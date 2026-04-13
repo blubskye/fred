@@ -9,6 +9,7 @@ import java.util.Random;
 import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.modes.AEADBlockCipher;
+import org.bouncycastle.crypto.modes.OCBBlockCipher;
 import org.bouncycastle.crypto.params.AEADParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
 
@@ -35,9 +36,12 @@ public class AEADOutputStream extends FilterOutputStream {
             BlockCipher mainCipher) throws IOException {
         super(os);
         os.write(nonce);
-        cipher = new OCBBlockCipher_v149(hashCipher, mainCipher);
+        // OCB spec (RFC 7253) limits nonce to max 15 bytes; trim to 15 so BC 1.68+ doesn't reject it.
+        // The full nonce is still written to the stream so the format stays at AES_BLOCK_SIZE bytes.
+        byte[] ocbNonce = nonce.length <= 15 ? nonce : java.util.Arrays.copyOf(nonce, 15);
+        cipher = new OCBBlockCipher(hashCipher, mainCipher);
         KeyParameter keyParam = new KeyParameter(key);
-        AEADParameters params = new AEADParameters(keyParam, MAC_SIZE_BITS, nonce);
+        AEADParameters params = new AEADParameters(keyParam, MAC_SIZE_BITS, ocbNonce);
         cipher.init(true, params);
     }
     

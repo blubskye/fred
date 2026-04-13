@@ -71,20 +71,20 @@ public class WelcomeToadlet extends Toadlet {
         List<BookmarkItem> items = cat.getItems();
         if (!items.isEmpty()) {
             // FIXME CSS noborder ...
-            HTMLNode table = list.addChild("li").addChild("table", new String[]{"border", "style"}, new String[]{"0", "border: none"});
+            HTMLNode table = list.addChild("li").addChild("table", new String[]{"border", "class"}, new String[]{"0", "no-border"});
             for (int i = 0; i < items.size(); i++) {
                 BookmarkItem item = items.get(i);
                 HTMLNode row = table.addChild("tr");
-                HTMLNode cell = row.addChild("td", "style", "border: none;");
+                HTMLNode cell = row.addChild("td", "class", "no-border");
                 if (item.hasAnActivelink() && !noActiveLinks) {
                     String initialKey = item.getKey();
                     String key = '/' + initialKey + (initialKey.endsWith("/") ? "" : "/") + "activelink.png";
-                    cell.addChild("div", "style", "height: 36px; width: 108px;").addChild("a", "href", '/' + item.getKey()).addChild("img", new String[]{"src", "alt", "style", "title"},
-                            new String[]{ key, "activelink", "height: 36px; width: 108px", item.getDescription()});
+                    cell.addChild("div", "class", "activelink-img").addChild("a", "href", '/' + item.getKey()).addChild("img", new String[]{"src", "alt", "class", "title"},
+                            new String[]{ key, "activelink", "activelink-img", item.getDescription()});
                 } else {
                     cell.addChild("#", " ");
                 }
-                cell = row.addChild("td", "style", "border: none");
+                cell = row.addChild("td", "class", "no-border");
                 
                 boolean updated = item.hasUpdated(); // We use it twice so copy for thread safety
                 String linkClass = updated ? "bookmark-title-updated" : "bookmark-title";
@@ -102,7 +102,7 @@ public class WelcomeToadlet extends Toadlet {
                 }
 
                 if (updated) {
-                    cell = row.addChild("td", "style", "border: none");
+                    cell = row.addChild("td", "class", "no-border");
                     cell.addChild(node.getClientCore().getAlerts().renderDismissButton(
                         item.getUserAlert(), path() + "#" + BOOKMARKS_ANCHOR));
                 }
@@ -298,7 +298,11 @@ public class WelcomeToadlet extends Toadlet {
         	if(!ctx.checkFormPassword(request)) return;
             MultiValueTable<String, String> headers = MultiValueTable.from(
                 "Location",
-                "/?terminated&formPassword=" + ctx.getFormPassword()
+                // HO-15: Do not put the formPassword into a redirect URL — it appears in
+                // browser history, server logs, and the Referer header of any sub-resource.
+                // Use a session cookie or a POST-only confirmation pattern instead.
+                // The redirect target page /?terminated does not need the formPassword.
+                "/?terminated"
             );
             ctx.sendReplyHeaders(302, "Found", headers, null, 0);
             node.getTicker().queueTimedJob(new Runnable() {
@@ -323,7 +327,8 @@ public class WelcomeToadlet extends Toadlet {
         	if(!ctx.checkFormPassword(request)) return;
             MultiValueTable<String, String> headers = MultiValueTable.from(
                 "Location",
-                "/?restarted&formPassword=" + ctx.getFormPassword()
+                // HO-15: Same as shutdown redirect — do not leak formPassword in URL.
+                "/?restarted"
             );
             ctx.sendReplyHeaders(302, "Found", headers, null, 0);
             node.getTicker().queueTimedJob(new Runnable() {
@@ -532,10 +537,10 @@ public class WelcomeToadlet extends Toadlet {
         
         HTMLNode bookmarksList = bookmarkBoxContent.addChild("ul", "id", BOOKMARKS_ANCHOR);
 		if (ctx.isAllowedFullAccess() || !ctx.getContainer().publicGatewayMode()) {
-			addCategoryToList(BookmarkManager.MAIN_CATEGORY, bookmarksList, (!container.enableActivelinks()) || (useragent != null && useragent.contains("khtml") && !useragent.contains("chrome")), ctx);
+			addCategoryToList(BookmarkManager.getMainCategory(), bookmarksList, (!container.enableActivelinks()) || (useragent != null && useragent.contains("khtml") && !useragent.contains("chrome")), ctx);
 		}
 		else {
-			addCategoryToList(BookmarkManager.DEFAULT_CATEGORY, bookmarksList, (!container.enableActivelinks()) || (useragent != null && useragent.contains("khtml") && !useragent.contains("chrome")), ctx);
+			addCategoryToList(BookmarkManager.getDefaultCategory(), bookmarksList, (!container.enableActivelinks()) || (useragent != null && useragent.contains("khtml") && !useragent.contains("chrome")), ctx);
 		}
 
         // Search Box

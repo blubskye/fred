@@ -297,10 +297,9 @@ public class SecurityLevelsToadlet extends Toadlet {
 
 			if(request.isPartSet("masterPassword")) {
 				String masterPassword = request.getPartAsStringFailsafe("masterPassword", 1024);
-				if (masterPassword.isEmpty()) {
-					sendPasswordPage(ctx, true, null);
-					return;
-				}
+				// Allow empty master password — master.keys stores keys with iterations=0
+				// for the empty-string case; blocking it here prevents existing installs
+				// with no password from unlocking their encrypted client store.
 				System.err.println("Setting master password");
 				try {
 					node.setMasterPassword(masterPassword, false);

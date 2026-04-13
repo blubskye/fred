@@ -19,7 +19,18 @@ public class PluginDownLoaderURL extends PluginDownLoader<URL> {
 	@Override
 	public URL checkSource(String source) throws PluginNotFoundException {
 		try {
-			return new URL(source);
+			URL url = new URL(source);
+			// P-5: Reject plain HTTP and FTP — only HTTPS is acceptable for plugin loading.
+			// A MITM on a plain-HTTP connection can silently replace the jar with malicious
+			// bytecode that then runs with full node privileges.
+			String proto = url.getProtocol().toLowerCase();
+			if (!proto.equals("https")) {
+				throw new PluginNotFoundException(
+					"Plugin URL must use HTTPS (got " + proto + "). "
+					+ "Plain HTTP and FTP are not permitted because a network attacker "
+					+ "could replace the plugin jar in transit.");
+			}
+			return url;
 		} catch (MalformedURLException e) {
 			// Generate a meaningful error message when file not found falls back to a URL.
 			// Maybe it's a file?
@@ -61,6 +72,8 @@ public class PluginDownLoaderURL extends PluginDownLoader<URL> {
 
 	static InputStream openConnectionCheckRedirects(URLConnection c) throws IOException
 	{
+		// P-5: Track the protocol of the initial connection to prevent HTTPS→HTTP downgrade.
+		String initialProtocol = c.getURL().getProtocol().toLowerCase();
 		boolean redir;
 		int redirects = 0;
 		InputStream in = null;
@@ -92,11 +105,17 @@ public class PluginDownLoaderURL extends PluginDownLoader<URL> {
 					// Redirection should be allowed only for HTTP and HTTPS
 					// and should be limited to 5 redirections at most.
 					if (target == null || !(target.getProtocol().equals("http")
-								|| target.getProtocol().equals("https")
-								|| target.getProtocol().equals("ftp"))
-							|| redirects >= 5)
+								|| target.getProtocol().equals("https"))
+						|| redirects >= 5)
 					{
 						throw new SecurityException("illegal URL redirect");
+					}
+					// P-5: Reject any redirect that downgrades from HTTPS to HTTP.
+					if (initialProtocol.equals("https")
+							&& target.getProtocol().equalsIgnoreCase("http")) {
+						throw new SecurityException(
+							"Rejected HTTPS→HTTP redirect during plugin download — "
+							+ "possible downgrade attack");
 					}
 					redir = true;
 					c = target.openConnection();

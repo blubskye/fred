@@ -20,6 +20,11 @@ public class WatchFeedsMessage extends FCPMessage {
 	@Override
 	public void run(FCPConnectionHandler handler, Node node)
 			throws MessageInvalidException {
+		// HO-25: WatchFeeds subscribes a client to all node alerts/feeds. Restrict to
+		// full-access clients — unrestricted clients should not receive node-wide alerts.
+		if (!handler.hasFullAccess())
+			throw new MessageInvalidException(ProtocolErrorMessage.ACCESS_DENIED,
+				"WatchFeeds requires full access", null, false);
 		if(enabled)
 			node.getClientCore().getAlerts().watch(handler);
 		else

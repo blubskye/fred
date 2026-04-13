@@ -23,7 +23,6 @@ import freenet.node.Node;
 import freenet.node.PrioRunnable;
 import freenet.support.Logger;
 import freenet.support.io.NativeThread;
-import sun.misc.Unsafe;
 
 public class UdpSocketHandler implements PrioRunnable, PacketSocketHandler, PortForwardSensitiveSocketHandler {
 
@@ -94,11 +93,16 @@ public class UdpSocketHandler implements PrioRunnable, PacketSocketHandler, Port
 
 		private static int getFd(DatagramChannel channel) {
 			try {
-				Field unsafe = Unsafe.class.getDeclaredField("theUnsafe");
-				unsafe.setAccessible(true);
-				Unsafe theUnsafe = (Unsafe) unsafe.get(null);
+				// HO-47: Replaced sun.misc.Unsafe (internal JVM API removed/strongly
+				// encapsulated in Java 17+) with plain reflection.
+				// java.lang.reflect.Field is already imported by this class.
+				// On Java 9+ with strong encapsulation, setAccessible() throws
+				// InaccessibleObjectException which the catch below handles by returning -1,
+				// silently skipping IPv6 address preference — the same graceful degradation
+				// that was already built into the original code.
 				Field fdVal = channel.getClass().getDeclaredField("fdVal");
-				return theUnsafe.getInt(channel, theUnsafe.objectFieldOffset(fdVal));
+				fdVal.setAccessible(true);
+				return fdVal.getInt(channel);
 			} catch (Exception e) {
 			   Logger.warning(UdpSocketHandler.class, e.getMessage(), e);
 			   return -1;

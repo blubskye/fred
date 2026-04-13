@@ -50,6 +50,7 @@ import org.bouncycastle.x509.X509V3CertificateGenerator;
 import freenet.config.InvalidConfigValueException;
 import freenet.config.SubConfig;
 import freenet.node.NodeStarter;
+import freenet.support.Base64;
 import freenet.support.Logger;
 import freenet.support.api.BooleanCallback;
 import freenet.support.api.IntCallback;
@@ -159,7 +160,12 @@ public class SSL {
 				}
 			});
 
-		sslConfig.register("sslKeyStorePass", "freenet", configItemOrder++, true, true, "SSL.keyStorePass", "SSL.keyStorePass",
+		// HO-9: Default keystore password "freenet" is well-known. Generate a random
+		// 128-bit (base64) password on first use so each node gets a unique credential.
+		// Existing installations that already have "freenet" will keep it until they
+		// change it via config; new installs will get a unique default.
+		String defaultKeyStorePass = Base64.encode(NodeStarter.getGlobalSecureRandom().generateSeed(16));
+		sslConfig.register("sslKeyStorePass", defaultKeyStorePass, configItemOrder++, true, true, "SSL.keyStorePass", "SSL.keyStorePass",
 			new StringCallback() {
 
 				@Override
@@ -184,7 +190,9 @@ public class SSL {
 				}
 			});
 
-		sslConfig.register("sslKeyPass", "freenet", configItemOrder++, true, true, "SSL.keyPass", "SSL.keyPass",
+		// HO-9: Same random default for private key password.
+		String defaultKeyPass = Base64.encode(NodeStarter.getGlobalSecureRandom().generateSeed(16));
+		sslConfig.register("sslKeyPass", defaultKeyPass, configItemOrder++, true, true, "SSL.keyPass", "SSL.keyPass",
 			new StringCallback() {
 
 				@Override

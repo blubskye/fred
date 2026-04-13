@@ -240,9 +240,8 @@ public class N2NTMToadlet extends Toadlet {
 					peerRow.addChild("td", "class", "peer-name").addChild("#", pn.getName());
 					peerRow.addChild("td", "class", sendStatusClass)
 									.addChild("span",
-									new String[] { "title", "style" },
-									new String[] { sendStatusLong,
-											"border-bottom: 1px dotted; cursor: help;" },
+									new String[] { "title", "class" },
+									new String[] { sendStatusLong, "help-tooltip" },
 									sendStatusShort);
 				}
 			}

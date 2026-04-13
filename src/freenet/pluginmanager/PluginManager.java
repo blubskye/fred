@@ -321,7 +321,16 @@ public class PluginManager {
 			}
 		}
 
-		return startPluginURL(pluginname, store);
+		// HO-43: The original code fell through silently to startPluginURL(), treating
+		// any unrecognized string as a clearnet HTTP/HTTPS URL. This means a typo in an
+		// official plugin name or a Freenet key would be fetched over clearnet, leaking
+		// the user's IP and loading an untrusted (unverified) jar. Reject explicitly.
+		Logger.error(this, "startPluginAuto: '" + pluginname
+			+ "' is not an official plugin name, a Freenet URI, or a local file path. "
+			+ "Refusing to fall through to clearnet URL loading.");
+		throw new IllegalArgumentException("Plugin source '" + pluginname
+			+ "' not recognized as official plugin, Freenet key, or local file. "
+			+ "Use startPluginURL() explicitly if you intend to load from a URL.");
 	}
 
 	public PluginInfoWrapper startPluginOfficial(final String pluginname, boolean store) {
@@ -1178,6 +1187,13 @@ public class PluginManager {
 	private void verifyDigest(PluginDownLoader<?> pluginDownLoader, File pluginFile) throws PluginNotFoundException {
 		String digest = pluginDownLoader.getSHA1sum();
 		if (digest == null) {
+			// HO-35: All PluginDownLoader implementations return null from getSHA1sum(),
+			// so this method has never enforced any checksum in practice. Log a warning
+			// so maintainers are aware; the real fix is to implement SHA-256 verification
+			// using a hash embedded in OfficialPlugins.java alongside each CHK.
+			Logger.warning(this, "verifyDigest: no checksum available for "
+				+ pluginFile.getName() + " from " + pluginDownLoader.getClass().getSimpleName()
+				+ " — plugin integrity is NOT verified by digest");
 			return;
 		}
 		String testsum = getFileDigest(pluginFile);
@@ -1208,6 +1224,7 @@ public class PluginManager {
 				throw new PluginAlreadyLoaded();
 			}
 			return pluginMainClassName;
+
 		} catch (IOException ioe1) {
 			throw new PluginNotFoundException("error procesesing jar file", ioe1);
 		} finally {
@@ -1218,6 +1235,36 @@ public class PluginManager {
 	private FredPlugin loadPluginFromJarFile(String name, File pluginFile, String pluginMainClassName, boolean isOfficialPlugin) throws PluginNotFoundException {
 		try {
 			JarClassLoader jarClassLoader = new JarClassLoader(pluginFile);
+			// HO-41: Attempt a pre-instantiation version check using the JAR manifest.
+			// Previously, the only way to check the plugin version was to call
+			// FredPluginRealVersioned.getRealVersion() on an instance, meaning the
+			// constructor ran (with potential side-effects) before the node could reject
+			// a too-old plugin.  Now we first look for a "Plugin-Version" manifest
+			// attribute and reject immediately if present and below minimumVersion.
+			// If absent we fall through to the existing post-instantiation check so
+			// that existing plugin JARs continue to work without changes.
+			if (isOfficialPlugin) {
+				OfficialPluginDescription desc = officialPlugins.get(name);
+				if (desc != null && desc.minimumVersion != -1) {
+					try (java.util.jar.JarFile jf = new java.util.jar.JarFile(pluginFile)) {
+						java.util.jar.Manifest mf = jf.getManifest();
+						if (mf != null) {
+							String verStr = mf.getMainAttributes().getValue("Plugin-Version");
+							if (verStr != null) {
+								long ver = Long.parseLong(verStr);
+								if (ver < desc.minimumVersion) {
+									jarClassLoader.close();
+									throw new PluginTooOldException(
+										"plugin too old (manifest check): need at least version "
+										+ desc.minimumVersion + " but manifest says " + ver);
+								}
+							}
+						}
+					} catch (NumberFormatException e) {
+						Logger.warning(this, "Plugin " + name + " has invalid Plugin-Version manifest attribute");
+					}
+				}
+			}
 			Class<?> pluginMainClass = jarClassLoader.loadClass(pluginMainClassName);
 			Object object = pluginMainClass.newInstance();
 			if (!(object instanceof FredPlugin)) {

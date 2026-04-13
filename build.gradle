@@ -1,14 +1,5 @@
 import java.security.MessageDigest
 
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:0.9.+'
-    }
-}
-
 configurations {
     provided
     compile
@@ -105,7 +96,7 @@ task buildJar(type: Jar) {
     preserveFileTimestamps = false
     reproducibleFileOrder = true
     duplicatesStrategy = DuplicatesStrategy.FAIL
-    archivesBaseName = "freenet"
+    archiveBaseName = "freenet"
     manifest {
         attributes("Permissions": "all-permissions")
         attributes("Application-Name": "Freenet REference Daemon")
@@ -254,19 +245,20 @@ copyRuntimeLibs.dependsOn jar
 
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    implementation "org.bouncycastle:bcprov-jdk15on:1.59"
-    implementation "net.java.dev.jna:jna:4.5.2"
-    implementation "net.java.dev.jna:jna-platform:4.5.2"
+    implementation "org.bouncycastle:bcprov-jdk18on:1.78.1"
+    implementation "org.bouncycastle:bcutil-jdk18on:1.78.1"
+    implementation "net.java.dev.jna:jna:5.14.0"
+    implementation "net.java.dev.jna:jna-platform:5.14.0"
     implementation "org.freenetproject:freenet-ext:29"
-    implementation "io.pebbletemplates:pebble:3.1.5"
+    implementation "io.pebbletemplates:pebble:3.2.2"
     // dependencies of pebble
     implementation "org.unbescape:unbescape:1.1.6.RELEASE"
-    implementation "org.slf4j:slf4j-api:1.7.25"
+    implementation "org.slf4j:slf4j-api:2.0.13"
 
     testImplementation 'junit:junit:4.13.2'
-    testImplementation "org.mockito:mockito-core:1.9.5"
+    testImplementation "org.mockito:mockito-core:5.12.0"
     testImplementation "org.hamcrest:hamcrest:3.0"
-    testImplementation "org.objenesis:objenesis:1.0"
+    testImplementation "org.objenesis:objenesis:3.3"
 }
 
 task tar(type: Tar) {

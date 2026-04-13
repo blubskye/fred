@@ -127,7 +127,8 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 	private int flags;
 
 	private boolean preallocate = true;
-	public static boolean NO_CLEANER_SLEEP = false;
+	// HO-62: volatile so cross-thread reads see updates; package-private to block plugin access.
+	static volatile boolean NO_CLEANER_SLEEP = false;
 
 	/**
 	 * true if close() hase been called
@@ -1152,8 +1153,7 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 				cipher.initialize(masterKey);
 				diskSalt = new byte[0x10];
 				cipher.encipher(newsalt, diskSalt);
-				if(logDEBUG)
-					Logger.debug(this, "Encrypting with "+HexUtil.bytesToHex(newsalt)+" from "+HexUtil.bytesToHex(diskSalt));
+				// HO-59: Removed Logger.debug of plaintext salt — logging salt defeats at-rest encryption.
 			}
 			cipherManager = new CipherManager(newsalt, diskSalt);
 
@@ -1220,19 +1220,15 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 					Closer.close(raf);
 				}
 			} catch (IOException e) {
-				// corrupted? delete it and try again
+				// HO-63: Back up rather than delete — prevents total data loss on transient I/O errors.
 				Logger.error(this, "config file corrupted, trying to create a new store: " + name, e);
 				System.err.println("config file corrupted, trying to create a new store: " + name);
-				if (configFile.exists() && configFile.delete()) {
-					File metaFile = new File(baseDir, name + ".metadata");
-					metaFile.delete();
-					return loadConfigFile(masterKey);
-				}
-
-				// last restore
-				Logger.error(this, "can't delete config file, please delete the store manually: " + name, e);
-				System.err.println( "can't delete config file, please delete the store manually: " + name);
-				throw e;
+				File corruptConfig = new File(configFile.getParentFile(), configFile.getName() + ".corrupt");
+				File metaFile = new File(baseDir, name + ".metadata");
+				File corruptMeta   = new File(metaFile.getParentFile(),   metaFile.getName()   + ".corrupt");
+				FileUtil.moveTo(configFile, corruptConfig);
+				FileUtil.moveTo(metaFile, corruptMeta);
+				return loadConfigFile(masterKey);
 			}
 		}
 	}

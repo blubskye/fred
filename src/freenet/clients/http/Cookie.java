@@ -316,6 +316,9 @@ public class Cookie {
 		sb.append("path="); sb.append(path); sb.append(';');
 		
 		sb.append("expires="); sb.append(TimeUtil.makeHTTPDate(expirationDate.getTime())); sb.append(';');
+		// HO-74: HttpOnly prevents browser-extension JavaScript from reading session
+		// cookies, protecting plugin session tokens from script-based exfiltration.
+		sb.append("HttpOnly;");
 		
 		if(discard) {
 			sb.append("discard="); sb.append(discard); sb.append(';');

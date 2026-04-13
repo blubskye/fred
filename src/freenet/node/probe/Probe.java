@@ -215,7 +215,8 @@ public class Probe implements ByteCounter {
 			}
 		});
 		respondIdentifier = nodeConfig.getBoolean("probeIdentifier");
-		nodeConfig.register("probeLinkLengths", true, sortOrder++, true, true, "Node.probeLinkLengthsShort",
+		// HO-45: Changed default from true to false — opt-in rather than opt-out for topology probes.
+		nodeConfig.register("probeLinkLengths", false, sortOrder++, true, true, "Node.probeLinkLengthsShort",
 			"Node.probeLinkLengthsLong", new BooleanCallback() {
 			@Override
 			public Boolean get() {
@@ -228,7 +229,7 @@ public class Probe implements ByteCounter {
 			}
 		});
 		respondLinkLengths = nodeConfig.getBoolean("probeLinkLengths");
-		nodeConfig.register("probeLocation", true, sortOrder++, true, true, "Node.probeLocationShort",
+		nodeConfig.register("probeLocation", false, sortOrder++, true, true, "Node.probeLocationShort",
 			"Node.probeLocationLong", new BooleanCallback() {
 			@Override
 			public Boolean get() {
@@ -624,7 +625,13 @@ public class Probe implements ByteCounter {
 			//Clamp to byte.
 			if (percent > Byte.MAX_VALUE) percent = Byte.MAX_VALUE;
 			else if (percent < Byte.MIN_VALUE) percent = Byte.MIN_VALUE;
-			listener.onIdentifier(probeIdentifier, (byte)percent);
+			// HO-51: probeIdentifier is a stable, node-specific long stored in config.
+			// Returning it verbatim lets an adversary build a cross-session fingerprint table
+			// for all reachable nodes. XOR with a per-response random nonce so each response
+			// is unlinkable — the identifier becomes a one-time value that is still unique
+			// within a single response but cannot be correlated across multiple probe results.
+			long nonce = node.getRandom().nextLong();
+			listener.onIdentifier(probeIdentifier ^ nonce, (byte)percent);
 			break;
 		case LINK_LENGTHS:
 			PeerNode[] peers = node.getConnectedPeers();
@@ -649,7 +656,8 @@ public class Probe implements ByteCounter {
 			listener.onLinkLengths(linkLengths);
 			break;
 		case LOCATION:
-			listener.onLocation((float)node.getLocation());
+			// Apply 1% noise (sigma=0.01) consistent with link-length probe noise (P-6).
+			listener.onLocation((float)randomNoise(node.getLocation(), 0.01));
 			break;
 		case STORE_SIZE:
 			/*

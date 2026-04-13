@@ -31,6 +31,12 @@ public class DirectDirPutFile extends DirPutFile {
 			throw new MessageInvalidException(ProtocolErrorMessage.ERROR_PARSING_NUMBER, "Could not parse DataLength: "+e.toString(), identifier, global);
 		}
 		try {
+			// HO-22: A negative DataLength would be passed to bf.makeBucket() which may wrap
+			// or allocate an unbounded buffer. Reject here before allocation.
+			if (length < 0) {
+				throw new MessageInvalidException(ProtocolErrorMessage.INVALID_FIELD,
+					"DataLength must be non-negative for " + name, identifier, global);
+			}
 			if(length == 0)
 				data = new NullBucket();
 			else

@@ -332,8 +332,13 @@ public class PaddedEphemerallyEncryptedBucket implements Bucket, Serializable {
 		if(iv != null)
 			return PCFBMode.create(aes, iv);
 		else
-			// FIXME CRYPTO We should probably migrate all old buckets automatically so we can get rid of this?
-			// Since the key is unique it is actually almost safe to use all zeros IV, but it's better to use a real IV.
+			// HO-67: Legacy deserialized buckets have iv==null, falling back to PCFB with
+			// all-zeros IV. The key is unique per bucket so this is not catastrophic, but
+			// it is weaker than using a real IV. Log a warning so operators can track how
+			// many old-format buckets remain; the all-zeros path is kept for read
+			// compatibility only — new buckets always have iv set at construction time.
+			Logger.warning(this, "PaddedEphemerallyEncryptedBucket using legacy null IV for bucket: "
+				+ bucket.getName() + " — consider re-encrypting with a current IV");
 			return PCFBMode.create(aes);
 	}
 

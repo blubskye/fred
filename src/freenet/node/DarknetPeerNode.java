@@ -898,10 +898,18 @@ public class DarknetPeerNode extends PeerNode {
 			size = data.size();
 			amIOffering = true;
 		}
-
 		public FileOffer(SimpleFieldSet fs, boolean amIOffering) throws FSParseException {
 			uid = fs.getLong("uid");
 			size = fs.getLong("size");
+			// HO-52: Enforce a maximum file size for incoming darknet file transfers.
+			// Without this a malicious darknet peer can offer a file of arbitrarily large
+			// size, causing the node to allocate disk space for the transfer. Limit to
+			// 256 MiB — large enough for any legitimate friend-to-friend file transfer.
+			final long MAX_FILE_OFFER_SIZE = 256L * 1024 * 1024; // 256 MiB
+			if (size < 0 || size > MAX_FILE_OFFER_SIZE) {
+				throw new FSParseException("FileOffer size out of range: " + size
+					+ " (max " + MAX_FILE_OFFER_SIZE + " bytes)");
+			}
 			mimeType = fs.get("metadata.contentType");
 			filename = FileUtil.sanitize(fs.get("filename"), mimeType);
 			destination = null;

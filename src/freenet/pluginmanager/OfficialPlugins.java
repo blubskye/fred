@@ -19,6 +19,74 @@ import freenet.node.updater.PluginJarUpdater;
  *
  * @author <a href="mailto:bombe@pterodactylus.net">David ‘Bombe’ Roden</a>
  */
+ // -------------------------------------------------------------------------
+ // HO-39: Official plugin CHK keys are NOT bound to developer identity.
+ // A CHK guarantees that the fetched bytes match a specific hash, but it does
+ // NOT prove who created the data.  Anyone who can commit to the fred repository
+ // (or compromise a committer's account) can insert a malicious plugin JAR and
+ // update the CHK here.  No code signing, reproducible-build verification, or
+ // multi-party approval is required.
+ //
+ // Additionally, the WebOfTrustTesting entry below used alwaysFetchLatestVersion()
+ // with a USK key.  This allowed the USK key holder to push new plugin versions
+ // at every node restart with no change to this source file.  That flag has been
+ // removed — the node now pins edition /17 and does not auto-update.
+ //
+ // FULL FIX REQUIRES EXTERNAL BUILD INFRASTRUCTURE — the following work must be
+ // done outside this source tree before the verification code can be enabled:
+ //
+ //   STEP 1 — KEY MANAGEMENT (maintainer action, not a code change):
+ //     Each official plugin developer generates a signing key pair.  The public
+ //     key must be pinned in this file (or a companion class).  Suggested format:
+ //     Base64-encoded DER SubjectPublicKeyInfo (SPKI), one constant per developer.
+ //     Example:
+ //       static final String WOT_DEV_PUBKEY_B64 =
+ //           "MIIBIjANBgkq..."; // developer generates and publishes this
+ //
+ //   STEP 2 — BUILD PIPELINE (CI/CD change, not a code change):
+ //     Every plugin JAR must be signed before being inserted into Freenet.
+ //     Standard tooling:
+ //       jarsigner -keystore release.jks -signedjar signed.jar plugin.jar alias
+ //     The signed JAR embeds the certificate chain in META-INF/*.SF + *.RSA.
+ //     The CHK entered here must be the CHK of the SIGNED jar.
+ //
+ //   STEP 3 — VERIFICATION CODE (ready to enable once steps 1+2 are complete):
+ //     In PluginManager.loadPluginFromJarFile() (or PluginJarUpdater), add before
+ //     class instantiation:
+ //
+ //       // Verify JAR signature and check signer matches pinned developer key.
+ //       try (JarFile jar = new JarFile(pluginFile, true /* verify */)) {
+ //           Enumeration<JarEntry> entries = jar.entries();
+ //           while (entries.hasMoreElements()) {
+ //               JarEntry entry = entries.nextElement();
+ //               // Consume bytes — JarFile verifies signatures lazily on read.
+ //               try (InputStream is = jar.getInputStream(entry)) {
+ //                   byte[] buf = new byte[8192];
+ //                   while (is.read(buf) != -1) { /* consume to trigger verify */ }
+ //               }
+ //               if (entry.isDirectory()) continue;
+ //               CodeSigner[] signers = entry.getCodeSigners();
+ //               if (signers == null || signers.length == 0)
+ //                   throw new SecurityException("Unsigned entry: " + entry.getName());
+ //               // Compare leaf certificate public key against the pinned SPKI for
+ //               // this plugin's declared developer:
+ //               PublicKey leafKey = signers[0]
+ //                   .getSignerCertPath().getCertificates().get(0)
+ //                   .getPublicKey();
+ //               if (!Arrays.equals(leafKey.getEncoded(), expectedDevPublicKeyDer))
+ //                   throw new SecurityException("Plugin signed by unknown key");
+ //           }
+ //       }
+ //
+ //   STEP 4 — POLICY (process change, not a code change):
+ //     Require sign-off from >= 2 maintainers in the git review process for any
+ //     CHK change in this file.  This limits the blast radius of a single
+ //     compromised committer account.
+ //
+ // DO NOT enable step 3 before steps 1+2 are complete — without signed JARs,
+ // turning on verification will make every official plugin fail to load.
+ // -------------------------------------------------------------------------
+
 public class OfficialPlugins {
 
 	private final Map<String, OfficialPluginDescription> officialPlugins = new HashMap<String, OfficialPluginDescription>();
@@ -127,8 +195,7 @@ public class OfficialPlugins {
 					.advanced()
 					.experimental()
 					.usesXml()
-					.alwaysFetchLatestVersion()
-					.minimumVersion(17) // When changing this also update edition of USK below!
+					.minimumVersion(17)
 					.loadedFrom("USK@QeTBVWTwBldfI-lrF~xf0nqFVDdQoSUghT~PvhyJ1NE,OjEywGD063La2H-IihD7iYtZm3rC0BP6UTvvwyF5Zh4,AQACAAE/WebOfTrustTesting.jar/17");
 			addPlugin("FlogHelper")
 					.inGroup("communication")

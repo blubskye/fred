@@ -59,9 +59,12 @@ public class PartiallyReceivedBlock {
 	ArrayList<PacketReceivedListener> _packetReceivedListeners = new ArrayList<PacketReceivedListener>();
 
 	public PartiallyReceivedBlock(int packets, int packetSize, byte[] data) {
-		if (data.length != packets * packetSize) {
-			throw new RuntimeException("Length of data ("+data.length+") doesn't match packet number and size");
-		}
+		// HO-48: Guard against signed integer overflow in packets * packetSize before
+		// comparing with data.length. A malicious peer could send large values whose
+		// product wraps to a small positive number, bypassing the length check.
+		if ((long)packets * packetSize != data.length)
+			throw new RuntimeException("Length of data ("+data.length+") doesn't match packet number and size: "
+				+packets+" * "+packetSize+" = "+(long)packets*packetSize);
 		_data = data;
 		_received = new boolean[packets];
 		for (int x=0; x<_received.length; x++) {
@@ -73,6 +76,11 @@ public class PartiallyReceivedBlock {
 	}
 	
 	public PartiallyReceivedBlock(int packets, int packetSize) {
+		// HO-48: Check for overflow before allocating — a malicious peer supplying
+		// overflowed values would allocate a tiny buffer but report a large logical size.
+		if ((long)packets * packetSize > Integer.MAX_VALUE || packets < 0 || packetSize < 0)
+			throw new IllegalArgumentException("Integer overflow in packets * packetSize: "
+				+packets+" * "+packetSize);
 		_data = new byte[packets * packetSize];
 		_received = new boolean[packets];
 		_packets = packets;

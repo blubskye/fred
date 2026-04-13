@@ -327,6 +327,14 @@ public class FreenetInetAddress {
 	public InetAddress getHandshakeAddress() {
 	    // Since we're handshaking, hostname-to-IP may have changed
 	    if ((_address != null) && (hostname == null)) {
+	    // HO-46: A DNS lookup for a peer hostname exposes this node's IP address
+	    // to the DNS resolver operator.  In F2F (darknet) mode this is a privacy
+	    // risk if a friend's noderef contains a hostname rather than a raw IP.
+	    // Log at NORMAL so operators are aware; DNS lookups happen at handshake
+	    // time only, not per-packet.
+	    Logger.normal(this, "DNS lookup for peer hostname '"+hostname
+	    	+"' — this reveals your IP to the DNS resolver. Consider asking"
+	    	+" your friend to use a static IP in their noderef.");
 	    	if(logMINOR) Logger.minor(this, "hostname is null, returning "+_address);
 	        return _address;
 	    } else {

@@ -408,7 +408,7 @@ outerTAR:		while(true) {
 						int readBytes;
 						while((readBytes = tarIS.read(buf)) > 0) {
 							out.write(buf, 0, readBytes);
-							readBytes += realLen;
+							realLen += readBytes; // HO-64: was readBytes += realLen (inverted)
 							if(readBytes > maxArchivedFileSize) {
 								addErrorElement(ctx, key, name, "File too big: "+maxArchivedFileSize+" greater than current archived file size limit "+maxArchivedFileSize, true);
 								out.close();
@@ -488,7 +488,7 @@ outerZIP:		while(true) {
 						int readBytes;
 						while((readBytes = zis.read(buf)) > 0) {
 							out.write(buf, 0, readBytes);
-							readBytes += realLen;
+							realLen += readBytes; // HO-64: was readBytes += realLen (inverted)
 							if(readBytes > maxArchivedFileSize) {
 								addErrorElement(ctx, key, name, "File too big: "+maxArchivedFileSize+" greater than current archived file size limit "+maxArchivedFileSize, true);
 								out.close();
@@ -538,6 +538,13 @@ outerZIP:		while(true) {
 	}
 
 	private String stripLeadingSlashes(String name) {
+		// HO-65: Reject entries containing path-traversal sequences before stripping
+		// leading slashes. An entry named "../../etc/passwd" would otherwise produce a
+		// malformed manifest path reachable by callers. Throw so callers skip the entry.
+		if (name.contains("..")) {
+			throw new IllegalArgumentException(
+				"Archive entry name contains path-traversal sequence: " + name);
+		}
 		while(name.length() > 1 && name.charAt(0) == '/')
 			name = name.substring(1);
 		return name;

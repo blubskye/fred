@@ -162,7 +162,11 @@ public class CSSReadFilter implements ContentDataFilter, CharsetExtractor {
 			int i;
 			for(i=0;i<m.length();i++) {
 				char c = m.charAt(i);
-				if(!('a' <= c && 'z' >= c) || ('A' <= c && 'Z' >= c) || ('0' <= c && '9' >= c) || c == '-')
+				// HO-3: Original condition had wrong operator precedence — the ! only
+				// applied to the lowercase check, so digits and hyphens were never
+				// accepted and uppercase letters always broke out of the loop.
+				// Correct: break if the character is NOT (lower | upper | digit | hyphen).
+				if(!(('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || c == '-'))
 					break;
 			}
 			m = m.substring(0, i);

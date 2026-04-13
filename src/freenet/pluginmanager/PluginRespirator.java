@@ -20,6 +20,7 @@ import freenet.node.Node;
 import freenet.node.NodeClientCore;
 import freenet.node.RequestStarter;
 import freenet.support.HTMLNode;
+import freenet.support.Logger;
 import freenet.support.URIPreEncoder;
 import freenet.support.api.HTTPRequest;
 import freenet.support.plugins.helpers1.WebInterfaceToadlet;
@@ -50,10 +51,23 @@ public class PluginRespirator {
 	public HighLevelSimpleClient getHLSimpleClient() {
 		return hlsc;
 	}
-	
+	/**
+	 * @deprecated HO-37: Returns the full {@link freenet.node.Node} object, giving
+	 * the caller unrestricted access to internal node state, crypto material,
+	 * and all subsystems.  Prefer the narrower methods on {@link PluginRespirator}
+	 * (e.g. {@link #getHLSimpleClient()}, {@link #getPageMaker()}).  Only call
+	 * this if you truly need something that has no dedicated accessor.
+	 */
 	/** Get the node. Use this if you need access to low-level stuff, node config
 	 * etc. */
 	public Node getNode(){
+		// HO-37: Log which plugin is requesting the full Node reference so that
+		// operators can audit unofficial plugins that use this broad API.
+		if(pi != null && !pi.isOfficialPlugin()) {
+			Logger.warning(this, "Unofficial plugin \"" + pi.getPluginClassName()
+				+ "\" (" + pi.getFilename() + ") called PluginRespirator.getNode()"
+				+ " — it has full node access.");
+		}
 		return node;
 	}
 

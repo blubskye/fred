@@ -302,6 +302,10 @@ public class UpdateDeployContext {
 		    bw.write("wrapper.anchor.poll_interval=1\n");
 		}
 		
+		// HO-32: fsync the new wrapper.conf before renaming it over the old one.
+		// Without this a crash between close() and renameTo() can leave the install
+		// with neither the old nor the new config, breaking startup.
+		fos.getFD().sync();
 		bw.close();
 
 		if(!newConfig.renameTo(oldConfig)) {

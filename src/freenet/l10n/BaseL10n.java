@@ -88,6 +88,7 @@ public class BaseL10n {
 		// RFC5646. Find a way to rename this without breaking the language in all plugins.
 		BRAZILIAN_PORTUGUESE("pt-br", "Português do Brasil", "pt-br", new String[] { "WINDOWS0416" }),
 		GREEK("el", "Ελληνικά", "ell", new String[] { "WINDOWS0408" }),
+		KOREAN("ko", "한국어", "kor", new String[] { "WINDOWS0412" }),
 		UNLISTED("unlisted", "unlisted", "unlisted", new String[] {});
 		/** The identifier we use internally : MUST BE UNIQUE! */
 		public final String shortCode;

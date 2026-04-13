@@ -62,41 +62,52 @@ class NPFPacket {
 
 			int numAckRanges = plaintext[offset++] & 0xFF;
 			if (numAckRanges > 0) {
-				try {
-					int ack, prevAck = 0;
-					
-					for(int i = 0; i < numAckRanges; i++) {
-						if (i == 0) {
+				// HO-53: Explicit bounds checks instead of catching ArrayIndexOutOfBoundsException.
+				int ack, prevAck = 0;
+
+				for(int i = 0; i < numAckRanges; i++) {
+					if (i == 0) {
+						if (plaintext.length < offset + 4) {
+							packet.error = true;
+							return packet;
+						}
+						ack = ((plaintext[offset] & 0xFF) << 24)
+					               | ((plaintext[offset + 1] & 0xFF) << 16)
+					               | ((plaintext[offset + 2] & 0xFF) << 8)
+					               | (plaintext[offset + 3] & 0xFF);
+						offset += 4;
+					} else {
+						if (offset >= plaintext.length) {
+							packet.error = true;
+							return packet;
+						}
+						int distanceFromPrevious = (plaintext[offset++] & 0xFF);
+						if (distanceFromPrevious != 0) {
+							ack = prevAck + distanceFromPrevious;
+						} else {
+							// Far offset
+							if (plaintext.length < offset + 4) {
+								packet.error = true;
+								return packet;
+							}
 							ack = ((plaintext[offset] & 0xFF) << 24)
 						               | ((plaintext[offset + 1] & 0xFF) << 16)
 						               | ((plaintext[offset + 2] & 0xFF) << 8)
 						               | (plaintext[offset + 3] & 0xFF);
 							offset += 4;
-						} else {
-							int distanceFromPrevious = (plaintext[offset++] & 0xFF);
-							if (distanceFromPrevious != 0) {
-								ack = prevAck + distanceFromPrevious;
-							} else {
-								// Far offset
-								ack = ((plaintext[offset] & 0xFF) << 24)
-							               | ((plaintext[offset + 1] & 0xFF) << 16)
-							               | ((plaintext[offset + 2] & 0xFF) << 8)
-							               | (plaintext[offset + 3] & 0xFF);
-								offset += 4;
-							}
 						}
-						
-						int rangeSize = (plaintext[offset++] & 0xFF);
-						for (int j = 1; j <= rangeSize; j++) {
-							packet.acks.add(ack++);
-						}
-						
-						prevAck = ack-1;
 					}
-				} catch (ArrayIndexOutOfBoundsException e) {
-					// The packet's length is not big enough
-					packet.error = true;
-					return packet;
+
+					if (offset >= plaintext.length) {
+						packet.error = true;
+						return packet;
+					}
+					int rangeSize = (plaintext[offset++] & 0xFF);
+					for (int j = 1; j <= rangeSize; j++) {
+						packet.acks.add(ack++);
+					}
+
+					prevAck = ack-1;
 				}
 			}
 

@@ -84,7 +84,14 @@ public class PproxyToadlet extends Toadlet {
 
 		if(!path.isEmpty())
 		{
-			// Plugins handle their own formPassword checking.
+			// HO-73: Centrally verify the form password before dispatching to any plugin
+			// HTTP handler. Individual plugins were previously responsible for their own
+			// CSRF check, but there was no framework enforcement — any plugin that forgot
+			// or skipped the check was silently vulnerable. A freesite POST to
+			// /plugins/PluginName could trigger state-changing plugin operations without
+			// any CSRF token. Core first-party plugins were compliant, but the design
+			// placed an unenforceable correctness burden on plugin authors.
+			if(!ctx.checkFormPassword(request)) return;
 			try
 			{
 				String plugin = null;
@@ -604,6 +611,18 @@ public class PproxyToadlet extends Toadlet {
 		addOtherPluginBox.addChild("div", "class", "infobox-header", l10n("loadOtherPlugin"));
 		HTMLNode addOtherPluginContent = addOtherPluginBox.addChild("div", "class", "infobox-content");
 		HTMLNode addOtherForm = toadletContext.addFormChild(addOtherPluginContent, ".", "addOtherPluginForm");
+		// HO-40/P-4/P-5: Explicit security warning — plugins run with full node privileges.
+		HTMLNode warning = addOtherForm.addChild("div", "class", "infobox infobox-alert");
+		warning.addChild("div", "class", "infobox-header", "Security Warning");
+		HTMLNode warningContent = warning.addChild("div", "class", "infobox-content");
+		warningContent.addChild("p",
+			"Loading a third-party plugin grants it FULL ACCESS to this Freenet node, "
+			+ "including all private keys, peer identities, the filesystem, and network. "
+			+ "This is equivalent to running an arbitrary program as the current user. "
+			+ "Only load plugins from sources you completely trust.");
+		warningContent.addChild("p",
+			"Plugin URLs must use HTTPS. Plain HTTP is rejected to prevent "
+			+ "network attackers from replacing the plugin jar in transit.");
 		addOtherForm.addChild("div", l10n("loadOtherPluginText"));
 		addOtherForm.addChild("#", (l10n("loadOtherURLLabel") + ": "));
 		addOtherForm.addChild("input", new String[] { "type", "name", "size" }, new String[] { "text", "plugin-url", "80" });
@@ -625,6 +644,15 @@ public class PproxyToadlet extends Toadlet {
 		addFreenetPluginBox.addChild("div", "class", "infobox-header", l10n("loadFreenetPlugin"));
 		HTMLNode addFreenetPluginContent = addFreenetPluginBox.addChild("div", "class", "infobox-content");
 		HTMLNode addFreenetForm = toadletContext.addFormChild(addFreenetPluginContent, ".", "addFreenetPluginForm");
+		// HO-40/P-4: Explicit security warning — plugins run with full node privileges.
+		HTMLNode fwarning = addFreenetForm.addChild("div", "class", "infobox infobox-alert");
+		fwarning.addChild("div", "class", "infobox-header", "Security Warning");
+		HTMLNode fwarningContent = fwarning.addChild("div", "class", "infobox-content");
+		fwarningContent.addChild("p",
+			"Loading a plugin from a Freenet key grants it FULL ACCESS to this node, "
+			+ "including all private keys, peer identities, the filesystem, and network. "
+			+ "This is equivalent to running an arbitrary program as the current user. "
+			+ "Only load plugins from Freenet keys you have verified through a trusted channel.");
 		addFreenetForm.addChild("div", l10n("loadFreenetPluginText"));
 		addFreenetForm.addChild("#", (l10n("loadFreenetURLLabel") + ": "));
 		addFreenetForm.addChild("input", new String[] { "type", "name", "size" }, new String[] { "text", "plugin-uri", "80" });

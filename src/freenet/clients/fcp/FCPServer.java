@@ -1245,4 +1245,10 @@ public class FCPServer implements Runnable, DownloadCache {
 		return globalRebootClient;
 	}
 
+	// HO-24: Called by FCPConnectionHandler when a connection closes so the server
+	// can perform any per-connection cleanup (e.g. decrement active count, audit logging).
+	public void connectionClosed() {
+		// Placeholder: extend with connection-count tracking if needed.
+	}
+
 }

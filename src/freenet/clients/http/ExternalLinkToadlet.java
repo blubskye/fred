@@ -6,6 +6,8 @@ import freenet.l10n.NodeL10n;
 import freenet.node.Node;
 import freenet.support.HTMLNode;
 import freenet.support.MultiValueTable;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import freenet.support.api.HTTPRequest;
 
 import java.io.IOException;
@@ -84,7 +86,10 @@ public class ExternalLinkToadlet extends Toadlet {
 	 * @return String appropriate for a link.
 	 */
 	public static String escape(String uri) {
-		return ExternalLinkToadlet.PATH+"?" + magicHTTPEscapeString + '=' + uri;
+		// HO-4: URL-encode the URI so that characters like &, =, #, % in the link target
+		// do not break the query string or allow parameter injection into the fproxy URL.
+		String encoded = URLEncoder.encode(uri, StandardCharsets.UTF_8);
+		return ExternalLinkToadlet.PATH + "?" + magicHTTPEscapeString + '=' + encoded;
 	}
 
 	private static String l10n(String key, String pattern, String value) {

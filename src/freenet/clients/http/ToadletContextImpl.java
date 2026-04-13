@@ -442,6 +442,10 @@ public class ToadletContextImpl implements ToadletContext {
 		mvt.put("x-content-security-policy", contentSecurityPolicy);
 		mvt.put("x-webkit-csp", contentSecurityPolicy);
 		mvt.put("x-frame-options", allowFrames ? "SAMEORIGIN" : "DENY");
+		// HO-13: Prevent fproxy URL (may contain formPassword) from leaking to external resources.
+		mvt.put("referrer-policy", "no-referrer");
+		// HO-14: Prevent MIME-sniffing responses away from the declared content-type.
+		mvt.put("x-content-type-options", "nosniff");
 		StringBuilder buf = new StringBuilder(1024);
 		buf.append("HTTP/1.1 ");
 		buf.append(replyCode);
@@ -473,9 +477,13 @@ public class ToadletContextImpl implements ToadletContext {
 	    sb.append("; frame-src ");
         sb.append(allowFrames ? "'self'" : "'none'");
         sb.append("; object-src 'none'");
-        // Always send unsafe-inline for CSS. This is safe given it can't use external stuff anyway.
-        // It's only strictly needed for fproxy.
-        sb.append("; style-src 'self' 'unsafe-inline'");
+        // HO-18: 'unsafe-inline' for style-src allows any inline <style> or style=""
+        // attribute to execute, which widens XSS surface if any HTML injection exists.
+        // Restrict to 'self' only (external stylesheets from the fproxy origin). Inline
+        // styles in admin pages should be moved to stylesheet files. Freesite content
+        // goes through the content filter which already strips style attributes it doesn't
+        // recognize, so this tightening should be safe for the admin/fproxy UI.
+        sb.append("; style-src 'self'");
         return sb.toString();
     }
 
@@ -708,13 +716,11 @@ public class ToadletContextImpl implements ToadletContext {
 		} catch (Throwable t) {
 			Logger.error(ToadletContextImpl.class, "Caught error: "+t+" handling socket", t);
 			try {
+				// HO-16: Do not expose stack trace to browser — log it where only the operator can see it.
+				Logger.error(ToadletContextImpl.class, "Internal error in HTTP handler", t);
 				String msg = "<html><head><title>"+NodeL10n.getBase().getString("Toadlet.internalErrorTitle")+
-						"</title></head><body><h1>"+NodeL10n.getBase().getString("Toadlet.internalErrorPleaseReport")+"</h1><pre>";
-				StringWriter sw = new StringWriter();
-				PrintWriter pw = new PrintWriter(sw);
-				t.printStackTrace(pw);
-				pw.flush();
-				msg = msg + sw + "</pre></body></html>";
+						"</title></head><body><h1>"+NodeL10n.getBase().getString("Toadlet.internalErrorPleaseReport")+"</h1>"+
+						"<p>Please check your node log for details.</p></body></html>";
 				byte[] messageBytes = msg.getBytes(StandardCharsets.UTF_8);
 				sendReplyHeaders(sock.getOutputStream(), 500, "Internal failure", null, "text/html; charset=UTF-8", messageBytes.length, null, true, false, false);
 				sock.getOutputStream().write(messageBytes);

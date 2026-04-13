@@ -61,6 +61,10 @@ public class SSLNetworkInterface extends NetworkInterface {
 		serverSocket.setNeedClientAuth(false);
 		serverSocket.setUseClientMode(false);
 		serverSocket.setWantClientAuth(false);
+		// HO-10: Explicitly disable TLS 1.0 and TLS 1.1 — SSLContext("TLSv1.2") sets
+		// the minimum but does not always prevent older protocol negotiation on all JVMs.
+		// Only allow TLS 1.2 and TLS 1.3 if the JVM supports it.
+		serverSocket.setEnabledProtocols(new String[]{"TLSv1.2", "TLSv1.3"});
 
 		List<String> enabledCiphers = new ArrayList<>();
 		for(String cipher : serverSocket.getSupportedCipherSuites()) {

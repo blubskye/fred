@@ -93,7 +93,7 @@ public class WELCOME implements Step {
 		header.addChild("th", "width", "33%", WizardL10n.l10n("presetTitle"+preset));
 		HTMLNode tableCell = row.addChild("td");
 		tableCell.addChild("p", WizardL10n.l10n("preset" + preset));
-		HTMLNode centerForm = tableCell.addChild("div", "style", "text-align:center;");
+		HTMLNode centerForm = tableCell.addChild("div", "class", "text-center");
 		HTMLNode secForm = helper.addFormChild(centerForm, ".", "SecForm"+preset);
 		secForm.addChild("input",
 		        new String[]{"type", "name", "value", },

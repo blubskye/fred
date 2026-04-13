@@ -22,7 +22,7 @@ public class TesterElement extends BaseUpdateableElement {
 	final String	id;
 
 	public TesterElement(ToadletContext ctx, String id, int max) {
-		super("div","style","float:left;", ctx);
+		super("div","class","float-left", ctx);
 		this.id = id;
 		this.ctx = ctx;
 		this.maxStatus = max;

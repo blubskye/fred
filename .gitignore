@@ -33,3 +33,5 @@ debhelper-build-stamp
 .gradle
 gradle
 debian/seednodes.fref
+docs/
+chat*.txt

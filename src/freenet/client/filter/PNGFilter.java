@@ -37,7 +37,12 @@ public class PNGFilter implements ContentDataFilter {
 	// https://www.w3.org/TR/png/#5ChunkOrdering, these chunks must appear before PLTE and IDAT
 	static final String[] HARMLESS_CHUNK_TYPES_BEFORE_PLTE = {
 	// http://www.w3.org/TR/PNG/
-	        "cHRM", "iCCP", // FIXME Embedded ICC profile: could this conceivably cause a web lookup?
+	        "cHRM",
+	        // HO-1: iCCP (ICC color profile) chunks removed from the passthrough list.
+	        // iCCP embeds arbitrary binary data; historical browser vulnerabilities (e.g.
+	        // CVE-2010-0209 in Flash) have abused ICC profiles to trigger code execution.
+	        // Dropping the chunk has no visible rendering impact — browsers fall back to
+	        // default (sRGB) color handling, which is already the common case.
 	        "sBIT", // https://www.w3.org/TR/png/#11sBIT
 	        "gAMA", // https://www.w3.org/TR/png/#11gAMA
 	        "cLLI", // https://www.w3.org/TR/png/#cLLI-chunk

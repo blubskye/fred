@@ -40,6 +40,12 @@ public abstract class SendPeerMessage extends DataCarryingMessage {
 
 	@Override
 	public void run(FCPConnectionHandler handler, Node node) throws MessageInvalidException {
+		// HO-20: SendPeerMessage (SendBookmark, SendURI, SendText) sends data to a
+		// darknet peer. Restrict to full-access FCP clients — a localhost process that
+		// hasn't been granted admin access should not be able to inject data to peers.
+		if (!handler.hasFullAccess())
+			throw new MessageInvalidException(ProtocolErrorMessage.ACCESS_DENIED,
+				getName() + " requires full access", null, false);
 		PeerNode pn = node.getPeerNode(nodeIdentifier);
 		if (pn == null) {
 			FCPMessage msg = new UnknownNodeIdentifierMessage(nodeIdentifier, identifier);

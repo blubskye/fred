@@ -127,6 +127,20 @@ public class JarClassLoader extends ClassLoader implements Closeable {
 	 */
 	@Override
 	protected Class<?> findClass(String name) throws ClassNotFoundException {
+		// HO-36: Prevent plugin JARs from defining classes in the freenet.* package
+		// namespace.  The parent (system) classloader loads all node classes before
+		// findClass() is invoked, so a class in freenet.* should never reach here
+		// unless the plugin is bundling its own version of a core type or injecting
+		// a new class into the core namespace to confuse the node.  Reject it.
+		// Plugin API types live in freenet.pluginmanager.*, which is also in the
+		// freenet.* tree, but those are ALREADY loaded by the parent, so a plugin
+		// that tries to shadow them would fail at the parent-delegation step, not
+		// here.  Any remaining hit on freenet.* that reaches findClass() is a plugin
+		// trying to inject a new class -- block it.
+		if (name.startsWith("freenet.")) {
+			throw new ClassNotFoundException(
+				"Plugin not permitted to define class in freenet.* namespace: " + name);
+		}
 		try {
 			String pathName = transformName(name);
 			JarEntry jarEntry = tempJarFile.getJarEntry(pathName);

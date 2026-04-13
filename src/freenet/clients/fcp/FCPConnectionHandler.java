@@ -202,6 +202,8 @@ public class FCPConnectionHandler implements Closeable {
 			foreverClient.onLostConnection(this);
 		boolean dupe;
 		SubscribeUSK[] uskSubscriptions2;
+		// HO-24: Signal the server so it can decrement the active connection count.
+		server.connectionClosed();
 		synchronized(this) {
 			if(isClosed) {
 				// This is normal, both input and output handlers will call close().

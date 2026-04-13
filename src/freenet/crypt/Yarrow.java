@@ -76,15 +76,16 @@ public class Yarrow extends RandomSource implements PersistentRandomSource {
 	public final File seedfile; //A file to which seed data should be dumped periodically
 
 	public Yarrow() {
-		this("prng.seed", "SHA1", "Rijndael", true, true);
+		this("prng.seed", "SHA-256", "Rijndael", true, true);
 	}
 
 	public Yarrow(boolean canBlock) {
-		this("prng.seed", "SHA1", "Rijndael", true, canBlock);
+		this("prng.seed", "SHA-256", "Rijndael", true, canBlock);
 	}
 
 	public Yarrow(File seed) {
-		this(seed, "SHA1", "Rijndael", true, true);
+		// HO-6: Default digest upgraded from SHA-1 to SHA-256 for the entropy accumulator.
+		this(seed, "SHA-256", "Rijndael", true, true);
 	}
 
 	public Yarrow(String seed, String digest, String cipher, boolean updateSeed, boolean canBlock) {
@@ -97,13 +98,8 @@ public class Yarrow extends RandomSource implements PersistentRandomSource {
 
 	// unset reseedOnStartup only in unit test
 	Yarrow(File seed, String digest, String cipher, boolean updateSeed, boolean canBlock, boolean reseedOnStartup) {
-		SecureRandom s;
-		try {
-			s = SecureRandom.getInstance("SHA1PRNG");
-		} catch(NoSuchAlgorithmException e) {
-			s = null;
-		}
-		sr = s;
+		// HO-6: Use platform default SecureRandom instead of SHA1PRNG.
+		sr = new SecureRandom();
 		try {
 			accumulator_init(digest);
 			reseed_init(digest);

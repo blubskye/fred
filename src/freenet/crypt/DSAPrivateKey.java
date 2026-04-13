@@ -30,6 +30,16 @@ public class DSAPrivateKey extends CryptoKey {
     //    this.x = new BigInteger(1, x);
     //}
 
+/**
+ * P-1 NOTE: This constructor accepts any Random instance including non-cryptographic ones.
+ * The ONLY legitimate caller with a non-CSPRNG is {@code ClientKSK.create()}, which passes
+ * MersenneTwister seeded from SHA-256(keyword) to achieve deterministic KSK key derivation —
+ * this is intentional by protocol design.  KSK keys MUST be reproducible from the keyword,
+ * so a non-deterministic SecureRandom cannot be substituted here without breaking all
+ * existing KSK URLs (backward-incompatible protocol change).
+ * All other callers MUST pass a cryptographically secure Random (e.g. node.getRandom()).
+ * See {@code ClientKSK.java} and P-1 in the private audit findings for full context.
+ */
     public DSAPrivateKey(DSAGroup g, Random r) {
         BigInteger tempX;
         do {

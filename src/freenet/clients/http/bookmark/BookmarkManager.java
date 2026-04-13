@@ -38,8 +38,15 @@ public class BookmarkManager implements RequestClient {
 	public static final SimpleFieldSet DEFAULT_BOOKMARKS;
 	private final NodeClientCore node;
 	private final USKUpdatedCallback uskCB = new USKUpdatedCallback();
-	public static final BookmarkCategory MAIN_CATEGORY = new BookmarkCategory("/");
-	public static final BookmarkCategory DEFAULT_CATEGORY = new BookmarkCategory("\\");
+	// HO-54: package-private — prevents plugins from mutating the global bookmark tree.
+	static final BookmarkCategory MAIN_CATEGORY = new BookmarkCategory("/");
+	static final BookmarkCategory DEFAULT_CATEGORY = new BookmarkCategory("\\");
+
+	/** Read-only accessor for the root bookmark category. */
+	public static BookmarkCategory getMainCategory() { return MAIN_CATEGORY; }
+	/** Read-only accessor for the default bookmark category. */
+	public static BookmarkCategory getDefaultCategory() { return DEFAULT_CATEGORY; }
+
 	private final HashMap<String, Bookmark> bookmarks = new HashMap<>();
 	private final File bookmarksFile;
 	private final File backupBookmarksFile;
@@ -86,6 +93,8 @@ public class BookmarkManager implements RequestClient {
 			SimpleFieldSet sfs = SimpleFieldSet.readFrom(bookmarksFile, false, true);
 			readBookmarks(MAIN_CATEGORY, sfs);
 		} catch(MalformedURLException mue) {
+			// HO-57: Log instead of silently swallowing — prevents silent bookmark loss.
+			Logger.error(this, "MalformedURLException while loading bookmarks", mue);
 		} catch(IOException ioe) {
 			Logger.error(this, "Error reading the bookmark file (" + bookmarksFile.toString() + "):" + ioe.getMessage(), ioe);
 
@@ -220,8 +229,9 @@ public class BookmarkManager implements RequestClient {
 	public void renameBookmark(String path, String newName) {
 		Bookmark bookmark = getBookmarkByPath(path);
 		String oldName = bookmark.getName();
-		String oldPath = '/' + oldName;
-		String newPath = path.substring(0, path.indexOf(oldPath)) + '/' + newName + (bookmark instanceof BookmarkCategory ? "/" : "");
+		String oldPath = "/" + oldName;
+		// HO-56: lastIndexOf avoids matching an earlier category with the same name.
+		String newPath = path.substring(0, path.lastIndexOf(oldPath)) + '/' + newName + (bookmark instanceof BookmarkCategory ? "/" : "");
 
 		bookmark.setName(newName);
 		synchronized(bookmarks) {
@@ -371,6 +381,7 @@ public class BookmarkManager implements RequestClient {
 		try {
 			fos = new FileOutputStream(backupBookmarksFile);
 			sfs.writeToBigBuffer(fos);
+			fos.getFD().sync(); // HO-55: ensure data reaches disk before rename
 			fos.close();
 			fos = null;
 			if(!FileUtil.moveTo(backupBookmarksFile, bookmarksFile))

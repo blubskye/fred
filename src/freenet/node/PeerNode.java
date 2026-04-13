@@ -124,18 +124,22 @@ public abstract class PeerNode implements USKRetrieverCallback, BasePeerNode, Pe
 	private byte[] jfkBuffer;
 	//TODO: sync ?
 
-	protected byte[] jfkKa;
-	protected byte[] incommingKey;
-	protected byte[] jfkKe;
-	protected byte[] outgoingKey;
-	protected byte[] jfkMyRef;
-	protected byte[] hmacKey;
-	protected byte[] ivKey;
-	protected byte[] ivNonce;
-	protected int ourInitialSeqNum;
-	protected int theirInitialSeqNum;
-	protected int ourInitialMsgID;
-	protected int theirInitialMsgID;
+	// HO-71: Narrowed from protected to package-private. These are active JFK/session
+	// key material. Subclasses in freenet.node are in the same package so they retain
+	// access; subclasses outside the package (none exist) would not. This prevents any
+	// freenet.node class that is NOT a subclass from casually reading key bytes.
+	byte[] jfkKa;
+	byte[] incommingKey;
+	byte[] jfkKe;
+	byte[] outgoingKey;
+	byte[] jfkMyRef;
+	byte[] hmacKey;
+	byte[] ivKey;
+	byte[] ivNonce;
+	int ourInitialSeqNum;
+	int theirInitialSeqNum;
+	int ourInitialMsgID;
+	int theirInitialMsgID;
 	// The following is used only if we are the initiator
 
 	protected long jfkContextLifetime = 0;

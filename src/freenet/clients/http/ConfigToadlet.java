@@ -471,14 +471,13 @@ public class ConfigToadlet extends Toadlet implements LinkEnabledCallback {
 				String defaultValue = "256";
 				item.addChild(
 						"span",
-						new String[] { "class", "title", "style" },
+						new String[] { "class", "title" },
 						new String[] {
-								"configshortdesc",
+								"configshortdesc cursor-help",
 								NodeL10n.getBase().getString(
 										"ConfigToadlet.defaultIs",
 										new String[] { "default" },
-										new String[] { defaultValue }),
-								"cursor: help;" }).addChild(
+										new String[] { defaultValue }) }).addChild(
 						NodeL10n.getBase().getHTMLNode(
 								"WrapperConfig." + configName + ".short"));
 				item.addChild("span", "class", "config")
@@ -563,16 +562,15 @@ public class ConfigToadlet extends Toadlet implements LinkEnabledCallback {
 								new String[] { configName, configName })
 						.addChild(
 								"span",
-								new String[] { "class", "title", "style" },
+								new String[] { "class", "title" },
 								new String[] {
-										"configshortdesc",
+										"configshortdesc cursor-help",
 										NodeL10n.getBase().getString(
 												"ConfigToadlet.defaultIs",
 												new String[] { "default" },
 												new String[] { defaultValue })
 												+ (advancedModeEnabled ? " ["
-														+ fullName + ']' : ""),
-										"cursor: help;" }).addChild(shortDesc);
+														+ fullName + ']' : "") }).addChild(shortDesc);
 				HTMLNode configItemValueNode = configItemNode.addChild("span",
 						"class", "config");
 

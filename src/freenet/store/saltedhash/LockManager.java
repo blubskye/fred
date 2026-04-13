@@ -60,8 +60,10 @@ public class LockManager {
 				entryLock.unlock();
 			}
 		} catch (InterruptedException e) {
-			Logger.error(this, "lock interrupted", e);
-			return null;
+			// HO-60: Restore interrupt flag so callers can detect cancellation.
+			Thread.currentThread().interrupt();
+			Logger.error(this, "lock interrupted, restoring flag", e);
+			return null; // caller treats null as "shutdown or interrupted, skip operation"
 		}
 
 		if (logDEBUG)
@@ -95,7 +97,22 @@ public class LockManager {
 		try {
 			while (!lockMap.isEmpty()) {
 				Condition cond = lockMap.values().iterator().next();
-				cond.awaitUninterruptibly();
+			// HO-61: Use a bounded wait rather than awaitUninterruptibly() which can hang
+			// forever if a lock holder is stuck. Give each holder up to 5 s to release;
+			// after 30 s total abandon waiting to avoid blocking JVM shutdown.
+			long deadline = System.currentTimeMillis() + 30_000;
+				long remaining = deadline - System.currentTimeMillis();
+				if (remaining <= 0) {
+					Logger.error(this, "LockManager.shutdown() timed out waiting for "
+						+ lockMap.size() + " entries to unlock; abandoning wait");
+					break;
+				}
+				try {
+					cond.await(Math.min(remaining, 5_000), TimeUnit.MILLISECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					break;
+				}
 			}
 		} finally {
 			entryLock.unlock();

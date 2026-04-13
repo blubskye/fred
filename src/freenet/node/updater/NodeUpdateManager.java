@@ -4,12 +4,19 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.io.FileInputStream;
+import java.security.MessageDigest;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
+import freenet.crypt.SHA256;
 
 import freenet.client.FetchContext;
 import freenet.client.FetchException;
@@ -219,6 +226,11 @@ public class NodeUpdateManager {
 	 */
 	private Bucket maybeNextMainJarData;
 
+// HO-27: File that records the highest build ever successfully deployed by this node.
+// Used to prevent version rollback attacks.
+private static final String MAX_DEPLOYED_BUILD_FILENAME = "max-deployed-build.txt";
+/** Highest build number that has been successfully deployed and persisted. */
+private volatile int maxDeployedBuild = 0;
 	private static final Object deployLock = new Object();
 
 	static final String TEMP_BLOB_SUFFIX = ".updater.fblob.tmp";
@@ -237,6 +249,8 @@ public class NodeUpdateManager {
 
 		SubConfig updaterConfig = config.createSubConfig("node.updater");
 
+// HO-27: Read persisted max-deployed-build on startup.
+loadMaxDeployedBuild();
 		updaterConfig.register("enabled", true, 1, false, false,
 				"NodeUpdateManager.enabled", "NodeUpdateManager.enabledLong",
 				new UpdaterEnabledCallback());
@@ -981,13 +995,18 @@ public class NodeUpdateManager {
 	private static final long WAIT_FOR_SECOND_FETCH_TO_COMPLETE = MINUTES.toMillis(4);
 	private static final long RECENT_REVOCATION_INTERVAL = MINUTES.toMillis(2);
 	/**
-	 * After 5 minutes, deploy the update even if we haven't got 3 DNFs on the
+	 * HO-26: After 30 minutes (was 5), deploy the update even if we haven't got 3 DNFs on the
 	 * revocation key yet. Reason: we want to be able to deploy UOM updates on
 	 * nodes with all TOO NEW or leaf nodes whose peers are overloaded/broken.
 	 * Note that with UOM, revocation certs are automatically propagated node to
 	 * node, so this should be *relatively* safe. Any better ideas, tell us.
+	 *
+	 * Rationale for increase: 5 minutes is too short — an adversary with a UOM
+	 * peer can serve a malicious JAR and the revocation check window closes before
+	 * the honest network can propagate a revocation. 30 minutes gives the network
+	 * adequate time while still allowing eventual deployment on isolated nodes.
 	 */
-	private static final long REVOCATION_FETCH_TIMEOUT = MINUTES.toMillis(5);
+	private static final long REVOCATION_FETCH_TIMEOUT = MINUTES.toMillis(30);
 
 	/**
 	 * Does the updater have an update ready to deploy? May be called
@@ -1047,7 +1066,11 @@ public class NodeUpdateManager {
 					}
 					if (gotJarTime > 0
 							&& now - gotJarTime >= REVOCATION_FETCH_TIMEOUT) {
-						if(logMINOR) Logger.minor(this, "Ready to deploy (got jar before timeout)");
+						// HO-26: Warn loudly when deploying due to timeout rather than clean DNF.
+						Logger.warning(this, "Deploying update for build "
+							+ fetchedMainJarVersion + " because revocation-fetch timeout ("
+							+ (REVOCATION_FETCH_TIMEOUT/60000) + " min) elapsed without 3 DNFs."
+							+ " If you believe this node has been compromised, disable auto-update.");
 						return true;
 					}
 				}
@@ -1194,6 +1217,8 @@ public class NodeUpdateManager {
 			return false;
 		}
 
+// HO-27: Persist the build number we are about to deploy.
+persistMaxDeployedBuild(deps.build);
 		if (writeJars(ctx, deps)) {
 			restart(ctx);
 			return true;
@@ -1379,9 +1404,41 @@ public class NodeUpdateManager {
 			BucketTools.copyTo(this.fetchedMainJarData, fos, -1);
 
 			fos.flush();
+			// HO-29: fsync before closing so the jar bytes are on stable storage before
+			// the node restarts. Without this a power failure between flush() and close()
+			// can leave a zero-length or partial jar and corrupt the installation.
+			fos.getFD().sync();
 		} finally {
 			Closer.close(fos);
 		}
+
+		// HO-30: Verify the on-disk jar matches the in-memory bucket SHA-256.
+		// A disk error, partial write, or TOCTOU attack could silently corrupt the jar
+		// between write and restart.  Recompute the hash from disk and compare.
+		final byte[] expectedHash = SHA256.digest(BucketTools.toByteArray(this.fetchedMainJarData));
+		final byte[] actualHash = hashFile(fNew);
+		if (!MessageDigest.isEqual(expectedHash, actualHash)) {
+			fNew.delete();
+			throw new IOException("HO-30: Written jar SHA-256 mismatch — "
+				+ "expected " + freenet.support.HexUtil.bytesToHex(expectedHash)
+				+ " got "     + freenet.support.HexUtil.bytesToHex(actualHash)
+				+ ". Aborting update to prevent executing a corrupted jar.");
+		}
+		Logger.normal(this, "HO-30: Jar SHA-256 verified OK: " + freenet.support.HexUtil.bytesToHex(actualHash));
+	}
+
+	/** Compute SHA-256 of an on-disk file. */
+	private static byte[] hashFile(File f) throws IOException {
+		MessageDigest md = SHA256.getMessageDigest();
+		try (FileInputStream fis = new FileInputStream(f)) {
+			byte[] buf = new byte[65536];
+			int n;
+			while ((n = fis.read(buf)) != -1)
+				md.update(buf, 0, n);
+		} finally {
+			SHA256.returnMessageDigest(md);
+		}
+		return md.digest();
 	}
 
 	@SuppressWarnings("serial")
@@ -1441,6 +1498,16 @@ public class NodeUpdateManager {
 		Bucket delete1 = null;
 		Bucket delete2 = null;
 		synchronized (this) {
+			// HO-27: Reject updates that are at or below the highest ever deployed build.
+			// This prevents a rollback attack where an adversary serves an old,
+			// vulnerable JAR after the node has already deployed a newer one.
+			if (fetched <= maxDeployedBuild) {
+				Logger.warning(this, "Rejecting fetched build " + fetched
+					+ ": it is not newer than the persisted maximum deployed build ("
+					+ maxDeployedBuild + "). Possible rollback attack?");
+				result.free();
+				return;
+			}
 			if (fetched > Version.buildNumber()) {
 				hasNewMainJar = true;
 				startedFetchingNextMainJar = -1;
@@ -1746,6 +1813,13 @@ public class NodeUpdateManager {
 		@Override
 		public void set(String val) throws InvalidConfigValueException {
 			FreenetURI uri;
+			// HO-28: Changing the update URI at runtime is a high-impact operation.
+			// A compromised operator or XSS bug could redirect updates to a malicious key.
+			// Log prominently so that node operators can detect unexpected URI changes in logs.
+			Logger.warning(NodeUpdateManager.this,
+				"Update URI changed at runtime from " + getURI().toString(false, false)
+				+ " to " + val
+				+ " — verify this was an intentional configuration change.");
 			try {
 				uri = new FreenetURI(val);
 			} catch (MalformedURLException e) {
@@ -1797,6 +1871,54 @@ public class NodeUpdateManager {
 
 		peersSayBlown = true;
 	}
+
+		// HO-27: Helpers for rollback protection.
+
+		private File maxDeployedBuildFile() {
+			return new File(node.runDir().dir(), MAX_DEPLOYED_BUILD_FILENAME);
+		}
+
+		private void loadMaxDeployedBuild() {
+			File f = maxDeployedBuildFile();
+			if (!f.exists()) {
+				// First run or pre-patch install: seed with current build so we never
+				// roll back to something older than what is running right now.
+				maxDeployedBuild = Version.buildNumber();
+				persistMaxDeployedBuild(maxDeployedBuild);
+				return;
+			}
+			try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+				String line = br.readLine();
+				if (line != null) {
+					int v = Integer.parseInt(line.trim());
+					maxDeployedBuild = Math.max(v, Version.buildNumber());
+					Logger.normal(this, "HO-27: Loaded persisted max-deployed-build = " + maxDeployedBuild);
+				}
+			} catch (IOException | NumberFormatException e) {
+				Logger.error(this, "HO-27: Failed to read " + f + "; seeding from current build: " + e, e);
+				maxDeployedBuild = Version.buildNumber();
+			}
+		}
+
+		private void persistMaxDeployedBuild(int build) {
+			File f = maxDeployedBuildFile();
+			try {
+				File tmp = new File(f.getParent(), f.getName() + ".tmp");
+				try (BufferedWriter bw = new BufferedWriter(new FileWriter(tmp))) {
+					bw.write(Integer.toString(build));
+					bw.newLine();
+					bw.flush();
+				}
+				if (!tmp.renameTo(f)) {
+					Logger.error(this, "HO-27: Failed to persist max-deployed-build to " + f);
+				} else {
+					maxDeployedBuild = Math.max(maxDeployedBuild, build);
+					Logger.normal(this, "HO-27: Persisted max-deployed-build = " + maxDeployedBuild);
+				}
+			} catch (IOException e) {
+				Logger.error(this, "HO-27: Failed to persist max-deployed-build: " + e, e);
+			}
+		}
 
 	/** Called inside locks, so don't lock anything */
 	public void notPeerClaimsKeyBlown() {

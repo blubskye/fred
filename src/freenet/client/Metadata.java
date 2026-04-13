@@ -690,7 +690,10 @@ public class Metadata implements Cloneable, Serializable {
 				short nameLength = dis.readShort();
 				byte[] buf = new byte[nameLength];
 				dis.readFully(buf);
-				String name = new String(buf, StandardCharsets.UTF_8).intern();
+				// HO-66: Do NOT intern() adversary-controlled manifest entry names.
+				// intern() inserts strings into the permanent JVM string pool; with an
+				// unbounded manifest entry count an attacker could exhaust PermGen/Metaspace.
+				String name = new String(buf, StandardCharsets.UTF_8);
 				if(logMINOR) Logger.minor(this, "Entry "+i+" name "+name);
 				short len = dis.readShort();
 				if(len < 0)
@@ -792,7 +795,7 @@ public class Metadata implements Cloneable, Serializable {
 		//clientMetadata = new ClientMetadata(null);
 		manifestEntries = new HashMap<String, Metadata>();
 		for (Map.Entry<String, Object> entry: dir.entrySet()) {
-			String key = entry.getKey().intern();
+			String key = entry.getKey(); // HO-66: no intern() on network-controlled keys
 			Object o = entry.getValue();
 			Metadata target;
 			if(o instanceof String) {
@@ -840,7 +843,7 @@ public class Metadata implements Cloneable, Serializable {
 		//clientMetadata = new ClientMetadata(null);
 		manifestEntries = new HashMap<String, Metadata>();
 		for (Map.Entry<String, Object> entry: dir.entrySet()) {
-			String key = entry.getKey().intern();
+			String key = entry.getKey(); // HO-66: no intern() on network-controlled keys
 			if(key.indexOf('/') != -1)
 				throw new IllegalArgumentException("Slashes in simple redirect manifest filenames! (slashes denote sub-manifests): "+key);
 			Object o = entry.getValue();
@@ -883,7 +886,7 @@ public class Metadata implements Cloneable, Serializable {
 		clientMetadata = new ClientMetadata();
 		manifestEntries = new HashMap<String, Metadata>();
 		for (Map.Entry<String, Object> entry: dir.entrySet()) {
-			String key = entry.getKey().intern();
+			String key = entry.getKey(); // HO-66: no intern() on network-controlled keys
 			Object o = entry.getValue();
 			Metadata target;
 			if(o instanceof String) {

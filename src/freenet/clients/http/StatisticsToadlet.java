@@ -711,7 +711,7 @@ public class StatisticsToadlet extends Toadlet {
 		storeSizeInfobox.addChild("div", "class", "infobox-header", l10n("datastore"));
 		HTMLNode storeSizeInfoboxContent = storeSizeInfobox.addChild("div", "class", "infobox-content");
 
-		HTMLNode scrollDiv = storeSizeInfoboxContent.addChild("div", "style", "overflow:scr");
+		HTMLNode scrollDiv = storeSizeInfoboxContent.addChild("div", "class", "overflow-scroll");
 
 		HTMLNode storeSizeTable = scrollDiv.addChild("table", "border", "0");
 		HTMLNode row = storeSizeTable.addChild("tr");
@@ -921,100 +921,99 @@ public class StatisticsToadlet extends Toadlet {
 		HTMLNode peerStatsList = peerStatsContent.addChild("ul");
 		if (numberOfConnected > 0) {
 			HTMLNode peerStatsConnectedListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsConnectedListItem.addChild("span", new String[] { "class", "title", "style" }, 
-					new String[] { "peer_connected", l10nDark("connected"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("connectedShort"));
+			peerStatsConnectedListItem.addChild("span", new String[] { "class", "title" },
+					new String[] { "peer_connected help-tooltip", l10nDark("connected") }, l10nDark("connectedShort"));
 			peerStatsConnectedListItem.addChild("span", ":\u00a0" + numberOfConnected);
 		}
 		if (numberOfRoutingBackedOff > 0) {
 			HTMLNode peerStatsRoutingBackedOffListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsRoutingBackedOffListItem.addChild("span", new String[] { "class", "title", "style" }, 
-					new String[] { "peer_backed_off", l10nDark(advancedModeEnabled ? "backedOff" : "busy"), 
-					"border-bottom: 1px dotted; cursor: help;" }, l10nDark((advancedModeEnabled ? "backedOff" : "busy")+"Short"));
+			peerStatsRoutingBackedOffListItem.addChild("span", new String[] { "class", "title" },
+					new String[] { "peer_backed_off help-tooltip", l10nDark(advancedModeEnabled ? "backedOff" : "busy") }, l10nDark((advancedModeEnabled ? "backedOff" : "busy")+"Short"));
 			peerStatsRoutingBackedOffListItem.addChild("span", ":\u00a0" + numberOfRoutingBackedOff);
 		}
 		if (numberOfTooNew > 0) {
 			HTMLNode peerStatsTooNewListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsTooNewListItem.addChild("span", new String[] { "class", "title", "style" }, 
-					new String[] { "peer_too_new", l10nDark("tooNew"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("tooNewShort"));
+			peerStatsTooNewListItem.addChild("span", new String[] { "class", "title" },
+					new String[] { "peer_too_new help-tooltip", l10nDark("tooNew") }, l10nDark("tooNewShort"));
 			peerStatsTooNewListItem.addChild("span", ":\u00a0" + numberOfTooNew);
 		}
 		if (numberOfTooOld > 0) {
 			HTMLNode peerStatsTooOldListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsTooOldListItem.addChild("span", new String[] { "class", "title", "style" }, 
-					new String[] { "peer_too_old", l10nDark("tooOld"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("tooOldShort"));
+			peerStatsTooOldListItem.addChild("span", new String[] { "class", "title" },
+					new String[] { "peer_too_old help-tooltip", l10nDark("tooOld") }, l10nDark("tooOldShort"));
 			peerStatsTooOldListItem.addChild("span", ":\u00a0" + numberOfTooOld);
 		}
 		if (numberOfDisconnected > 0) {
 			HTMLNode peerStatsDisconnectedListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsDisconnectedListItem.addChild("span", new String[] { "class", "title", "style" }, 
-					new String[] { "peer_disconnected", l10nDark("notConnected"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("notConnectedShort"));
+			peerStatsDisconnectedListItem.addChild("span", new String[] { "class", "title" },
+					new String[] { "peer_disconnected help-tooltip", l10nDark("notConnected") }, l10nDark("notConnectedShort"));
 			peerStatsDisconnectedListItem.addChild("span", ":\u00a0" + numberOfDisconnected);
 		}
 		if (numberOfNeverConnected > 0) {
 			HTMLNode peerStatsNeverConnectedListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsNeverConnectedListItem.addChild("span", new String[] { "class", "title", "style" },
-					new String[] { "peer_never_connected", l10nDark("neverConnected"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("neverConnectedShort"));
+			peerStatsNeverConnectedListItem.addChild("span", new String[] { "class", "title" },
+					new String[] { "peer_never_connected help-tooltip", l10nDark("neverConnected") }, l10nDark("neverConnectedShort"));
 			peerStatsNeverConnectedListItem.addChild("span", ":\u00a0" + numberOfNeverConnected);
 		}
 		if (numberOfDisabled > 0) {
 			HTMLNode peerStatsDisabledListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsDisabledListItem.addChild("span", new String[] { "class", "title", "style" }, 
-					new String[] { "peer_disabled", l10nDark("disabled"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("disabledShort"));
+			peerStatsDisabledListItem.addChild("span", new String[] { "class", "title" },
+					new String[] { "peer_disabled help-tooltip", l10nDark("disabled") }, l10nDark("disabledShort"));
 			peerStatsDisabledListItem.addChild("span", ":\u00a0" + numberOfDisabled);
 		}
 		if (numberOfBursting > 0) {
 			HTMLNode peerStatsBurstingListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsBurstingListItem.addChild("span", new String[] { "class", "title", "style" }, 
-					new String[] { "peer_bursting", l10nDark("bursting"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("burstingShort"));
+			peerStatsBurstingListItem.addChild("span", new String[] { "class", "title" },
+					new String[] { "peer_bursting help-tooltip", l10nDark("bursting") }, l10nDark("burstingShort"));
 			peerStatsBurstingListItem.addChild("span", ":\u00a0" + numberOfBursting);
 		}
 		if (numberOfListening > 0) {
 			HTMLNode peerStatsListeningListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsListeningListItem.addChild("span", new String[] { "class", "title", "style" }, 
-					new String[] { "peer_listening", l10nDark("listening"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("listeningShort"));
+			peerStatsListeningListItem.addChild("span", new String[] { "class", "title" },
+					new String[] { "peer_listening help-tooltip", l10nDark("listening") }, l10nDark("listeningShort"));
 			peerStatsListeningListItem.addChild("span", ":\u00a0" + numberOfListening);
 		}
 		if (numberOfListenOnly > 0) {
 			HTMLNode peerStatsListenOnlyListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsListenOnlyListItem.addChild("span", new String[] { "class", "title", "style" }, 
-					new String[] { "peer_listen_only", l10nDark("listenOnly"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("listenOnlyShort"));
+			peerStatsListenOnlyListItem.addChild("span", new String[] { "class", "title" },
+					new String[] { "peer_listen_only help-tooltip", l10nDark("listenOnly") }, l10nDark("listenOnlyShort"));
 			peerStatsListenOnlyListItem.addChild("span", ":\u00a0" + numberOfListenOnly);
 		}
 		if (numberOfClockProblem > 0) {
 			HTMLNode peerStatsRoutingDisabledListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsRoutingDisabledListItem.addChild("span", new String[] { "class", "title", "style" }, new String[] { "peer_clock_problem", l10nDark("clockProblem"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("clockProblemShort"));
+			peerStatsRoutingDisabledListItem.addChild("span", new String[] { "class", "title" }, new String[] { "peer_clock_problem help-tooltip", l10nDark("clockProblem") }, l10nDark("clockProblemShort"));
 			peerStatsRoutingDisabledListItem.addChild("span", ":\u00a0" + numberOfClockProblem);
 		}
 		if (numberOfConnError > 0) {
 			HTMLNode peerStatsRoutingDisabledListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsRoutingDisabledListItem.addChild("span", new String[] { "class", "title", "style" }, new String[] { "peer_routing_disabled", l10nDark("connError"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("connErrorShort"));
+			peerStatsRoutingDisabledListItem.addChild("span", new String[] { "class", "title" }, new String[] { "peer_routing_disabled help-tooltip", l10nDark("connError") }, l10nDark("connErrorShort"));
 			peerStatsRoutingDisabledListItem.addChild("span", ":\u00a0" + numberOfClockProblem);
 		}
 		if (numberOfDisconnecting > 0) {
 			HTMLNode peerStatsListenOnlyListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsListenOnlyListItem.addChild("span", new String[] { "class", "title", "style" }, new String[] { "peer_disconnecting", l10nDark("disconnecting"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("disconnectingShort"));
+			peerStatsListenOnlyListItem.addChild("span", new String[] { "class", "title" }, new String[] { "peer_disconnecting help-tooltip", l10nDark("disconnecting") }, l10nDark("disconnectingShort"));
 			peerStatsListenOnlyListItem.addChild("span", ":\u00a0" + numberOfDisconnecting);
 		}
 		if (numberOfSeedServers > 0) {
 			HTMLNode peerStatsSeedServersListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsSeedServersListItem.addChild("span", new String[] { "class", "title", "style" },
-					new String[] { "peer_listening" /* FIXME */, l10nDark("seedServers"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("seedServersShort"));
+			peerStatsSeedServersListItem.addChild("span", new String[] { "class", "title" },
+					new String[] { "peer_listening help-tooltip" /* FIXME */, l10nDark("seedServers") }, l10nDark("seedServersShort"));
 			peerStatsSeedServersListItem.addChild("span", ":\u00a0" + numberOfSeedServers);
 		}
 		if (numberOfSeedClients > 0) {
 			HTMLNode peerStatsSeedClientsListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsSeedClientsListItem.addChild("span", new String[] { "class", "title", "style" },
-					new String[] { "peer_listening" /* FIXME */, l10nDark("seedClients"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("seedClientsShort"));
+			peerStatsSeedClientsListItem.addChild("span", new String[] { "class", "title" },
+					new String[] { "peer_listening help-tooltip" /* FIXME */, l10nDark("seedClients") }, l10nDark("seedClientsShort"));
 			peerStatsSeedClientsListItem.addChild("span", ":\u00a0" + numberOfSeedClients);
 		}
 		if (numberOfRoutingDisabled > 0) {
 			HTMLNode peerStatsRoutingDisabledListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsRoutingDisabledListItem.addChild("span", new String[] { "class", "title", "style" }, new String[] { "peer_routing_disabled", l10nDark("routingDisabled"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("routingDisabledShort"));
+			peerStatsRoutingDisabledListItem.addChild("span", new String[] { "class", "title" }, new String[] { "peer_routing_disabled help-tooltip", l10nDark("routingDisabled") }, l10nDark("routingDisabledShort"));
 			peerStatsRoutingDisabledListItem.addChild("span", ":\u00a0" + numberOfRoutingDisabled);
 		}
 		if (numberOfNoLoadStats > 0) {
 			HTMLNode peerStatsNoLoadStatsListItem = peerStatsList.addChild("li").addChild("span");
-			peerStatsNoLoadStatsListItem.addChild("span", new String[] { "class", "title", "style" }, new String[] { "peer_no_load_stats", l10nDark("noLoadStats"), "border-bottom: 1px dotted; cursor: help;" }, l10nDark("noLoadStatsShort"));
+			peerStatsNoLoadStatsListItem.addChild("span", new String[] { "class", "title" }, new String[] { "peer_no_load_stats help-tooltip", l10nDark("noLoadStats") }, l10nDark("noLoadStatsShort"));
 			peerStatsNoLoadStatsListItem.addChild("span", ":\u00a0" + numberOfNoLoadStats);
 		}
 		OpennetManager om = node.getOpennet();
@@ -1369,16 +1368,16 @@ public class StatisticsToadlet extends Toadlet {
 		HTMLNode nodeCircleTableCell = nodeCircleTableRow.addChild("td", new String[] { "class", "colspan" }, new String[] {"first", "10"});
 		HTMLNode nodeHistogramLegendCell;
 		HTMLNode nodeHistogramGraphCell;
-		HTMLNode nodeCircleInfoboxContent = nodeCircleTableCell.addChild("div", new String[] { "style", "class" }, new String[] {"position: relative; height: " + ((PEER_CIRCLE_RADIUS + PEER_CIRCLE_ADDITIONAL_FREE_SPACE) * 2) + "px; width: " + ((PEER_CIRCLE_RADIUS + PEER_CIRCLE_ADDITIONAL_FREE_SPACE) * 2) + "px", "peercircle" });
-		nodeCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0, false, 1.0),	 "mark" }, "|");
-		nodeCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.125, false, 1.0), "mark" }, "+");
-		nodeCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.25, false, 1.0),  "mark" }, "--");
-		nodeCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.375, false, 1.0), "mark" }, "+");
-		nodeCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.5, false, 1.0),   "mark" }, "|");
-		nodeCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.625, false, 1.0), "mark" }, "+");
-		nodeCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.75, false, 1.0),  "mark" }, "--");
-		nodeCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.875, false, 1.0), "mark" }, "+");
-		nodeCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { "position: absolute; top: " + PEER_CIRCLE_RADIUS + "px; left: " + (PEER_CIRCLE_RADIUS + PEER_CIRCLE_ADDITIONAL_FREE_SPACE) + "px", "mark" }, "+");
+		HTMLNode nodeCircleInfoboxContent = nodeCircleTableCell.addChild("div", "class", "peercircle");
+		addCircleSpan(nodeCircleInfoboxContent, 0,     false, 1.0, "mark", "|");
+		addCircleSpan(nodeCircleInfoboxContent, 0.125, false, 1.0, "mark", "+");
+		addCircleSpan(nodeCircleInfoboxContent, 0.25,  false, 1.0, "mark", "--");
+		addCircleSpan(nodeCircleInfoboxContent, 0.375, false, 1.0, "mark", "+");
+		addCircleSpan(nodeCircleInfoboxContent, 0.5,   false, 1.0, "mark", "|");
+		addCircleSpan(nodeCircleInfoboxContent, 0.625, false, 1.0, "mark", "+");
+		addCircleSpan(nodeCircleInfoboxContent, 0.75,  false, 1.0, "mark", "--");
+		addCircleSpan(nodeCircleInfoboxContent, 0.875, false, 1.0, "mark", "+");
+		nodeCircleInfoboxContent.addChild("span", new String[] { "class" }, new String[] { "mark peercircle-center" }, "+");
 		final Object[] knownLocsCopy = stats.getKnownLocations(-1);
 		final Double[] locations = (Double[])knownLocsCopy[0];
 		final Long[] timestamps = (Long[])knownLocsCopy[1];
@@ -1399,20 +1398,18 @@ public class StatisticsToadlet extends Toadlet {
 			histogramIndex = (int) (Math.floor(location * HISTOGRAM_LENGTH));
 			histogram[histogramIndex]++;
 			
-			nodeCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(location, false, strength), "connected" }, "x");
+			addCircleSpan(nodeCircleInfoboxContent, location, false, strength, "connected", "x");
 		}
-		nodeCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(myLocation, true, 1.0), "me" }, "x");
+		addCircleSpan(nodeCircleInfoboxContent, myLocation, true, 1.0, "me", "x");
 		//
 		int histogramDiv = simpleHistogramDivisor(histogram); // Prevent division by 0 on empty histograms.
 		double histogramPercent;
 		for (int i = 0; i < HISTOGRAM_LENGTH; i++) {
 			nodeHistogramLegendCell = nodeHistogramLegendTableRow.addChild("td");
-			nodeHistogramGraphCell = nodeHistogramGraphTableRow.addChild("td", "style", "height: 100px;");
+			nodeHistogramGraphCell = nodeHistogramGraphTableRow.addChild("td", "class", "td-height-100");
 			nodeHistogramLegendCell.addChild("div", "class", "histogramLabel").addChild("#", fix1p1.format(((double) i) / HISTOGRAM_LENGTH ));
 			histogramPercent = (double)histogram[i] / histogramDiv;
-			
-			// Don't use HTMLNode here to speed things up
-			nodeHistogramGraphCell.addChild("%", "<div class=\"histogramConnected\" style=\"height: " + fix3pctUS.format(histogramPercent) + "; width: 100%;\">\u00a0</div>");
+			nodeHistogramGraphCell.addChild("div", new String[] { "class", "data-bar-height" }, new String[] { "histogramConnected", fix3pctUS.format(histogramPercent) }, "\u00a0");
 		}
 	}
 	
@@ -1423,12 +1420,12 @@ public class StatisticsToadlet extends Toadlet {
 		int histogramDiv = simpleHistogramDivisor(incomingRequestLocation);
 		for (int i = 0; i<incomingRequestLocation.length; i++) {
 			HTMLNode nodeHistogramLegendCell = nodeHistogramLegendTableRow.addChild("td");
-			HTMLNode nodeHistogramGraphCell = nodeHistogramGraphTableRow.addChild("td", "style", "height: 100px;");
+			HTMLNode nodeHistogramGraphCell = nodeHistogramGraphTableRow.addChild("td", "class", "td-height-100");
 			HTMLNode nodeHistogramGraphCell2 = nodeHistogramLegendCell.addChild("div", "class", "histogramLabel");
 			if(i == myIndex)
 				 nodeHistogramGraphCell2 = nodeHistogramGraphCell2.addChild("span", "class", "me");
 			nodeHistogramGraphCell2.addChild("#", fix1p1.format(((double) i) / incomingRequestLocation.length ));
-			nodeHistogramGraphCell.addChild("div", new String[] { "class", "style" }, new String[] { "histogramConnected", "height: " + fix3pctUS.format(((double)incomingRequestLocation[i]) / histogramDiv) + "; width: 100%;" }, "\u00a0");
+			nodeHistogramGraphCell.addChild("div", new String[] { "class", "data-bar-height" }, new String[] { "histogramConnected", fix3pctUS.format(((double)incomingRequestLocation[i]) / histogramDiv) }, "\u00a0");
 		}
 	}
 	
@@ -1440,22 +1437,20 @@ public class StatisticsToadlet extends Toadlet {
 		int histogramDiv = combinedHistogramDivisor(locallyOriginatingRequests, remotelyOriginatingRequests);
 		for (int i = 0; i<locallyOriginatingRequests.length; i++) {
 			HTMLNode nodeHistogramLegendCell = nodeHistogramLegendTableRow.addChild("td");
-			HTMLNode nodeHistogramGraphCell = nodeHistogramGraphTableRow.addChild("td", "style", "height: 100px;");
+			HTMLNode nodeHistogramGraphCell = nodeHistogramGraphTableRow.addChild("td", "class", "td-height-100");
 			HTMLNode nodeHistogramGraphCell2 = nodeHistogramLegendCell.addChild("div", "class", "histogramLabel");
 			if(i == myIndex)
 				 nodeHistogramGraphCell2 = nodeHistogramGraphCell2.addChild("span", "class", "me");
 			nodeHistogramGraphCell2.addChild("#", fix1p1.format(((double) i) / locallyOriginatingRequests.length ));
 			nodeHistogramGraphCell.addChild("div",
-				new String[] { "class", "style" },
-				new String[] { "histogramConnected", "height: " +
-					fix3pctUS.format(((double)locallyOriginatingRequests[i]) / histogramDiv) +
-					"; width: 100%;" },
+				new String[] { "class", "data-bar-height" },
+				new String[] { "histogramConnected",
+					fix3pctUS.format(((double)locallyOriginatingRequests[i]) / histogramDiv) },
 				"\u00a0");
 			nodeHistogramGraphCell.addChild("div",
-				new String[] { "class", "style" },
-				new String[] { "histogramDisconnected", "height: " +
-					fix3pctUS.format(((double)remotelyOriginatingRequests[i]) / histogramDiv) +
-					"; width: 100%;" },
+				new String[] { "class", "data-bar-height" },
+				new String[] { "histogramDisconnected",
+					fix3pctUS.format(((double)remotelyOriginatingRequests[i]) / histogramDiv) },
 				"\u00a0");
 		}
 	}
@@ -1491,13 +1486,13 @@ public class StatisticsToadlet extends Toadlet {
 		double cumulativeFraction = 0;
 		for (int i = 0; i < HISTOGRAM_LENGTH; i++) {
 			peerHistogramLegendCell = peerHistogramLegendTableRow.addChild("td");
-			peerHistogramGraphCell = peerHistogramGraphTableRow.addChild("td", "style", "height: 100px;");
+			peerHistogramGraphCell = peerHistogramGraphTableRow.addChild("td", "class", "td-height-100");
 			peerHistogramLegendCell.addChild("div", "class", "histogramLabel").addChild("#", fix1p2.format(((double)i) / HISTOGRAM_LENGTH * 0.5));
 			if (peersLinkCount == 0) continue;
 
 			double histogramFraction = ((double)peersLinkHistogram[i]) / peersLinkCount;
-			peerHistogramGraphCell.addChild("div", new String[] { "class", "style" }, new String[] { "histogramConnected", "height: " + fix3pctUS.format(histogramFraction) + "; width: 100%;" }, "\u00a0");
-			peerHistogramGraphCell.addChild("div", new String[] { "class", "style" }, new String[] { "histogramDisconnected", "height: " + fix3pctUS.format(cumulativeFraction) + "; width: 100%;" }, "\u00a0");
+			peerHistogramGraphCell.addChild("div", new String[] { "class", "data-bar-height" }, new String[] { "histogramConnected", fix3pctUS.format(histogramFraction) }, "\u00a0");
+			peerHistogramGraphCell.addChild("div", new String[] { "class", "data-bar-height" }, new String[] { "histogramDisconnected", fix3pctUS.format(cumulativeFraction) }, "\u00a0");
 			cumulativeFraction += histogramFraction;
 		}
 	}
@@ -1515,16 +1510,16 @@ public class StatisticsToadlet extends Toadlet {
 		HTMLNode peerCircleTableCell = peerCircleTableRow.addChild("td", new String[] { "class", "colspan" }, new String[] {"first", "10"});
 		HTMLNode peerHistogramLegendCell;
 		HTMLNode peerHistogramGraphCell;
-		HTMLNode peerCircleInfoboxContent = peerCircleTableCell.addChild("div", new String[] { "style", "class" }, new String[] {"position: relative; height: " + ((PEER_CIRCLE_RADIUS + PEER_CIRCLE_ADDITIONAL_FREE_SPACE) * 2) + "px; width: " + ((PEER_CIRCLE_RADIUS + PEER_CIRCLE_ADDITIONAL_FREE_SPACE) * 2) + "px", "peercircle" });
-		peerCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0, false, 1.0),	 "mark" }, "|");
-		peerCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.125, false, 1.0), "mark" }, "+");
-		peerCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.25, false, 1.0),  "mark" }, "--");
-		peerCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.375, false, 1.0), "mark" }, "+");
-		peerCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.5, false, 1.0),   "mark" }, "|");
-		peerCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.625, false, 1.0), "mark" }, "+");
-		peerCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.75, false, 1.0),  "mark" }, "--");
-		peerCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(0.875, false, 1.0), "mark" }, "+");
-		peerCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { "position: absolute; top: " + PEER_CIRCLE_RADIUS + "px; left: " + (PEER_CIRCLE_RADIUS + PEER_CIRCLE_ADDITIONAL_FREE_SPACE) + "px", "mark" }, "+");
+		HTMLNode peerCircleInfoboxContent = peerCircleTableCell.addChild("div", "class", "peercircle");
+		addCircleSpan(peerCircleInfoboxContent, 0,     false, 1.0, "mark", "|");
+		addCircleSpan(peerCircleInfoboxContent, 0.125, false, 1.0, "mark", "+");
+		addCircleSpan(peerCircleInfoboxContent, 0.25,  false, 1.0, "mark", "--");
+		addCircleSpan(peerCircleInfoboxContent, 0.375, false, 1.0, "mark", "+");
+		addCircleSpan(peerCircleInfoboxContent, 0.5,   false, 1.0, "mark", "|");
+		addCircleSpan(peerCircleInfoboxContent, 0.625, false, 1.0, "mark", "+");
+		addCircleSpan(peerCircleInfoboxContent, 0.75,  false, 1.0, "mark", "--");
+		addCircleSpan(peerCircleInfoboxContent, 0.875, false, 1.0, "mark", "+");
+		peerCircleInfoboxContent.addChild("span", new String[] { "class" }, new String[] { "mark peercircle-center" }, "+");
 
 		PeerNodeStatus peerNodeStatus;
 		double peerLocation;
@@ -1539,7 +1534,7 @@ public class StatisticsToadlet extends Toadlet {
 			if (foafLocations!=null && peerNodeStatus.isRoutable()) {
 				for (double foafLocation : foafLocations) {
 					//one grey dot for each "Friend-of-a-friend"
-					peerCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(foafLocation, false, 0.9), "disconnected" }, ".");
+					addCircleSpan(peerCircleInfoboxContent, foafLocation, false, 0.9, "disconnected", ".");
 				}
 			}
 			histogramIndex = (int)(peerLocation * HISTOGRAM_LENGTH);
@@ -1549,23 +1544,44 @@ public class StatisticsToadlet extends Toadlet {
 			} else {
 				histogramDisconnected[histogramIndex]++;
 			}
-			peerCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(peerLocation, false, (1.0 - peerNodeStatus.getPReject())), ((peerNodeStatus.isConnected())?"connected":"disconnected") }, ((peerNodeStatus.isOpennet())?"o":"x"));
+			addCircleSpan(peerCircleInfoboxContent, peerLocation, false, (1.0 - peerNodeStatus.getPReject()),
+					(peerNodeStatus.isConnected() ? "connected" : "disconnected"),
+					(peerNodeStatus.isOpennet() ? "o" : "x"));
 		}
-		peerCircleInfoboxContent.addChild("span", new String[] { "style", "class" }, new String[] { generatePeerCircleStyleString(myLocation, true, 1.0), "me" }, "x");
+		addCircleSpan(peerCircleInfoboxContent, myLocation, true, 1.0, "me", "x");
 		//
 		int histogramDiv = combinedHistogramDivisor(histogramConnected, histogramDisconnected);
 		double histogramPercent;
 		for (int i = 0; i < HISTOGRAM_LENGTH; i++) {
 			peerHistogramLegendCell = peerHistogramLegendTableRow.addChild("td");
-			peerHistogramGraphCell = peerHistogramGraphTableRow.addChild("td", "style", "height: 100px;");
+			peerHistogramGraphCell = peerHistogramGraphTableRow.addChild("td", "class", "td-height-100");
 			peerHistogramLegendCell.addChild("div", "class", "histogramLabel").addChild("#", fix1p1.format(((double) i) / HISTOGRAM_LENGTH));
 			//
 			histogramPercent = ((double) histogramConnected[ i ] ) / histogramDiv;
-			peerHistogramGraphCell.addChild("div", new String[] { "class", "style" }, new String[] { "histogramConnected", "height: " + fix3pctUS.format(histogramPercent) + "; width: 100%;" }, "\u00a0");
+			peerHistogramGraphCell.addChild("div", new String[] { "class", "data-bar-height" }, new String[] { "histogramConnected", fix3pctUS.format(histogramPercent) }, "\u00a0");
 			//
 			histogramPercent = ((double) histogramDisconnected[ i ] ) / histogramDiv;
-			peerHistogramGraphCell.addChild("div", new String[] { "class", "style" }, new String[] { "histogramDisconnected", "height: " + fix3pctUS.format(histogramPercent) + "; width: 100%;" }, "\u00a0");
+			peerHistogramGraphCell.addChild("div", new String[] { "class", "data-bar-height" }, new String[] { "histogramDisconnected", fix3pctUS.format(histogramPercent) }, "\u00a0");
 		}
+	}
+
+	/** Returns {topPx, leftPx} as formatted decimal strings (without units).
+	 *  Used with data-abs-top / data-abs-left attributes so inline-styles.js
+	 *  can set position: top/left without a style="" attribute on the element. */
+	private String[] generatePeerCirclePosition(double peerLocation, boolean offsetMe, double strength) {
+		peerLocation *= Math.PI * 2;
+		int offset = offsetMe ? -10 : (int)(PEER_CIRCLE_INNER_RADIUS * (1.0 - strength));
+		double x = PEER_CIRCLE_ADDITIONAL_FREE_SPACE + PEER_CIRCLE_RADIUS + Math.sin(peerLocation) * (PEER_CIRCLE_RADIUS - offset);
+		double y = PEER_CIRCLE_RADIUS - Math.cos(peerLocation) * (PEER_CIRCLE_RADIUS - offset);
+		return new String[] { fix3p1US.format(y), fix3p1US.format(x) };
+	}
+
+	/** Appends a positioned span child to parent using data-abs-top / data-abs-left
+	 *  instead of a style="" attribute (CSP-safe). */
+	private void addCircleSpan(HTMLNode parent, double peerLocation, boolean offsetMe, double strength, String cssClass, String text) {
+		String[] pos = generatePeerCirclePosition(peerLocation, offsetMe, strength);
+		parent.addChild("span", new String[] { "class", "data-abs-top", "data-abs-left" },
+				new String[] { cssClass, pos[0], pos[1] }, text);
 	}
 
 	private String generatePeerCircleStyleString (double peerLocation, boolean offsetMe, double strength) {

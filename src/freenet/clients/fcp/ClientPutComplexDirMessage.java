@@ -3,6 +3,7 @@
  * http://www.gnu.org/ for further details of the GPL. */
 package freenet.clients.fcp;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -148,7 +149,7 @@ public class ClientPutComplexDirMessage extends ClientPutDirMessage {
 		// of ManifestElement's.
 		// Then simply create the ClientPutDir.
 		HashMap<String, Object> manifestElements = new HashMap<String, Object>();
-		convertFilesByNameToManifestElements(filesByName, manifestElements, node);
+		convertFilesByNameToManifestElements(filesByName, manifestElements, node, handler);
 		handler.startClientPutDir(this, manifestElements, false);
 	}
 
@@ -158,8 +159,8 @@ public class ClientPutComplexDirMessage extends ClientPutDirMessage {
 	 */
 	@SuppressWarnings("unchecked")
 	private void convertFilesByNameToManifestElements(HashMap<String, Object> filesByName,
-	        HashMap<String, Object> manifestElements, Node node) throws MessageInvalidException {
-		
+	        HashMap<String, Object> manifestElements, Node node, FCPConnectionHandler handler) throws MessageInvalidException {
+
 		for (Map.Entry<String, Object> entry : filesByName.entrySet()) {
 			String tempName = entry.getKey();
 			Object val = entry.getValue();
@@ -167,11 +168,18 @@ public class ClientPutComplexDirMessage extends ClientPutDirMessage {
 				HashMap<String, Object> h = (HashMap<String, Object>) val;
 				HashMap<String, Object> manifests = new HashMap<String, Object>();
 				manifestElements.put(tempName, manifests);
-				convertFilesByNameToManifestElements(h, manifests, node);
+				convertFilesByNameToManifestElements(h, manifests, node, handler);
 			} else {
 				DirPutFile f = (DirPutFile) val;
-				if(f instanceof DiskDirPutFile && !node.getClientCore().allowUploadFrom(((DiskDirPutFile)f).getFile()))
-					throw new MessageInvalidException(ProtocolErrorMessage.ACCESS_DENIED, "Not allowed to upload "+((DiskDirPutFile) f).getFile(), identifier, global);
+				if(f instanceof DiskDirPutFile) {
+					File diskFile = ((DiskDirPutFile)f).getFile();
+					if(!node.getClientCore().allowUploadFrom(diskFile))
+						throw new MessageInvalidException(ProtocolErrorMessage.ACCESS_DENIED, "Not allowed to upload "+diskFile, identifier, global);
+					// HO-19: per-connection DDA check.
+					if(!handler.allowDDAFrom(diskFile, false))
+						throw new MessageInvalidException(ProtocolErrorMessage.DIRECT_DISK_ACCESS_DENIED,
+							"Not allowed to upload "+diskFile+". Have you done a testDDA previously?", identifier, global);
+				}
 				ManifestElement e = f.getElement();
 				manifestElements.put(tempName, e);
 			}

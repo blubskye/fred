@@ -59,6 +59,9 @@ public class FCPConnectionInputHandler implements Runnable {
 		handler.closedInput();
 	}
 
+	// HO-21: Bound maximum key=value fields per FCP message to prevent OOM.
+	private static final int MAX_FIELDS = 256;
+
 	public void realRun() throws IOException {
 		InputStream is = new BufferedInputStream(handler.getSocket().getInputStream(), 4096);
 		LineReadingInputStream lis = new LineReadingInputStream(is);
@@ -81,7 +84,18 @@ public class FCPConnectionInputHandler implements Runnable {
 			}
 			if(messageType.isEmpty())
 				continue;
+
 			fs = new SimpleFieldSet(lis, 4096, 128, true, true, true);
+			// HO-21: Enforce field-count cap now that we have the parsed SFS.
+			// SimpleFieldSet has no built-in limit; an adversarial FCP client could send
+			// thousands of key=value lines to exhaust heap memory.
+			if (fs.directKeys().size() > MAX_FIELDS) {
+				FCPMessage err = new ProtocolErrorMessage(ProtocolErrorMessage.MESSAGE_PARSE_ERROR,
+					false, "Too many fields in message (max " + MAX_FIELDS + ")",
+					fs.get("Identifier"), fs.getBoolean("Global", false));
+				handler.send(err);
+				continue;
+			}
 
 			// check for valid endmarker
 			if (!firstMessage && fs.getEndMarker() != null && (!fs.getEndMarker().startsWith("End")) && (!"Data".equals(fs.getEndMarker()))) {

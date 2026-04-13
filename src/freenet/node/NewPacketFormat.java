@@ -43,7 +43,10 @@ public class NewPacketFormat implements PacketFormat {
 	static final long NUM_SEQNUMS = 2147483648L;
 	private static final long MAX_MSGID_BLOCK_TIME = MINUTES.toMillis(10);
 	private static final int MAX_ACKS = 500;
-	static boolean DO_KEEPALIVES = true;
+	// HO-70: Must be volatile — a plugin writing this from a non-synchronized context
+	// would otherwise not be visible to the packet-sender thread, silently disconnecting
+	// all peers.  Package-private (not public) to limit write surface.
+	static volatile boolean DO_KEEPALIVES = true;
 
 	private static volatile boolean logMINOR;
 	private static volatile boolean logDEBUG;

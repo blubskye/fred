@@ -325,11 +325,14 @@ public final class PageMaker {
 		HTMLNode headNode = htmlNode.addChild("head");
 		headNode.addChild("meta", new String[] { "http-equiv", "content" }, new String[] { "Content-Type", "text/html; charset=utf-8" });
 		headNode.addChild("title", title + " - Freenet");
-		//To make something only rendered when javascript is on, then add the jsonly class to it
-		headNode.addChild("noscript").addChild("style"," .jsonly {display:none;}");
+		// CSP utility styles (loaded before theme so theme can override if needed).
+		// Replaces the former <noscript><style>.jsonly{display:none}</style></noscript>
+		// which was blocked by style-src 'self'.  The no-js class is added to <body>
+		// below; inline-styles.js removes it at run-time.
+		headNode.addChild("link", new String[] { "rel", "href", "type" }, new String[] { "stylesheet", "/static/csp-utils.css", "text/css" });
 		if(override != null)
 			headNode.addChild(getOverrideContent());
-		else 
+		else
 			headNode.addChild("link", new String[] { "rel", "href", "type", "title" }, new String[] { "stylesheet", "/static/themes/" + theme.code + "/theme.css", "text/css", theme.code });
 		
 		boolean sendAllThemes =  ctx != null && ctx.getContainer().sendAllThemes();
@@ -348,6 +351,11 @@ public final class PageMaker {
 						new String[]{"type", "language", "src"},
 						new String[]{"text/javascript", "javascript", "/static/themes/" + theme.code + "/script.js"});
 			}
+			// Apply dynamic data-* values and show .jsonly elements (CSP-safe replacement
+			// for inline style="" attributes and the former <noscript><style> block).
+			headNode.addChild("script",
+					new String[]{"type", "language", "src"},
+					new String[]{"text/javascript", "javascript", "/static/js/inline-styles.js"});
 		}
 
 		boolean webPushingEnabled = 
@@ -367,7 +375,7 @@ public final class PageMaker {
 		if(t != null) activePath = t.path();
 		HTMLNode bodyNode = htmlNode.addChild("body",
 		        new String[] { "class", "id" },
-		        new String[] { "fproxy-page", filterCSSIdentifier("page-"+activePath) });
+		        new String[] { "fproxy-page no-js", filterCSSIdentifier("page-"+activePath) });
 		//Add a hidden input that has the request's id
 		if(webPushingEnabled)
 			bodyNode.addChild("input",new String[]{"type","name","value","id"},new String[]{"hidden","requestId",ctx.getUniqueId(),"requestId"});
@@ -460,8 +468,8 @@ public final class PageMaker {
 				}
 
 				HTMLNode progressBar = statusBarDiv.addChild("div", "class", "progressbar");
-				progressBar.addChild("div", new String[] { "class", "style" }, new String[] { "progressbar-done progressbar-peers " + additionalClass, "width: " +
-						Math.min(100,Math.floor(100*connectedRatio)) + "%;" });
+				progressBar.addChild("div", new String[] { "class", "data-pct" }, new String[] { "progressbar-done progressbar-peers " + additionalClass,
+						String.valueOf((int)Math.min(100, Math.floor(100*connectedRatio))) });
 
 				progressBar.addChild("div", new String[] { "class", "title" }, new String[] { "progress_fraction_finalized", NodeL10n.getBase().getString("StatusBar.connectedPeers", new String[]{"X", "Y"},
 						new String[]{Integer.toString(node.getPeers().countConnectedDarknetPeers()), Integer.toString(node.getPeers().countConnectedOpennetPeers())}) },

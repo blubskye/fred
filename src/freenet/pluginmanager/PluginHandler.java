@@ -30,6 +30,18 @@ public class PluginHandler {
 		Runnable job;
 		if(!pi.isThreadlessPlugin()) {
 			final Thread t = new Thread(ps);
+			// HO-42: Install an uncaught-exception handler so that plugin crashes are
+			// logged rather than silently swallowed. Without this, a RuntimeException or
+			// Error thrown from runPlugin() terminates the daemon thread with no record
+			// in the node log, making debugging plugin failures very difficult.
+			t.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+				@Override
+				public void uncaughtException(Thread thread, Throwable e) {
+					Logger.error(PluginHandler.class,
+						"Plugin thread " + pi.getPluginClassName()
+						+ " terminated with uncaught exception", e);
+				}
+			});
 			t.setDaemon(true);
 			pi.setThread(t);
 			job = new Runnable() {

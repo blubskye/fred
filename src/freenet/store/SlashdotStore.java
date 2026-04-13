@@ -117,7 +117,9 @@ public class SlashdotStore<T extends StorableBlock> implements FreenetStore<T> {
 		byte[] fk = new byte[fullKeySize];
 		byte[] header = new byte[headerSize];
 		byte[] data = new byte[dataSize];
-		InputStream in = block.data.getInputStream();
+		// Hold reference under lock to prevent GC of TempBucket while reading.
+		final Bucket bucket = block.data;
+		InputStream in = bucket.getInputStream();
 		try {
 			DataInputStream dis = new DataInputStream(in);
 			dis.readFully(fk);

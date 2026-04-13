@@ -158,6 +158,18 @@ public class FilterMessage extends DataCarryingMessage {
 
 	@Override
 	public void run(FCPConnectionHandler handler, Node node) throws MessageInvalidException {
+		// P-3: FilterMessage with DataSource=DISK must enforce DDA/full-access.
+		// Without this check any FCP client could read arbitrary files (e.g. node keys,
+		// SSH keys) by specifying MimeType=text/plain, which is a passthrough in the filter.
+		if (dataSource == DataSource.DISK) {
+			File file = new File(filename);
+			if (!handler.hasFullAccess()
+					&& !handler.getServer().getCore().allowUploadFrom(file)
+					&& !handler.allowDDAFrom(file, false)) {
+				throw new MessageInvalidException(ProtocolErrorMessage.ACCESS_DENIED,
+						"DataSource=DISK requires full access or DDA authorization", identifier, false);
+			}
+		}
 		if (bucket == null) {
 			throw new MessageInvalidException(ProtocolErrorMessage.MISSING_FIELD, "Must contain data", identifier, false);
 		}

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import freenet.io.comm.AsyncMessageCallback;
@@ -163,7 +164,13 @@ public class BlockTransmitter {
 						count++;
 						if (isHighHtl() && count >= (Node.PACKETS_IN_BLOCK - 2)) {
 							state.set(STATE_WAITING);
-							long delayMillis = (long) (Math.random() * MAX_ARTIFICIAL_FINAL_PACKETS_DELAY);
+							// HO-11: Math.random() uses a global singleton java.util.Random which
+							// is predictable and contended.  ThreadLocalRandom has better statistical
+							// properties and avoids lock contention on multi-threaded nodes.
+							// Timing jitter does not need to be crypto-random, but SHOULD be
+							// unpredictable enough that an observer cannot predict packet send times.
+							long delayMillis = (long) (ThreadLocalRandom.current().nextDouble()
+								* MAX_ARTIFICIAL_FINAL_PACKETS_DELAY);
 							_ticker.queueTimedJob((FastRunnable) this::schedule, delayMillis);
 						}
 					}

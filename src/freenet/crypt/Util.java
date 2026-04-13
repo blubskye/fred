@@ -270,7 +270,11 @@ public class Util {
 		int offset,
 		int len) {
 		try {
-			MessageDigest ctx = HashType.SHA1.get();
+			// HO-7: Upgrade iterative KDF from SHA-1 to SHA-256.
+			// makeKey() is only called from Yarrow's reseed path; it has no external callers
+			// and does not affect any on-wire or file format.  SHA-256 provides a larger
+			// output block (32 vs 20 bytes) and stronger collision/preimage resistance.
+			MessageDigest ctx = HashType.SHA256.get();
 			int ctx_length = ctx.getDigestLength();
 
 			int ic = 0;

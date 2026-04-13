@@ -419,9 +419,10 @@ public class ClientCHKBlock implements ClientKeyBlock {
         else
         	encKey = md256.digest(data);
     	if(cryptoAlgorithm == 0) {
-    		// TODO find all such cases and fix them.
-    		Logger.error(ClientCHKBlock.class, "Passed in 0 crypto algorithm", new Exception("warning"));
-    		cryptoAlgorithm = Key.ALGO_AES_PCFB_256_SHA256;
+    		// P-2: Default to CTR (not PCFB). PCFB with null IV leaks keystream prefix for
+    		// splitfile blocks sharing the same encryption key. CTR uses a hash-derived IV.
+    		Logger.error(ClientCHKBlock.class, "Passed in 0 crypto algorithm, defaulting to CTR", new Exception("warning"));
+    		cryptoAlgorithm = Key.ALGO_AES_CTR_256_SHA256;
     	}
         if(cryptoAlgorithm == Key.ALGO_AES_PCFB_256_SHA256)
         	return innerEncode(data, dataLength, md256, encKey, asMetadata, compressionAlgorithm, cryptoAlgorithm);

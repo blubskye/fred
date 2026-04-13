@@ -69,6 +69,10 @@ public class ClientPutDiskDirMessage extends ClientPutDirMessage {
 			throws MessageInvalidException {
 		if(!handler.getServer().getCore().allowUploadFrom(dirname))
 			throw new MessageInvalidException(ProtocolErrorMessage.ACCESS_DENIED, "Not allowed to upload from "+dirname, identifier, global);
+		// HO-19: per-connection DDA check (server-side allowlist is not sufficient alone).
+		if(!handler.allowDDAFrom(dirname, false))
+			throw new MessageInvalidException(ProtocolErrorMessage.DIRECT_DISK_ACCESS_DENIED,
+				"Not allowed to upload from "+dirname+". Have you done a testDDA previously?", identifier, global);
 		// Create a directory listing of Buckets of data, mapped to ManifestElement's.
 		// Directories are sub-HashMap's.
 		HashMap<String, Object> buckets = makeBucketsByName(dirname, "");

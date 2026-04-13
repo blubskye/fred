@@ -11,25 +11,28 @@ import freenet.crypt.BlockCipher;
  */
 public class SessionKey {
 	
+	// HO-72: Session key material must not be public. Plugins and any freenet.node.*
+	// class can currently read active AES-256 / HMAC session keys directly without
+	// reflection. Restrict to package-private so only node-package code accesses them.
 	/** Parent PeerNode */
-	public final PeerNode pn;
+	final PeerNode pn;
 	/** Cipher to encrypt outgoing packets with */
-	public final BlockCipher outgoingCipher;
-	/** Key for outgoingCipher, so far for debugging */
-	public final byte[] outgoingKey;
+	final BlockCipher outgoingCipher;
+	/** Key for outgoingCipher */
+	final byte[] outgoingKey;
 
 	/** Cipher to decrypt incoming packets */
-	public final BlockCipher incommingCipher;
-	/** Key for incommingCipher, so far for debugging */
-	public final byte[] incommingKey;
+	final BlockCipher incommingCipher;
+	/** Key for incommingCipher */
+	final byte[] incommingKey;
 
-	public final BlockCipher ivCipher;
-	public final byte[] ivNonce;
-	public final byte[] hmacKey;
-	
+	final BlockCipher ivCipher;
+	final byte[] ivNonce;
+	final byte[] hmacKey;
+
 	final long trackerID;
-	
-	public final NewPacketFormatKeyContext packetContext;
+
+	final NewPacketFormatKeyContext packetContext;
 
 	SessionKey(PeerNode parent, BlockCipher outgoingCipher, byte[] outgoingKey,
 	                BlockCipher incommingCipher, byte[] incommingKey, BlockCipher ivCipher,

@@ -11,6 +11,10 @@ import java.io.File;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -75,6 +79,15 @@ public class FNPPacketMangler implements OutgoingPacketMangler {
 	 * The messages are cached in hashmaps because the message retrieval from the cache
 	 * can be performed in constant time( given the key)
 	 */
+	 // HO-50: Rate-limit the brute-force all-peers auth scan to defend against
+	 // CPU exhaustion from spoofed/garbage packets.
+	 // [0] = fail count in current 1-second window, [1] = window start ms.
+	 private final ConcurrentHashMap<InetAddress, long[]> authBruteForceFailures =
+	 	new ConcurrentHashMap<>();
+	 private static final int AUTH_BRUTE_FORCE_MAX_FAILS = 10;
+	 private static final long AUTH_BRUTE_FORCE_WINDOW_MS = 1000L;
+	 private final AtomicLong authPacketCount = new AtomicLong();
+	 private static final int AUTH_EVICT_EVERY_N = 500;
 	private final HashMap<ByteArrayWrapper, byte[]> authenticatorCache;
 	/** The following is used in the HMAC calculation of JFK message3 and message4 */
 	private static final byte[] JFK_PREFIX_INITIATOR = "I".getBytes(StandardCharsets.UTF_8);
@@ -170,17 +183,53 @@ public class FNPPacketMangler implements OutgoingPacketMangler {
 		if(node.isStopping()) return DECODED.SHUTTING_DOWN;
 		// Disconnected node connecting on a new IP address?
 		if(length > Node.SYMMETRIC_KEY_LENGTH /* iv */ + HASH_LENGTH + 2) {
-			for(PeerNode pn: peers) {
-				if(pn == opn) continue;
-				if(logDEBUG)
-					Logger.debug(this, "Trying auth with "+pn);
-				if(tryProcessAuth(buf, offset, length, pn, peer,false, now)) {
-					return DECODED.DECODED;
+			// HO-50: Rate-limit per source IP before brute-forcing all peers.
+			InetAddress srcAddr = peer.getAddress();
+			boolean authRateLimited = false;
+			if (srcAddr != null) {
+				long[] entry = authBruteForceFailures.computeIfAbsent(
+					srcAddr, k -> new long[]{0L, now});
+				synchronized (entry) {
+					if (now - entry[1] > AUTH_BRUTE_FORCE_WINDOW_MS) {
+						entry[0] = 0L;
+						entry[1] = now;
+					}
+					if (entry[0] >= AUTH_BRUTE_FORCE_MAX_FAILS) {
+						authRateLimited = true;
+					}
 				}
-				if(pn.handshakeUnknownInitiator()) {
-					// Might be a reply to us sending an anon auth packet.
-					// I.e. we are not the seednode, they are.
-					if(tryProcessAuthAnonReply(buf, offset, length, pn, peer, now)) {
+			}
+			if (authRateLimited) {
+				Logger.normal(this, "HO-50: auth brute-force rate limit hit for "+srcAddr
+					+" (>"+AUTH_BRUTE_FORCE_MAX_FAILS+" failures/s)");
+			} else {
+				boolean matched = false;
+				for(PeerNode pn: peers) {
+					if(pn == opn) continue;
+					if(logDEBUG)
+						Logger.debug(this, "Trying auth with "+pn);
+					if(tryProcessAuth(buf, offset, length, pn, peer,false, now)) {
+						matched = true;
+					if(pn.handshakeUnknownInitiator()) {
+						if(tryProcessAuthAnonReply(buf, offset, length, pn, peer, now)) {
+							matched = true;
+							return DECODED.DECODED;
+						}
+					}
+				}
+				if (!matched && srcAddr != null) {
+					long[] entry = authBruteForceFailures.get(srcAddr);
+					if (entry != null) synchronized (entry) { entry[0]++; }
+				}
+				// Periodically evict stale entries.
+				if (authPacketCount.incrementAndGet() % AUTH_EVICT_EVERY_N == 0) {
+					for (Iterator<Map.Entry<InetAddress,long[]>> it =
+							authBruteForceFailures.entrySet().iterator(); it.hasNext(); ) {
+						long[] e = it.next().getValue();
+						synchronized(e) {
+							if (now - e[1] > AUTH_BRUTE_FORCE_WINDOW_MS * 10) it.remove();
+						}
+					}
 						return DECODED.DECODED;
 					}
 				}
@@ -1725,8 +1774,13 @@ public class FNPPacketMangler implements OutgoingPacketMangler {
 
 		// cache the message
 		synchronized (authenticatorCache) {
-			if(!maybeResetTransientKey())
+			// HO-44: Enforce per-put size guard so a flood of JFK1 messages cannot grow
+			// the cache unboundedly between periodic rekey checks.
+			if(!maybeResetTransientKey() && authenticatorCache.size() < getAuthenticatorCacheSize()) {
 				authenticatorCache.put(new ByteArrayWrapper(authenticator),message3);
+			} else if(logMINOR) {
+				Logger.minor(this, "JFK3: authenticatorCache full, dropping entry");
+			}
 		}
 		final long timeSent = System.currentTimeMillis();
 		if(unknownInitiator) {
@@ -1840,8 +1894,12 @@ public class FNPPacketMangler implements OutgoingPacketMangler {
 
 		// cache the message
 		synchronized (authenticatorCache) {
-			if(!maybeResetTransientKey())
+			// HO-44: same guard as JFK3 path — cap before insertion.
+			if(!maybeResetTransientKey() && authenticatorCache.size() < getAuthenticatorCacheSize()) {
 				authenticatorCache.put(new ByteArrayWrapper(authenticator), message4);
+			} else if(logMINOR) {
+				Logger.minor(this, "JFK4: authenticatorCache full, dropping entry");
+			}
 			if(logDEBUG) Logger.debug(this, "Storing JFK(4) for "+HexUtil.bytesToHex(authenticator));
 		}
 

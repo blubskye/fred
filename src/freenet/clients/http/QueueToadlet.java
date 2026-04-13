@@ -1827,14 +1827,14 @@ public class QueueToadlet extends Toadlet implements RequestCompletionCallback, 
 			int fatallyFailedPercent = (int) (fatallyFailed / (double) total * 100);
 			int minPercent = (int) (min / (double) total * 100);
 			HTMLNode progressBar = progressCell.addChild("div", "class", "progressbar");
-			progressBar.addChild("div", new String[] { "class", "style" }, new String[] { "progressbar-done", "width: " + fetchedPercent + "%;" });
+			progressBar.addChild("div", new String[] { "class", "data-pct" }, new String[] { "progressbar-done", String.valueOf(fetchedPercent) });
 
 			if (failed > 0)
-				progressBar.addChild("div", new String[] { "class", "style" }, new String[] { "progressbar-failed", "width: " + failedPercent + "%;" });
+				progressBar.addChild("div", new String[] { "class", "data-pct" }, new String[] { "progressbar-failed", String.valueOf(failedPercent) });
 			if (fatallyFailed > 0)
-				progressBar.addChild("div", new String[] { "class", "style" }, new String[] { "progressbar-failed2", "width: " + fatallyFailedPercent + "%;" });
+				progressBar.addChild("div", new String[] { "class", "data-pct" }, new String[] { "progressbar-failed2", String.valueOf(fatallyFailedPercent) });
 			if ((fetched + failed + fatallyFailed) < min)
-				progressBar.addChild("div", new String[] { "class", "style" }, new String[] { "progressbar-min", "width: " + (minPercent - fetchedPercent) + "%;" });
+				progressBar.addChild("div", new String[] { "class", "data-pct" }, new String[] { "progressbar-min", String.valueOf(minPercent - fetchedPercent) });
 
 			NumberFormat nf = NumberFormat.getInstance();
 			nf.setMaximumFractionDigits(1);

@@ -53,6 +53,12 @@ public class TestDDARequestMessage extends FCPMessage {
 
 	@Override
 	public void run(FCPConnectionHandler handler, Node node) throws MessageInvalidException {
+		// HO-23: TestDDARequestMessage initiates DDA authorization (direct disk access).
+		// Restrict to full-access clients — a non-admin FCP client should not be able to
+		// probe filesystem paths or request read/write authorization.
+		if (!handler.hasFullAccess())
+			throw new MessageInvalidException(ProtocolErrorMessage.ACCESS_DENIED,
+				"TestDDARequest requires full access", identifier, false);
 		DDACheckJob job;
 		try {
 			job = handler.enqueueDDACheck(identifier, wantRead, wantWrite);

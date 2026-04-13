@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.FileOutputStream;
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -124,7 +125,8 @@ public class MasterKeys {
 					throw new Error(e);
 				}
 //				System.err.println("Outer key: "+HexUtil.bytesToHex(outerKey));
-				cipher.initialize(outerKey);
+			cipher.initialize(outerKey);
+				Arrays.fill(outerKey, (byte)0); // HO-69: clear password-derived key from heap
 				PCFBMode pcfb = PCFBMode.create(cipher, iv);
 				pcfb.blockDecipher(dataAndHash, 0, dataAndHash.length);
 //				System.err.println("Decrypted data and hash: "+HexUtil.bytesToHex(dataAndHash));
@@ -204,6 +206,7 @@ public class MasterKeys {
             // Impossible
             throw new Error(e);
         }
+        Arrays.fill(outerKey, (byte)0); // HO-69: clear password-derived key from heap
 //      System.err.println("Outer key: "+HexUtil.bytesToHex(outerKey));
         cipher.initialize(outerKey);
         PCFBMode pcfb = PCFBMode.create(cipher, iv);
@@ -312,21 +315,21 @@ public class MasterKeys {
 			throw new Error(e);
 		}
 		cipher.initialize(outerKey);
+		Arrays.fill(outerKey, (byte)0); // HO-69: clear password-derived key after use
 		PCFBMode pcfb = PCFBMode.create(cipher, iv);
 		pcfb.blockEncipher(data, hashedStart, data.length - hashedStart);
 
-		RandomAccessFile raf = new RandomAccessFile(masterKeysFile, "rw");
-
-		raf.seek(0);
-		raf.write(data);
-		long len = raf.length();
-		if(len > data.length) {
-			byte[] diff = new byte[(int)(len - data.length)];
-			raf.write(diff);
-			raf.setLength(data.length);
+		// HO-68: Atomic write via temp-file + rename to avoid partial-write corruption on power loss.
+		File temp = new File(masterKeysFile.getParentFile(), masterKeysFile.getName() + ".tmp");
+		try (FileOutputStream fos = new FileOutputStream(temp)) {
+			fos.write(data);
+			fos.getFD().sync();
+		} finally {
+			if (!FileUtil.renameTo(temp, masterKeysFile)) {
+				temp.delete();
+				throw new IOException("Atomic rename failed: could not replace " + masterKeysFile);
+			}
 		}
-		raf.getFD().sync();
-		raf.close();
 	}
 
 	public static void killMasterKeys(File masterKeysFile) throws IOException {

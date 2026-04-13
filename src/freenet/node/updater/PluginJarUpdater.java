@@ -216,6 +216,10 @@ public class PluginJarUpdater extends NodeUpdater {
 			BucketTools.copyTo(result.asBucket(), fos, -1);
 
 			fos.flush();
+			// HO-29/31: fsync before close to ensure the plugin jar is durable before
+			// the node uses it. A crash between flush() and close() without sync would
+			// leave a zero-length or partial jar, breaking the plugin on restart.
+			fos.getFD().sync();
 			fos.close();
 		}
 		synchronized(this) {

@@ -249,6 +249,20 @@ public class MainJarUpdater extends NodeUpdater implements Deployer {
 								if(fetched) return;
 								fetched = true;
 							}
+							// HO-33: The Freenet-native download path calls validFile() on the
+							// temp file before renaming it to the final location.  The UOM
+							// (Update Over Mandatory) path previously skipped this check,
+							// creating a TOCTOU: a peer could supply a file that passes UOM
+							// acceptance but differs from the hash in dependencies.properties.
+							// Re-verify here before signalling success.
+							if(!MainJarDependenciesChecker.validFile(filename, expectedHash, expectedLength, executable)) {
+								Logger.error(this, "UOM-fetched dependency "+filename+" failed hash/length verification — rejecting!");
+								System.err.println("UOM dependency "+filename+" failed integrity check: will not deploy.");
+								if(cb != null)
+									cb.onFailure(new FetchException(FetchExceptionMode.BUCKET_ERROR,
+										"UOM-supplied dependency failed hash verification: "+filename));
+								return;
+							}
 							if(cb != null) cb.onSuccess();
 						}
 						
