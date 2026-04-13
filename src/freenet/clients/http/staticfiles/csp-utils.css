@@ -1,0 +1,65 @@
+/*
+ * CSP utility classes — loaded on every page by PageMaker regardless of theme.
+ *
+ * These replace inline style="" attributes that are blocked by
+ * Content-Security-Policy "style-src 'self'".  Dynamic values (progress-bar
+ * widths, peer-circle positions, histogram heights) are carried as data-*
+ * attributes and applied via js/inline-styles.js.
+ */
+
+/* Static layout helpers */
+.text-center  { text-align: center; }
+.no-border    { border: none; }
+.cursor-help  { cursor: help; }
+.help-tooltip { border-bottom: 1px dotted; cursor: help; }
+.float-left   { float: left; }
+.overflow-scroll { overflow: scroll; }
+
+/* Table cell with fixed 100 px height used by histogram graph cells */
+td.td-height-100 { height: 100px; }
+
+/* Status-code colours in the "add friend" result table */
+.color-ok    { color: green; }
+.color-error { color: red; }
+
+/* Active-link thumbnail (36 × 108 px) */
+.activelink-img { height: 36px; width: 108px; display: block; }
+
+/*
+ * Peer circle container.
+ * PEER_CIRCLE_RADIUS = 100, PEER_CIRCLE_ADDITIONAL_FREE_SPACE = 10
+ * → container is 2 × (100 + 10) = 220 px square, position: relative so
+ *   the absolutely-positioned dot spans inside it are correct.
+ */
+div.peercircle { position: relative; height: 220px; width: 220px; }
+
+/*
+ * Centre mark inside the peer circle.
+ * top  = PEER_CIRCLE_RADIUS = 100 px
+ * left = PEER_CIRCLE_RADIUS + PEER_CIRCLE_ADDITIONAL_FREE_SPACE = 110 px
+ */
+.peercircle-center { position: absolute; top: 100px; left: 110px; }
+
+/*
+ * Absolutely-positioned dot spans for peer-circle marks and peer dots.
+ * inline-styles.js reads data-abs-top / data-abs-left and sets the pixel
+ * values; position: absolute is safe to set here via CSS.
+ */
+div.peercircle span.mark,
+div.peercircle span.me,
+div.peercircle span.connected,
+div.peercircle span.disconnected,
+div.peercircle span.backed_off { position: absolute; }
+
+/*
+ * Histogram bars: width is always 100 %; height is dynamic and set by
+ * inline-styles.js via data-bar-height.
+ */
+div.histogramConnected, div.histogramDisconnected { width: 100%; }
+
+/*
+ * No-JS mode: hide elements that require JavaScript.
+ * PageMaker adds class "no-js" to <body>; inline-styles.js removes it so
+ * .jsonly elements become visible when JS is available.
+ */
+body.no-js .jsonly { display: none; }

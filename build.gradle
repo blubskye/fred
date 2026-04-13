@@ -247,6 +247,8 @@ copyRuntimeLibs.dependsOn jar
 dependencies {
     implementation "org.bouncycastle:bcprov-jdk18on:1.78.1"
     implementation "org.bouncycastle:bcutil-jdk18on:1.78.1"
+    implementation "org.bouncycastle:bcprov-jdk18on:1.83"
+    implementation "org.bouncycastle:bcutil-jdk18on:1.83"
     implementation "net.java.dev.jna:jna:5.14.0"
     implementation "net.java.dev.jna:jna-platform:5.14.0"
     implementation "org.freenetproject:freenet-ext:29"
