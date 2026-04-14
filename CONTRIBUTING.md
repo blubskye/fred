@@ -21,7 +21,7 @@ Love AI? Want to help with translations? Interested in security stuff? **Bring y
 2. Make your changes ✨
 3. Open a Pull Request against the `next` branch
 
-I read every PR with a smile and I’m always happy to help, answer questions, or refine things together. No pressure at all!
+I read every PR  and I’m always happy to help, answer questions, or refine things together. No pressure at all!
 
 ### Friendly guidelines ✨
 - Try to keep changes focused (but it’s okay if it’s not perfect!)
