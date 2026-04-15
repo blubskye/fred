@@ -1,105 +1,155 @@
-[![Build status](https://img.shields.io/github/check-runs/hyphanet/fred/next?label=build)](https://github.com/hyphanet/fred/actions)
+[![Build status](https://img.shields.io/github/check-runs/hyphanet/fred/next?label=upstream%20build)](https://github.com/hyphanet/fred/actions)
+[![Fork build](https://img.shields.io/github/check-runs/blubskye/fred/next?label=fork%20build)](https://github.com/blubskye/fred/actions)
 [![Coverity status](https://scan.coverity.com/projects/2316/badge.svg?flat=1)](https://scan.coverity.com/projects/freenet-fred)
+[![License: GPL v2](https://img.shields.io/badge/License-GPL_v2+-blue.svg)](LICENSE.Freenet)
+[![Based on build](https://img.shields.io/badge/based%20on-build%201506-informational)](https://github.com/hyphanet/fred)
 
-# Freenet
+---
 
-Freenet is a platform for censorship-resistant communication and publishing. It is peer-to-peer
-software which provides a distributed, encrypted, decentralized datastore. Websites and applications
-providing things like forums and chat are built on top of it.
+# fred — Freenet Reference Daemon (blubskye fork)
 
-Fred stands for Freenet REference Daemon.
+> **Hyphanet** (formerly Freenet) is a censorship-resistant peer-to-peer platform for
+> anonymous communication and publishing. It provides a distributed, encrypted,
+> decentralised datastore; forums, chat, and static websites are all built on top of it.
+
+This is a personal fork of [hyphanet/fred](https://github.com/hyphanet/fred) based on
+build **1506**. It tracks upstream's `next` branch and layers a set of security hardening
+patches and quality-of-life improvements on top.
+
+---
+
+## What's different from upstream
+
+### Security hardening (HO-series audit findings)
+
+| ID | Area | Change |
+|----|------|--------|
+| HO-53 | `NPFPacket` | Replace exception-driven bounds handling with explicit length checks during ACK-range parsing |
+| HO-72 | `SessionKey` | Restrict AES-256/HMAC session key fields from `public` to package-private to prevent leakage to plugins |
+| — | `AEADInputStream` | Fix OCB nonce truncation to comply with RFC 7253 (max 15 bytes); use upstream BouncyCastle `OCBBlockCipher` |
+| — | FCP layer | Input size/length validation added across `FCPConnectionInputHandler`, `FCPServer`, and FCP message handlers |
+| — | HTTP toadlets | Input validation and output encoding hardening in `ConfigToadlet`, `ConnectionsToadlet`, `ToadletContextImpl`, `Cookie`, and others |
+| — | Plugin manager | Safer plugin loading and classpath isolation in `JarClassLoader`, `PluginHandler`, `PluginManager` |
+| — | Store layer | Concurrency fixes in `SaltedHashFreenetStore` and `LockManager` |
+
+### Dependency updates
+
+- **BouncyCastle** upgraded from 1.78.1 → **1.83** (removed duplicate 1.78.1 jar)
+- **Gradle** upgraded to **9.4.1**
+
+### Localisation
+
+- **Korean (한국어)** translations added across the web interface
+
+---
 
 ## Building
 
-We've included the [Gradle Wrapper](https://docs.gradle.org/8.14.3/userguide/gradle_wrapper.html) as
-recommended by the Gradle project. If you trust the version we've committed you can build
-immediately:
+The [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html) is
+included. Its checksum is verified automatically against `https://services.gradle.org`.
 
-#### POSIX / Windows PowerShell:
+**POSIX / Windows PowerShell:**
 
-    $ ./gradlew jar
+```bash
+./gradlew jar
+```
 
-#### Windows cmd:
+**Windows cmd:**
 
-    > gradlew jar
+```bat
+gradlew jar
+```
 
-We've [configured it](gradle/wrapper/gradle-wrapper.properties) to [verify the checksum](https://docs.gradle.org/8.14.3/userguide/gradle_wrapper.html#wrapper_checksum_verification)
-of the archive it downloads from `https://services.gradle.org`.
+The output is `build/libs/freenet.jar`.
 
-### Build with ant
+### Build offline (ant)
 
-    $ mkdir -p lib; (cd lib && grep -o CHK.* ../dependencies.properties  | xargs -P16 -I {} bash -c 'fcpget -v {} "$(echo {} | sed s,^.*/,,)"')
-    $ ant -propertyfile build.properties -f build-clean.xml -Dtest.skip=true -Dfindbugs.skip=true
+```bash
+mkdir -p lib
+(cd lib && grep -o 'CHK.*' ../dependencies.properties \
+  | xargs -P16 -I {} bash -c 'fcpget -v {} "$(echo {} | sed s,^.*/,,)"')
+ant -propertyfile build.properties -f build-clean.xml \
+    -Dtest.skip=true -Dfindbugs.skip=true
+```
 
-## Building the installers
+### Building the installers
 
-The installers are built from specialized repositories:
+The installers live in separate repos:
 
-- The GNU/Linux, macOS and *nix installer is built from [hyphanet/java_installer](https://github.com/hyphanet/java_installer).
-- The Windows installer is built from [hyphanet/wininstaller-innosetup](https://github.com/hyphanet/wininstaller-innosetup) and signed with [hyphanet/sign-windows-installer](https://github.com/hyphanet/sign-windows-installer).
+| Platform | Repository |
+|----------|-----------|
+| GNU/Linux, macOS, \*nix | [hyphanet/java_installer](https://github.com/hyphanet/java_installer) |
+| Windows | [hyphanet/wininstaller-innosetup](https://github.com/hyphanet/wininstaller-innosetup) + [hyphanet/sign-windows-installer](https://github.com/hyphanet/sign-windows-installer) |
 
-Free code signing for the Windows installer is provided by [SignPath.io](https://about.signpath.io/), the certificate by the [SignPath Foundation](https://signpath.org/).
+Free code signing for Windows is provided by [SignPath.io](https://about.signpath.io/) /
+[SignPath Foundation](https://signpath.org/).
 
+---
 
 ## Testing
 
-### Run Tests
+### Unit tests
 
-To run all unit tests, use
+```bash
+./gradlew --parallel test
+```
 
-    ./gradlew --parallel test
+Run a specific test class:
 
-You can run specifics tests with a test filter similar to the following:
+```bash
+./gradlew --parallel test --tests '*M3UFilterTest'
+```
 
-    ./gradlew --parallel test --tests *M3UFilterTest
+### Test against a live node
 
-TODO: how to run integration tests.
+1. Build: `./gradlew jar`
+2. Stop your node.
+3. Replace `freenet.jar` in your Hyphanet directory with `build/libs/freenet.jar`.
+4. Start your node.
 
-### Run your changes as node
+### Gradle performance tuning
 
-To test your version of Freenet, build it with ,./gradlew jar`,
-stop your node, replace `freenet.jar` in your
-Freenet directory with `build/libs/freenet.jar`, and start your node again.
+Create (or extend) `gradle.properties` in the repo root:
 
-To override values set in `build.gradle` put them into [the file](https://docs.gradle.org/8.14.3/userguide/build_environment.html)
-`gradle.properties` in the format `variable = value`. For instance:
+```properties
+org.gradle.parallel = true
+org.gradle.daemon = true
+org.gradle.jvmargs = -Xms256m -Xmx1024m
+org.gradle.configureondemand = true
+```
 
-    org.gradle.parallel = true
-    org.gradle.daemon = true
-    org.gradle.jvmargs=-Xms256m -Xmx1024m
-    org.gradle.configureondemand=true
-
-    tasks.withType(Test)  {
-      maxParallelForks = Runtime.runtime.availableProcessors()
-    }
+---
 
 ## Contributing
 
-See our [contributor guidelines](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for coding standards and the PR process.
 
-### Get in contact
+**Get in touch with upstream:**
 
-* Ask the [development mailing list](https://www.hyphanet.org/pages/help.html#mailing-lists)
-  or join us in [IRC](https://web.libera.chat/?nick=Rabbit|?#freenet) - `#freenet` on
-  `irc.libera.chat`.
-* You can file problems in the [bug tracker](https://freenet.mantishub.io/my_view_page.php).
+- IRC: [`#freenet`](https://web.libera.chat/?nick=Rabbit|?#freenet) on `irc.libera.chat`
+- Mailing list: [hyphanet.org/pages/help](https://www.hyphanet.org/pages/help.html#mailing-lists)
+- Bug tracker: [freenet.mantishub.io](https://freenet.mantishub.io/my_view_page.php)
 
-## Add a new dependency
+For issues specific to **this fork**, open an issue at
+[blubskye/fred](https://github.com/blubskye/fred/issues).
 
-All dependencies must be available via Freenet, so it must be added to
-dependencies.properties.
+---
 
-- Add it to build.gradle dependencies *and* dependencyVerification.
-  Run `./gradlew jar --debug` to find files that fail the
-  verification.
-- fcpupload {dependencyfile.jar}
-- add it to all installers: wininstaller-innosetup, java_installer, mactray. Search for `jna-platform` to find out where to put and register the dependency.
-- add dependency and the CHK to `dependencies.properties`.
-- update `scripts/update.sh` and `res/wrapper.conf` and `res/unix/run.sh` in java_installer to include the dependency.
+## Adding a dependency
 
-With the example of pebble: The filename is just the jarfile. The key is what fcpupload returns. Size is `wc -c filename.jar`, sha256 is `sha256sum filename.jar`, order is where it should be put in `wrapper.conf` in wrapper.java.classpath.
+All dependencies must be reachable via Freenet itself (`dependencies.properties`):
 
-```
+1. Add to `build.gradle` `dependencies` block **and** `dependencyVerification`.
+   (`./gradlew jar --debug` reveals verification failures.)
+2. `fcpupload {dependency.jar}`
+3. Add to all installers (search for `jna-platform` as a reference).
+4. Add the CHK key, size, sha256, and classpath order to `dependencies.properties`.
+5. Update `scripts/update.sh`, `res/wrapper.conf`, and `res/unix/run.sh` in
+   `java_installer`.
+
+**Example entry (pebble 3.1.5):**
+
+```properties
 pebble.version=3.1.5
 pebble.filename=pebble-3.1.5.jar
 pebble.filename-regex=pebble-*.jar
@@ -110,8 +160,17 @@ pebble.type=CLASSPATH
 pebble.order=4
 ```
 
+---
+
 ## Licensing
-Freenet is under the GPL, version 2 or later - see LICENSE.Freenet. We use some
-code under the Apache license version 2 (mostly apache commons stuff), and some
-modified BSD code (Mantissa). All of which is compatible with the GPL, although
-arguably ASL2 is only compatible with GPL3. Some plugins are GPL3.
+
+Freenet/Hyphanet is licensed under the **GPL v2 or later** — see
+[LICENSE.Freenet](LICENSE.Freenet).
+
+Some bundled components use compatible licences:
+
+| Component | Licence |
+|-----------|---------|
+| Apache Commons (and similar) | Apache 2.0 |
+| Mantissa | Modified BSD |
+| Some plugins | GPL v3 |
