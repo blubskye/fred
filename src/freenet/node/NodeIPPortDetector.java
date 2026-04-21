@@ -139,7 +139,6 @@ public class NodeIPPortDetector {
 							}
 							if(best.getAddress().equals(secondBest.getAddress()) && bestPopularity == 1) {
 								Logger.error(this, "Hrrrm, maybe this is a symmetric NAT? Expect trouble connecting!");
-								System.err.println("Hrrrm, maybe this is a symmetric NAT? Expect trouble connecting!");
 								
 								ipDetector.setMaybeSymmetric();
 								

@@ -245,7 +245,7 @@ public class PooledFileRandomAccessBuffer implements LockableRandomAccessBuffer,
                     try {
                         fds.wait();
                     } catch (InterruptedException e) {
-                        // Ignore
+                        Thread.currentThread().interrupt();
                     }
                 }
             }
@@ -301,7 +301,6 @@ public class PooledFileRandomAccessBuffer implements LockableRandomAccessBuffer,
                 FileUtil.secureDelete(file);
             } catch (IOException e) {
                 Logger.error(this, "Unable to delete "+file+" : "+e, e);
-                System.err.println("Unable to delete temporary file "+file);
             }
         } else {
             file.delete();

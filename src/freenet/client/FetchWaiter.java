@@ -42,7 +42,8 @@ public class FetchWaiter implements ClientGetCallback {
 			try {
 				wait();
 			} catch (InterruptedException e) {
-				// Ignore
+				Thread.currentThread().interrupt();
+				break;
 			}
 		}
 

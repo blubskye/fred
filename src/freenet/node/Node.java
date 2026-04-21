@@ -180,7 +180,7 @@ public class Node implements TimeSkewDetectorCallback {
 
 		@Override
 		public void run() {
-			System.err.println("Migrating old "+(clientCache ? "client cache" : "datastore"));
+			Logger.normal(this, "Migrating old "+(clientCache ? "client cache" : "datastore"));
 			if(clientCache) {
 				migrateOldStore(oldCHKClientCache, chkClientcache, true);
 				StoreCallback<? extends StorableBlock> old;
@@ -215,7 +215,7 @@ public class Node implements TimeSkewDetectorCallback {
 				migrateOldStore(oldSSKCache, sskDatacache, false);
 				oldSSKCache = null;
 			}
-			System.err.println("Finished migrating old "+(clientCache ? "client cache" : "datastore"));
+			Logger.normal(this, "Finished migrating old "+(clientCache ? "client cache" : "datastore"));
 		}
 
 	}
@@ -410,8 +410,6 @@ public class Node implements TimeSkewDetectorCallback {
 						initSaltHashClientCacheFS(suffix, true, key);
 					} catch (NodeInitException e) {
 						Logger.error(this, "Unable to create new store", e);
-						System.err.println("Unable to create new store: "+e);
-						e.printStackTrace();
 						// FIXME l10n both on the NodeInitException and the wrapper message
 						throw new InvalidConfigValueException("Unable to create new store: "+e);
 					}
@@ -1073,7 +1071,6 @@ public class Node implements TimeSkewDetectorCallback {
 					p = new Peer(udpAddr, false, true);
 				} catch (HostnameSyntaxException e) {
 					Logger.error(this, "Invalid hostname or IP Address syntax error while parsing our darknet node reference: "+udpAddr);
-					System.err.println("Invalid hostname or IP Address syntax error while parsing our darknet node reference: "+udpAddr);
 					continue;
 				} catch (PeerParseException e) {
 					throw (IOException)new IOException().initCause(e);
@@ -1102,7 +1099,6 @@ public class Node implements TimeSkewDetectorCallback {
 		String verString = fs.get("version");
 		if(verString == null) {
 			Logger.error(this, "No version!");
-			System.err.println("No version!");
 		} else {
 			lastVersion = Version.getArbitraryBuildNumber(verString, -1);
 		}
@@ -1115,8 +1111,6 @@ public class Node implements TimeSkewDetectorCallback {
 				initSaltHashFS(suffix, true, null);
 			} catch (NodeInitException e) {
 				Logger.error(this, "Unable to create new store", e);
-				System.err.println("Unable to create new store: "+e);
-				e.printStackTrace();
 				// FIXME l10n both on the NodeInitException and the wrapper message
 				throw new InvalidConfigValueException("Unable to create new store: "+e);
 			}
@@ -1215,7 +1209,6 @@ public class Node implements TimeSkewDetectorCallback {
 		// Easy stuff
 		String tmp = "Initializing Node using Freenet Build #"+Version.buildNumber()+" r"+Version.cvsRevision()+" and freenet-ext Build #"+NodeStarter.extBuildNumber+" r"+NodeStarter.extRevisionNumber+" with "+System.getProperty("java.vendor")+" JVM version "+System.getProperty("java.version")+" running on "+System.getProperty("os.arch")+' '+System.getProperty("os.name")+' '+System.getProperty("os.version");
 		Logger.normal(this, tmp);
-		System.out.println(tmp);
 		collector = new IOStatisticCollector();
 		this.executor = executor;
 		nodeStarter=ns;
@@ -1266,12 +1259,9 @@ public class Node implements TimeSkewDetectorCallback {
 			toadlets.start();
 		} catch (IOException e4) {
 			Logger.error(this, "Could not start web interface: "+e4, e4);
-			System.err.println("Could not start web interface: "+e4);
-			e4.printStackTrace();
 			throw new NodeInitException(NodeInitException.EXIT_COULD_NOT_START_FPROXY, "Could not start FProxy: "+e4);
 		} catch (InvalidConfigValueException e4) {
-			System.err.println("Invalid config value, cannot start web interface: "+e4);
-			e4.printStackTrace();
+			Logger.error(this, "Invalid config value, cannot start web interface: "+e4, e4);
 			throw new NodeInitException(NodeInitException.EXIT_COULD_NOT_START_FPROXY, "Could not start FProxy: "+e4);
 		}
 		
@@ -1304,16 +1294,17 @@ public class Node implements TimeSkewDetectorCallback {
 					// Delay entropy generation helper hack if enough entropy available
 					Thread.sleep(100);
 				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 				}
 				if(isPRNGReady)
 					return;
-				System.out.println("Not enough entropy available.");
-				System.out.println("Trying to gather entropy (randomness) by reading the disk...");
+				Logger.normal(Node.this, "Not enough entropy available.");
+				Logger.normal(Node.this, "Trying to gather entropy (randomness) by reading the disk...");
 				if(File.separatorChar == '/') {
 					if(new File("/dev/hwrng").exists())
-						System.out.println("/dev/hwrng exists - have you installed rng-tools?");
+						Logger.normal(Node.this, "/dev/hwrng exists - have you installed rng-tools?");
 					else
-						System.out.println("You should consider installing a better random number generator e.g. haveged.");
+						Logger.normal(Node.this, "You should consider installing a better random number generator e.g. haveged.");
 				}
 				extendTimeouts();
 				for(File root : File.listRoots()) {
@@ -1451,14 +1442,14 @@ public class Node implements TimeSkewDetectorCallback {
                 persistentSecret = keys.getPersistentMasterSecret();
                 databaseKey = keys.createDatabaseKey();
                 if(securityLevels.getPhysicalThreatLevel() == PHYSICAL_THREAT_LEVEL.HIGH) {
-                    System.err.println("Physical threat level is set to HIGH but no password, resetting to NORMAL - probably timing glitch");
+                    Logger.error(this, "Physical threat level is set to HIGH but no password, resetting to NORMAL - probably timing glitch");
                     securityLevels.resetPhysicalThreatLevel(PHYSICAL_THREAT_LEVEL.NORMAL);
                 }
                 break;
             } catch (MasterKeysWrongPasswordException e) {
                 break;
             } catch (MasterKeysFileSizeException e) {
-                System.err.println("Impossible: master keys file "+masterKeysFile+" too " + e.sizeToString() + "! Deleting to enable startup, but you will lose your client cache.");
+                Logger.error(this, "Impossible: master keys file "+masterKeysFile+" too " + e.sizeToString() + "! Deleting to enable startup, but you will lose your client cache.");
                 masterKeysFile.delete();
             } catch (IOException e) {
                 break;
@@ -1492,7 +1483,7 @@ public class Node implements TimeSkewDetectorCallback {
 			String s = HexUtil.bytesToHex(Fields.longToBytes(bootID));
 			byte[] buf = s.getBytes(StandardCharsets.ISO_8859_1);
 			if(buf.length != BOOT_FILE_LENGTH)
-				System.err.println("Not 16 bytes for boot ID "+bootID+" - WTF??");
+				Logger.error(this, "Not 16 bytes for boot ID "+bootID+" - WTF??");
 			raf.write(buf);
 		} catch (IOException e) {
 			oldBootID = -1;
@@ -1933,7 +1924,6 @@ public class Node implements TimeSkewDetectorCallback {
 		"Note that this version of Freenet is still a very early alpha, and may well have numerous bugs and design flaws.\n"+
 		"In particular: YOU ARE WIDE OPEN TO YOUR IMMEDIATE PEERS! They can eavesdrop on your requests with relatively little difficulty at present (correlation attacks etc).";
 		Logger.normal(this, s);
-		System.err.println(s);
 
 		File nodeFile = nodeDir.file("node-"+getDarknetPortNumber());
 		File nodeFileBackup = nodeDir.file("node-"+getDarknetPortNumber()+".bak");
@@ -1943,18 +1933,16 @@ public class Node implements TimeSkewDetectorCallback {
 			readNodeFile(nodeFile.getPath());
 		} catch (IOException e) {
 			try {
-				System.err.println("Trying to read node file backup ...");
+				Logger.normal(this, "Trying to read node file backup ...");
 				readNodeFile(nodeFileBackup.getPath());
 			} catch (IOException e1) {
 				if(nodeFile.exists() || nodeFileBackup.exists()) {
-					System.err.println("No node file or cannot read, (re)initialising crypto etc");
-					System.err.println(e1.toString());
-					e1.printStackTrace();
-					System.err.println("After:");
-					System.err.println(e.toString());
-					e.printStackTrace();
+					Logger.error(this, "No node file or cannot read, (re)initialising crypto etc");
+					Logger.error(this, e1.toString(), e1);
+					Logger.error(this, "After:");
+					Logger.error(this, e.toString(), e);
 				} else {
-					System.err.println("Creating new cryptographic keys...");
+					Logger.normal(this, "Creating new cryptographic keys...");
 				}
 				initNodeFileSettings();
 			}
@@ -1988,11 +1976,11 @@ public class Node implements TimeSkewDetectorCallback {
 		
 		// Node updater support
 
-		System.out.println("Initializing Node Updater");
+		Logger.normal(this, "Initializing Node Updater");
 		try {
 			nodeUpdater = NodeUpdateManager.maybeCreate(this, config);
 		} catch (InvalidConfigValueException e) {
-			e.printStackTrace();
+			Logger.error(this, "Could not create Updater: "+e, e);
 			throw new NodeInitException(NodeInitException.EXIT_COULD_NOT_START_UPDATER, "Could not create Updater: "+e);
 		}
 
@@ -2240,8 +2228,6 @@ public class Node implements TimeSkewDetectorCallback {
 						} catch (IOException e) {
 							// FIXME we need to be able to tell the user.
 							Logger.error(this, "Caught "+e+" resizing the datastore", e);
-							System.err.println("Caught "+e+" resizing the datastore");
-							e.printStackTrace();
 						}
 						//Perhaps a bit hackish...? Seems like this should be near it's definition in NodeStats.
 						nodeStats.avgStoreCHKLocation.changeMaxReports((int)maxStoreKeys);
@@ -2405,7 +2391,7 @@ public class Node implements TimeSkewDetectorCallback {
 						} catch (IOException e) {
 							masterKeysFile.delete();
 							Logger.error(this, "Unable to securely delete "+masterKeysFile);
-							System.err.println(NodeL10n.getBase().getString("SecurityLevels.cantDeletePasswordFile", "filename", masterKeysFile.getAbsolutePath()));
+							Logger.error(this, NodeL10n.getBase().getString("SecurityLevels.cantDeletePasswordFile", "filename", masterKeysFile.getAbsolutePath()));
 							clientCore.getAlerts().register(new SimpleUserAlert(true, NodeL10n.getBase().getString("SecurityLevels.cantDeletePasswordFileTitle"), NodeL10n.getBase().getString("SecurityLevels.cantDeletePasswordFile"), NodeL10n.getBase().getString("SecurityLevels.cantDeletePasswordFileTitle"), UserAlert.CRITICAL_ERROR));
 						}
 					}
@@ -2421,8 +2407,6 @@ public class Node implements TimeSkewDetectorCallback {
                             keys.changePassword(masterKeysFile, "", secureRandom);
                         } catch (IOException e) {
                             Logger.error(this, "Unable to create encryption keys file: "+masterKeysFile+" : "+e, e);
-                            System.err.println("Unable to create encryption keys file: "+masterKeysFile+" : "+e);
-                            e.printStackTrace();
                         }
 					}
 				}
@@ -2434,7 +2418,7 @@ public class Node implements TimeSkewDetectorCallback {
 				killMasterKeysFile();
 			} catch (IOException e) {
 				String msg = "Unable to securely delete old master.keys file when switching to MAXIMUM seclevel!!";
-				System.err.println(msg);
+				Logger.error(this, msg);
 				throw new NodeInitException(NodeInitException.EXIT_CANT_WRITE_MASTER_KEYS, msg);
 			}
 		}
@@ -2504,9 +2488,9 @@ public class Node implements TimeSkewDetectorCallback {
 		boolean shouldWriteConfig = false;
 
 		if(storeType.equals("bdb-index")) {
-			System.err.println("Old format Berkeley DB datastore detected.");
-			System.err.println("This datastore format is no longer supported.");
-			System.err.println("The old datastore will be securely deleted.");
+			Logger.error(this, "Old format Berkeley DB datastore detected.");
+			Logger.error(this, "This datastore format is no longer supported.");
+			Logger.error(this, "The old datastore will be securely deleted.");
 			storeType = "salt-hash";
 			shouldWriteConfig = true;
 			deleteOldBDBIndexStoreFiles();
@@ -2554,8 +2538,6 @@ public class Node implements TimeSkewDetectorCallback {
 						} catch (IOException e) {
 							// FIXME we need to be able to tell the user.
 							Logger.error(this, "Caught "+e+" resizing the clientcache", e);
-							System.err.println("Caught "+e+" resizing the clientcache");
-							e.printStackTrace();
 						}
 					}
 		}, true);
@@ -2572,7 +2554,7 @@ public class Node implements TimeSkewDetectorCallback {
 
 		if (clientCacheType.equals("salt-hash")) {
 		    if(clientCacheKey == null) {
-		        System.err.println("Cannot open client-cache, it is passworded");
+		        Logger.normal(this, "Cannot open client-cache, it is passworded");
 		        setClientCacheAwaitingPassword();
 		    } else {
 		        initSaltHashClientCacheFS(suffix, false, clientCacheKey);
@@ -2592,14 +2574,11 @@ public class Node implements TimeSkewDetectorCallback {
 			try {
 				lateSetupDatabase(databaseKey);
 			} catch (MasterKeysWrongPasswordException e2) {
-				System.err.println("Impossible: "+e2);
-				e2.printStackTrace();
+				Logger.error(this, "Impossible: "+e2, e2);
 			} catch (MasterKeysFileSizeException e2) {
-				System.err.println("Impossible: "+e2);
-				e2.printStackTrace();
+				Logger.error(this, "Impossible: "+e2, e2);
 			} catch (IOException e2) {
-				System.err.println("Unable to load database: "+e2);
-				e2.printStackTrace();
+				Logger.error(this, "Unable to load database: "+e2, e2);
 			}
 		}
 
@@ -2685,8 +2664,6 @@ public class Node implements TimeSkewDetectorCallback {
 						} catch (IOException e) {
 							// FIXME we need to be able to tell the user.
 							Logger.error(this, "Caught "+e+" resizing the slashdotcache", e);
-							System.err.println("Caught "+e+" resizing the slashdotcache");
-							e.printStackTrace();
 						}
 					}
 		}, true);
@@ -2843,7 +2820,6 @@ public class Node implements TimeSkewDetectorCallback {
 
 		// Initialize the plugin manager
 		Logger.normal(this, "Initializing Plugin Manager");
-		System.out.println("Initializing Plugin Manager");
 		pluginManager = new PluginManager(this, lastVersion);
 
 		shutdownHook.addEarlyJob(new NativeThread("Shutdown plugins", NativeThread.HIGH_PRIORITY, true) {
@@ -2888,7 +2864,6 @@ public class Node implements TimeSkewDetectorCallback {
 		}
 
 		Logger.normal(this, "Node constructor completed");
-		System.out.println("Node constructor completed");
 
 		new BandwidthManager(this).start();
 
@@ -2943,12 +2918,11 @@ public class Node implements TimeSkewDetectorCallback {
 			String name = f.getName();
 			if(f.isFile() && 
 					name.toLowerCase().matches("((chk)|(ssk)|(pubkey))-[0-9]*\\.((store)|(cache))(\\.((keys)|(lru)))?")) {
-				System.out.println("Deleting old datastore file \""+f+"\"");
+				Logger.normal(this, "Deleting old datastore file \""+f+"\"");
 				try {
 					FileUtil.secureDelete(f);
 				} catch (IOException e) {
-					System.err.println("Failed to delete old datastore file \""+f+"\": "+e);
-					e.printStackTrace();
+					Logger.error(this, "Failed to delete old datastore file \""+f+"\": "+e, e);
 				}
 			}
 		}
@@ -2982,7 +2956,7 @@ public class Node implements TimeSkewDetectorCallback {
 
 	public void lateSetupDatabase(DatabaseKey databaseKey) throws MasterKeysWrongPasswordException, MasterKeysFileSizeException, IOException {
 	    if(clientCore.loadedDatabase()) return;
-		System.out.println("Starting late database initialisation");
+		Logger.normal(this, "Starting late database initialisation");
 
 		try {
 		    if(!clientCore.lateInitDatabase(databaseKey))
@@ -2993,7 +2967,7 @@ public class Node implements TimeSkewDetectorCallback {
 	}
 
 	private void failLateInitDatabase() {
-		System.err.println("Failed late initialisation of database, closing...");
+		Logger.error(this, "Failed late initialisation of database, closing...");
 	}
 
 	public void killMasterKeysFile() throws IOException {
@@ -3183,7 +3157,7 @@ public class Node implements TimeSkewDetectorCallback {
 
 			if(delay) {
 
-				System.err.println("Delayed init of datastore");
+				Logger.normal(Node.this, "Delayed init of datastore");
 
 				initRAMFS();
 
@@ -3193,7 +3167,7 @@ public class Node implements TimeSkewDetectorCallback {
 
 					@Override
 					public void run() {
-						System.err.println("Starting delayed init of datastore");
+						Logger.normal(Node.this, "Starting delayed init of datastore");
 						try {
 							chkDataFS.start(ticker, true);
 							chkCacheFS.start(ticker, true);
@@ -3202,9 +3176,7 @@ public class Node implements TimeSkewDetectorCallback {
 							sskDataFS.start(ticker, true);
 							sskCacheFS.start(ticker, true);
 						} catch (IOException e) {
-							Logger.error(this, "Failed to start datastore: "+e, e);
-							System.err.println("Failed to start datastore: "+e);
-							e.printStackTrace();
+							Logger.error(Node.this, "Failed to start datastore: "+e, e);
 							return;
 						}
 
@@ -3218,7 +3190,7 @@ public class Node implements TimeSkewDetectorCallback {
 
 						finishInitSaltHashFS(suffix, clientCore);
 
-						System.err.println("Finishing delayed init of datastore");
+						Logger.normal(Node.this, "Finishing delayed init of datastore");
 						migrate.run();
 					}
 
@@ -3253,8 +3225,7 @@ public class Node implements TimeSkewDetectorCallback {
 			}
 
 		} catch (IOException e) {
-			System.err.println("Could not open store: " + e);
-			e.printStackTrace();
+			Logger.error(this, "Could not open store: " + e, e);
 			throw new NodeInitException(NodeInitException.EXIT_STORE_OTHER, e.getMessage());
 		}
     }
@@ -3276,7 +3247,7 @@ public class Node implements TimeSkewDetectorCallback {
 
 			if(delay) {
 
-				System.err.println("Delayed init of client-cache");
+				Logger.normal(Node.this, "Delayed init of client-cache");
 
 				initRAMClientCacheFS();
 
@@ -3286,15 +3257,13 @@ public class Node implements TimeSkewDetectorCallback {
 
 					@Override
 					public void run() {
-						System.err.println("Starting delayed init of client-cache");
+						Logger.normal(Node.this, "Starting delayed init of client-cache");
 						try {
 							chkDataFS.start(ticker, true);
 							pubkeyDataFS.start(ticker, true);
 							sskDataFS.start(ticker, true);
 						} catch (IOException e) {
-							Logger.error(this, "Failed to start client-cache: "+e, e);
-							System.err.println("Failed to start client-cache: "+e);
-							e.printStackTrace();
+							Logger.error(Node.this, "Failed to start client-cache: "+e, e);
 							return;
 						}
 						Node.this.chkClientcache = chkClientcache;
@@ -3302,7 +3271,7 @@ public class Node implements TimeSkewDetectorCallback {
 						getPubKey.setLocalDataStore(pubKeyClientcache);
 						Node.this.sskClientcache = sskClientcache;
 
-						System.err.println("Finishing delayed init of client-cache");
+						Logger.normal(Node.this, "Finishing delayed init of client-cache");
 						migrate.run();
 					}
 				}, "Migrate store", 0, true, false);
@@ -3314,8 +3283,7 @@ public class Node implements TimeSkewDetectorCallback {
 			}
 
 		} catch (IOException e) {
-			System.err.println("Could not open store: " + e);
-			e.printStackTrace();
+			Logger.error(this, "Could not open store: " + e, e);
 			throw new NodeInitException(NodeInitException.EXIT_STORE_OTHER, e.getMessage());
 		}
     }
@@ -3332,8 +3300,7 @@ public class Node implements TimeSkewDetectorCallback {
 	}
 
 	private <T extends StorableBlock> FreenetStore<T> makeStore(String type, String store, long maxKeys, StoreCallback<T> cb, boolean lateStart, byte[] clientCacheMasterKey) throws IOException {
-		Logger.normal(this, "Initializing "+type+" Data"+store);
-		System.out.println("Initializing "+type+" Data"+store+" (" + maxStoreKeys + " keys)");
+		Logger.normal(this, "Initializing "+type+" Data"+store+" (" + maxStoreKeys + " keys)");
 
 		SaltedHashFreenetStore<T> fs = SaltedHashFreenetStore.<T>construct(getStoreDir(), type+"-"+store, cb,
 		        random, maxKeys, storeUseSlotFilters, shutdownHook, storePreallocate, storeSaltHashResizeOnStart && !lateStart, lateStart ? ticker : null, clientCacheMasterKey);
@@ -3367,15 +3334,11 @@ public class Node implements TimeSkewDetectorCallback {
 
 		if(isUsingWrapper()) {
 			Logger.normal(this, "Using wrapper correctly: "+nodeStarter);
-			System.out.println("Using wrapper correctly: "+nodeStarter);
 		} else {
 			Logger.error(this, "NOT using wrapper (at least not correctly).  Your freenet-ext.jar <https://ftp.lysator.liu.se/pub/freenet/fred-releases/build01495/freenet-ext.jar> and/or wrapper.conf <https://github.com/hyphanet/java_installer/raw/refs/heads/next/res/wrapper.conf> need to be updated.");
-			System.out.println("NOT using wrapper (at least not correctly).  Your freenet-ext.jar <https://ftp.lysator.liu.se/pub/freenet/fred-releases/build01495/freenet-ext.jar> and/or wrapper.conf <https://github.com/hyphanet/java_installer/raw/refs/heads/next/res/wrapper.conf> need to be updated.");
 		}
 		Logger.normal(this, "Freenet 0.7.5 Build #"+Version.buildNumber()+" r"+Version.cvsRevision());
-		System.out.println("Freenet 0.7.5 Build #"+Version.buildNumber()+" r"+Version.cvsRevision());
 		Logger.normal(this, "FNP port is on "+darknetCrypto.getBindTo()+ ':' +getDarknetPortNumber());
-		System.out.println("FNP port is on "+darknetCrypto.getBindTo()+ ':' +getDarknetPortNumber());
 		// Start services
 
 //		SubConfig pluginManagerConfig = new SubConfig("pluginmanager3", config);
@@ -3891,8 +3854,6 @@ public class Node implements TimeSkewDetectorCallback {
 		} catch (IOException e) {
 			Logger.error(this, "Cannot store data: "+e, e);
 		} catch (Throwable t) {
-			System.err.println(t);
-			t.printStackTrace();
 			Logger.error(this, "Caught "+t+" storing data", t);
 		}
 		if(clientCore != null && clientCore.getRequestStarters() != null) {
@@ -3942,8 +3903,6 @@ public class Node implements TimeSkewDetectorCallback {
 		} catch (KeyCollisionException e) {
 			throw e;
 		} catch (Throwable t) {
-			System.err.println(t);
-			t.printStackTrace();
 			Logger.error(this, "Caught "+t+" storing data", t);
 		}
 		if(clientCore != null && clientCore.getRequestStarters() != null) {
@@ -4097,8 +4056,7 @@ public class Node implements TimeSkewDetectorCallback {
 	public void exit(int reason) {
 		try {
 			this.park();
-			System.out.println("Goodbye.");
-			System.out.println(reason);
+			Logger.normal(this, "Goodbye. Exiting with code "+reason);
 		} finally {
 			System.exit(reason);
 		}
@@ -4107,7 +4065,7 @@ public class Node implements TimeSkewDetectorCallback {
 	public void exit(String reason){
 		try {
 			this.park();
-			System.out.println("Goodbye. from "+this+" ("+reason+ ')');
+			Logger.normal(this, "Goodbye. from "+this+" ("+reason+ ')');
 		} finally {
 			System.exit(0);
 		}
@@ -4782,11 +4740,11 @@ public class Node implements TimeSkewDetectorCallback {
 	private void activatePasswordedClientCache(MasterKeys keys) {
 		synchronized(this) {
 			if(clientCacheType.equals("ram")) {
-				System.err.println("RAM client cache cannot be passworded!");
+				Logger.error(this, "RAM client cache cannot be passworded!");
 				return;
 			}
 			if(!clientCacheType.equals("salt-hash")) {
-				System.err.println("Unknown client cache type, cannot activate passworded store: "+clientCacheType);
+				Logger.error(this, "Unknown client cache type, cannot activate passworded store: "+clientCacheType);
 				return;
 			}
 		}
@@ -4795,9 +4753,7 @@ public class Node implements TimeSkewDetectorCallback {
 		try {
 			initSaltHashClientCacheFS(suffix, true, keys.clientCacheMasterKey);
 		} catch (NodeInitException e) {
-			Logger.error(this, "Unable to activate passworded client cache", e);
-			System.err.println("Unable to activate passworded client cache: "+e);
-			e.printStackTrace();
+			Logger.error(this, "Unable to activate passworded client cache: "+e, e);
 			return;
 		}
 
@@ -4840,9 +4796,8 @@ public class Node implements TimeSkewDetectorCallback {
 		try {
 			MasterKeys.killMasterKeys(getMasterPasswordFile());
 		} catch (IOException e) {
-			System.err.println("Unable to wipe master passwords key file!");
-			System.err.println("Please delete " + getMasterPasswordFile()
-					   + " to ensure that nobody can recover your old downloads.");
+			Logger.error(this, "Unable to wipe master passwords key file! Please delete " + getMasterPasswordFile()
+					   + " to ensure that nobody can recover your old downloads.", e);
 		}
 		// persistent-temp will be cleaned on restart.
 	}

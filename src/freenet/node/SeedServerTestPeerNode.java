@@ -5,6 +5,7 @@ package freenet.node;
 
 import freenet.io.comm.PeerParseException;
 import freenet.io.comm.ReferenceSignatureVerificationException;
+import freenet.support.Logger;
 import freenet.support.SimpleFieldSet;
 
 /**
@@ -51,11 +52,11 @@ public class SeedServerTestPeerNode extends SeedServerPeerNode {
 	public void onRemove() {
 		long lastReceivedDataPacketTime = lastReceivedDataPacketTime();
 		if(lastReceivedDataPacketTime <= 0 && timeLastConnectionCompleted() > 0)
-			System.err.println(this.getIdentityString()+" : REMOVED: TIMEOUT: NO PACKETS RECEIVED AFTER SUCCESSFUL CONNECTION SETUP");
+			Logger.normal(this, this.getIdentityString()+" : REMOVED: TIMEOUT: NO PACKETS RECEIVED AFTER SUCCESSFUL CONNECTION SETUP");
 		else if(timeLastConnectionCompleted() <= 0)
-			System.err.println(this.getIdentityString()+" : REMOVED: NEVER CONNECTED");
+			Logger.normal(this, this.getIdentityString()+" : REMOVED: NEVER CONNECTED");
 		else
-			System.err.println(this.getIdentityString()+" : REMOVED: UNKNOWN CAUSE");
+			Logger.normal(this, this.getIdentityString()+" : REMOVED: UNKNOWN CAUSE");
 		super.onRemove();
 	}
 	

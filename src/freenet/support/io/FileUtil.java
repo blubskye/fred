@@ -584,7 +584,7 @@ final public class FileUtil {
 	
 	public static boolean secureDeleteAll(File wd) throws IOException {
 		if(!wd.isDirectory()) {
-			System.err.println("DELETING FILE "+wd);
+			Logger.normal(FileUtil.class, "Securely deleting file: "+wd);
 			try {
 				secureDelete(wd);
 			} catch (IOException e) {
@@ -609,7 +609,7 @@ final public class FileUtil {
 	 * important data below it! */
 	public static boolean removeAll(File wd) {
 		if(!wd.isDirectory()) {
-			System.err.println("DELETING FILE "+wd);
+			Logger.normal(FileUtil.class, "Deleting file: "+wd);
 			if(!wd.delete() && wd.exists()) {
 				Logger.error(FileUtil.class, "Could not delete file: "+wd);
 				return false;
@@ -637,7 +637,7 @@ final public class FileUtil {
 		if(!file.exists()) return;
 		long size = file.length();
 		if(size > 0) {
-			System.out.println("Securely deleting "+file+" which is of length "+size+" bytes...");
+			Logger.normal(FileUtil.class, "Securely deleting "+file+" which is of length "+size+" bytes...");
 			try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
 				// Random data first.
 				raf.seek(0);
@@ -717,7 +717,7 @@ final public class FileUtil {
 			Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
 			return true;
 		} catch (IOException | InvalidPathException e) {
-			System.err.println("Unable to copy from " + copyFrom + " to " + copyTo);
+			Logger.error(FileUtil.class, "Unable to copy from " + copyFrom + " to " + copyTo, e);
 			return false;
 		}
 	}

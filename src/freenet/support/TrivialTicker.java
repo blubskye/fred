@@ -144,7 +144,8 @@ public class TrivialTicker implements Ticker {
 			while(shutdownThread.isAlive()) { // Ignore InterruptedExceptions
 				try {
 					shutdownThread.join();
-				} catch (InterruptedException e) { 
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 					Logger.error(this, "Got an unexpected InterruptedException", e);
 				}
 			}

@@ -128,7 +128,8 @@ public class LongTermManySingleBlocksTest extends LongTermTest {
 				try {
 					wait();
 				} catch (InterruptedException e) {
-					// Ignore
+					Thread.currentThread().interrupt();
+					break;
 				}
 			}
 		}

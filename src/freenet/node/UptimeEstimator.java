@@ -73,7 +73,7 @@ public class UptimeEstimator implements Runnable {
 		readData(prevFile, base);
 		readData(logFile, base);
 		schedule(System.currentTimeMillis());
-		System.out.println("Created uptime estimator, time offset is "+timeOffset+" uptime at startup is "+new DecimalFormat("0.00").format(getUptime()));
+		Logger.normal(this, "Created uptime estimator, time offset is "+timeOffset+" uptime at startup is "+new DecimalFormat("0.00").format(getUptime()));
 	}
 
 	private void readData(File file, int base) {

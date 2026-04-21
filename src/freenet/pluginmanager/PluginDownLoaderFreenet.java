@@ -50,7 +50,7 @@ public class PluginDownLoaderFreenet extends PluginDownLoader<FreenetURI> {
 	@Override
 	InputStream getInputStream(final PluginProgress progress) throws IOException, PluginNotFoundException {
 		FreenetURI uri = getSource();
-		System.out.println("Downloading plugin from Freenet: "+uri);
+		Logger.normal(this, "Downloading plugin from Freenet: "+uri);
 		while (true) {
 			try {
 				progress.setDownloading();

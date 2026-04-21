@@ -437,8 +437,6 @@ public final class SimpleToadletServer implements ToadletContainer, Runnable, Li
 			FProxyToadlet.maybeCreateFProxyEtc(core, node, node.getConfig(), this);
 		} catch (IOException e) {
 			Logger.error(this, "Could not start fproxy: "+e, e);
-			System.err.println("Could not start fproxy:");
-			e.printStackTrace();
 		}
 	}
 	
@@ -656,7 +654,7 @@ public final class SimpleToadletServer implements ToadletContainer, Runnable, Li
 		FProxyToadlet.MAX_LENGTH_NO_PROGRESS = fproxyConfig.getLong("passthroughMaxSize");
 		fproxyConfig.register("passthroughMaxSizeProgress", FProxyToadlet.MAX_LENGTH_WITH_PROGRESS, configItemOrder++, true, false, "SimpleToadletServer.passthroughMaxSizeProgress", "SimpleToadletServer.passthroughMaxSizeProgressLong", new FProxyPassthruMaxSizeProgress(), true);
 		FProxyToadlet.MAX_LENGTH_WITH_PROGRESS = fproxyConfig.getLong("passthroughMaxSizeProgress");
-		System.out.println("Set fproxy max length to "+FProxyToadlet.MAX_LENGTH_NO_PROGRESS+" and max length with progress to "+FProxyToadlet.MAX_LENGTH_WITH_PROGRESS+" = "+fproxyConfig.getLong("passthroughMaxSizeProgress"));
+		Logger.normal(this, "Set fproxy max length to "+FProxyToadlet.MAX_LENGTH_NO_PROGRESS+" and max length with progress to "+FProxyToadlet.MAX_LENGTH_WITH_PROGRESS+" = "+fproxyConfig.getLong("passthroughMaxSizeProgress"));
 
 		fproxyConfig.register("enableCachingForChkAndSskKeys", false, configItemOrder++, true, true, "SimpleToadletServer.enableCachingForChkAndSskKeys", "SimpleToadletServer.enableCachingForChkAndSskKeysLong", new BooleanCallback() {
 			@Override
@@ -831,7 +829,6 @@ public final class SimpleToadletServer implements ToadletContainer, Runnable, Li
 
 		if(!enabled) {
 			Logger.normal(SimpleToadletServer.this, "Not starting FProxy as it's disabled");
-			System.out.println("Not starting FProxy as it's disabled");
 		} else {
 			maybeGetNetworkInterface();
 			myThread = new Thread(this, "SimpleToadletServer");
@@ -885,7 +882,6 @@ public final class SimpleToadletServer implements ToadletContainer, Runnable, Li
 			maybeGetNetworkInterface();
 			myThread.start();
 			Logger.normal(this, "Starting FProxy on "+bindTo+ ':' +port);
-			System.out.println("Starting FProxy on "+bindTo+ ':' +port);
 		} catch (IOException e) {
 			Logger.error(this, "Could not bind network port for FProxy?", e);
 		}
@@ -1029,7 +1025,7 @@ public final class SimpleToadletServer implements ToadletContainer, Runnable, Li
 					try {
 						wait();
 					} catch (InterruptedException e) {
-						// Ignore
+						Thread.currentThread().interrupt();
 					}
 				}
 				if((!finishedStartup) && this.finishedStartup)
@@ -1074,8 +1070,6 @@ public final class SimpleToadletServer implements ToadletContainer, Runnable, Li
 			try {
 				ToadletContextImpl.handle(sock, SimpleToadletServer.this, pageMaker, getUserAlertManager(), bookmarkManager);
 			} catch (Throwable t) {
-				System.err.println("Caught in SimpleToadletServer: "+t);
-				t.printStackTrace();
 				Logger.error(this, "Caught in SimpleToadletServer: "+t, t);
 			} finally {
 	            synchronized(SimpleToadletServer.this) {

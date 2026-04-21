@@ -93,8 +93,6 @@ public class RevocationChecker implements ClientGetCallback, RequestClient {
 				manager.getUpdateOverMandatory().processRevocationBlob(bucket, "disk", true);
 			} catch (IOException e) {
 				Logger.error(this, "Failed to read old revocation blob: "+e, e);
-				System.err.println("We may have downloaded an old revocation blob before restarting but it cannot be read: "+e);
-				e.printStackTrace();
 			}
 		}
 	}
@@ -206,8 +204,6 @@ public class RevocationChecker implements ClientGetCallback, RequestClient {
 			try {
 				msg = "Failed to extract result when key blown: "+t;
 				Logger.error(this, msg, t);
-				System.err.println(msg);
-				t.printStackTrace();
 			} catch (Throwable t1) {
 				msg = "Internal error after retreiving revocation key";
 			}
@@ -236,8 +232,7 @@ public class RevocationChecker implements ClientGetCallback, RequestClient {
 					blobBucket = buf;
 				}
 			} catch (IOException e) {
-				System.err.println("Unable to copy data from revocation bucket!");
-				System.err.println("This should not happen and indicates there may be a problem with the auto-update checker.");
+				Logger.error(this, "Unable to copy data from revocation bucket! This should not happen and indicates there may be a problem with the auto-update checker.", e);
 				// Don't blow(), as that's already happened.
 				return;
 			}
@@ -249,15 +244,13 @@ public class RevocationChecker implements ClientGetCallback, RequestClient {
 					if(FileUtil.getCanonicalFile(f).equals(FileUtil.getCanonicalFile(blobFile))) return;
 				}
 			}
-			System.out.println("Unexpected blob file in revocation checker: "+tmpBlob);
+			Logger.normal(this, "Unexpected blob file in revocation checker: "+tmpBlob);
 		}
 		FileBucket fb = new FileBucket(blobFile, false, false, false, false);
 		try {
 			BucketTools.copy(tmpBlob, fb);
 		} catch (IOException e) {
-			System.err.println("Got revocation but cannot write it to disk: "+e);
-			System.err.println("This means the auto-update system is blown but we can't tell other nodes about it!");
-			e.printStackTrace();
+			Logger.error(this, "Got revocation but cannot write it to disk: "+e+". This means the auto-update system is blown but we can't tell other nodes about it!", e);
 		}
 	}
 
@@ -282,8 +275,7 @@ public class RevocationChecker implements ClientGetCallback, RequestClient {
 				// They should never be seen but they should be idiot-proof if they ever are.
 				// FIXME split into two parts? Fetch manually should be a second part?
 				String message = l10n("revocationFetchFailedMaybeInternalError", new String[] { "detail", "key" }, new String[] { e.toUserFriendlyString(), manager.getRevocationURI().toASCIIString() });
-				System.err.println(message);
-				e.printStackTrace();
+				Logger.error(this, message, e);
 				manager.blow(message, true);
 				return;
 			}

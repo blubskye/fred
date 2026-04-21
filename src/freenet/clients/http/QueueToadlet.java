@@ -662,7 +662,7 @@ public class QueueToadlet extends Toadlet implements RequestCompletionCallback, 
 					try {
 						done.await();
 					} catch (InterruptedException e) {
-						// Ignore
+						Thread.currentThread().interrupt();
 					}
 				}
 				return;
@@ -769,7 +769,7 @@ public class QueueToadlet extends Toadlet implements RequestCompletionCallback, 
 					try {
 						done.await();
 					} catch (InterruptedException e) {
-						// Ignore
+						Thread.currentThread().interrupt();
 					}
 				}
 				return;
@@ -861,7 +861,7 @@ public class QueueToadlet extends Toadlet implements RequestCompletionCallback, 
 					try {
 						done.await();
 					} catch (InterruptedException e) {
-						// Ignore
+						Thread.currentThread().interrupt();
 					}
 				}
 				return;
@@ -1182,7 +1182,7 @@ public class QueueToadlet extends Toadlet implements RequestCompletionCallback, 
 				try {
 					ow.wait();
 				} catch (InterruptedException e) {
-					// Ignore
+					Thread.currentThread().interrupt();
 				}
 			}
 		}

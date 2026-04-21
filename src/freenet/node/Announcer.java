@@ -89,14 +89,14 @@ public class Announcer {
 			// We know opennet is enabled.
 			// We have no peers AT ALL.
 			// So lets connect to a few seednodes, and attempt an announcement.
-			System.err.println("Attempting announcement to seednodes...");
+			Logger.normal(this, "Attempting announcement to seednodes...");
 			synchronized(this) {
 				registerEvent(STATUS_LOADING);
 				started = true;
 			}
 			connectSomeSeednodes();
 		} else {
-			System.out.println("Not attempting immediate announcement: dark peers="+darkPeers+" open peers="+openPeers+" old open peers="+oldOpenPeers+" - will wait 1 minute...");
+			Logger.normal(this, "Not attempting immediate announcement: dark peers="+darkPeers+" open peers="+openPeers+" old open peers="+oldOpenPeers+" - will wait 1 minute...");
 			// Wait a minute, then check whether we need to seed.
 			node.getTicker().queueTimedJob(new Runnable() {
 				@Override
@@ -124,7 +124,7 @@ public class Announcer {
 		if(logMINOR)
 			Logger.minor(this, "Connecting some seednodes...");
 		List<SimpleFieldSet> seeds = Announcer.readSeednodes(NodeFile.Seednodes.getFile(node));
-		System.out.println("Trying to connect to "+seeds.size()+" seednodes...");
+		Logger.normal(this, "Trying to connect to "+seeds.size()+" seednodes...");
 		long now = System.currentTimeMillis();
 		synchronized(this) {
 			if(now - timeAddedSeeds < MIN_ADDED_SEEDS_INTERVAL) return;
@@ -376,7 +376,6 @@ public class Announcer {
 					killAnnouncement = true;
 				}
 				Logger.error(this, "Shutting down announcement as we are older than the current mandatory build and auto-update is disabled or waiting for user input.");
-				System.err.println("Shutting down announcement as we are older than the current mandatory build and auto-update is disabled or waiting for user input.");
 				if(node.getClientCore() != null)
 					node.getClientCore().getAlerts().register(announcementDisabledAlert);
 			}
@@ -596,9 +595,7 @@ public class Announcer {
 				Logger.minor(this, "Not announcing to "+seed+" because opennet is disabled");
 			return false;
 		}
-		System.out.println("Announcement to "+seed.userToString()+" starting...");
-		if(logMINOR)
-			Logger.minor(this, "Announcement to "+seed.userToString()+" starting...");
+		Logger.normal(this, "Announcement to "+seed.userToString()+" starting...");
 		AnnounceSender sender = new AnnounceSender(node.getLocation(), om, node, new AnnouncementCallback() {
 			private int totalAdded;
 			private int totalNotWanted;
@@ -614,7 +611,6 @@ public class Announcer {
 					totalAdded++;
 				}
 				Logger.normal(this, "Announcement to "+seed.userToString()+" added node "+pn+" for a total of "+announcementAddedNodes+" ("+totalAdded+" from this announcement)");
-				System.out.println("Announcement to "+seed.userToString()+" added node "+pn.userToString()+'.');
 				return;
 			}
 			@Override
@@ -651,9 +647,9 @@ public class Announcer {
 				node.getPeers().disconnectAndRemove(seed, true, false, false);
 				int shallow=node.maxHTL()-(totalAdded+totalNotWanted);
 				if(acceptedSomewhere)
-					System.out.println("Announcement to "+seed.userToString()+" completed ("+totalAdded+" added, "+totalNotWanted+" not wanted, "+shallow+" shallow)");
+					Logger.normal(this, "Announcement to "+seed.userToString()+" completed ("+totalAdded+" added, "+totalNotWanted+" not wanted, "+shallow+" shallow)");
 				else
-					System.out.println("Announcement to "+seed.userToString()+" not accepted (version "+seed.getVersionNumber()+") .");
+					Logger.normal(this, "Announcement to "+seed.userToString()+" not accepted (version "+seed.getVersionNumber()+")");
 				if(announceNow)
 					maybeSendAnnouncement();
 			}
@@ -827,7 +823,7 @@ public class Announcer {
 	}
 
 	public void reannounce() {
-		System.out.println("Re-announcing...");
+		Logger.normal(this, "Re-announcing...");
 		maybeSendAnnouncementOffThread();
 	}
 

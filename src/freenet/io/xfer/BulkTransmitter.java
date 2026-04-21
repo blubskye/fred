@@ -298,15 +298,15 @@ outer:	while(true) {
 							if(inFlightPackets == 0) break;
 							continue outer; // Might be a packet...
 						} catch (InterruptedException e) {
-							// Ignore
+							Thread.currentThread().interrupt();
 						}
 					}
-					
+
 					// Wait for a packet to come in, BulkReceivedAll or BulkReceiveAborted
 					try {
 						wait(SECONDS.toMillis(60));
 					} catch (InterruptedException e) {
-						// No problem
+						Thread.currentThread().interrupt();
 						continue;
 					}
 				}
@@ -338,7 +338,7 @@ outer:	while(true) {
 						try {
 							wait(1000);
 						} catch (InterruptedException e) {
-							// Ignore
+							Thread.currentThread().interrupt();
 						}
 				}
 				synchronized(this) {

@@ -145,10 +145,9 @@ public class NodeStarter implements WrapperListener {
 
 		String builtWithMessage = "freenet.jar built with freenet-ext.jar Build #" + ExtVersion.buildNumber + " r" + ExtVersion.cvsRevision+" running with ext build "+extBuildNumber+" r" + extRevisionNumber;
 		Logger.normal(this, builtWithMessage);
-		System.out.println(builtWithMessage);
 
 
-		System.out.println("Starting executor...");
+		Logger.normal(this, "Starting executor...");
 		executor.start();
 
 		// Prevent timeouts for a while. The DiffieHellman init for example could take some time on a very slow system.
@@ -168,7 +167,7 @@ public class NodeStarter implements WrapperListener {
 						try {
 							Thread.sleep(MINUTES.toMillis(60));
 						} catch(InterruptedException e) {
-							// Ignore
+							Thread.currentThread().interrupt();
 						} catch(Throwable t) {
 							try {
 								Logger.error(this, "Caught " + t, t);
@@ -192,10 +191,9 @@ public class NodeStarter implements WrapperListener {
 		try {
 			node = new Node(cfg, null, null, logConfigHandler, this, executor);
 			node.start(false);
-			System.out.println("Node initialization completed.");
+			Logger.normal(this, "Node initialization completed.");
 		} catch(NodeInitException e) {
-			System.err.println("Failed to load node: " + e.exitCode + " : " + e.getMessage());
-			e.printStackTrace();
+			Logger.error(this, "Failed to load node: " + e.exitCode + " : " + e.getMessage(), e);
 			System.exit(e.exitCode);
 		}
 
@@ -220,7 +218,7 @@ public class NodeStarter implements WrapperListener {
 	 */
 	@Override
 	public int stop(int exitCode) {
-		System.err.println("Shutting down with exit code " + exitCode);
+		Logger.normal(this, "Shutting down with exit code " + exitCode);
 		node.park();
 		// see #354
 		WrapperManager.signalStopping(120000);
@@ -348,7 +346,7 @@ public class NodeStarter implements WrapperListener {
 							try {
 								Thread.sleep(MINUTES.toMillis(60));
 							} catch(InterruptedException e) {
-								// Ignore
+								Thread.currentThread().interrupt();
 							} catch(Throwable t) {
 								try {
 									Logger.error(this, "Caught " + t, t);

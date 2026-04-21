@@ -487,7 +487,7 @@ public class AnnounceSender implements PrioRunnable, ByteCounter {
               try {
                  wait();
               } catch (InterruptedException e) {
-                 // Ignore.
+                 Thread.currentThread().interrupt();
               }
            }
         }

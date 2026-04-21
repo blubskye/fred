@@ -113,17 +113,13 @@ public class ECDH {
 					selftest_genSecret(key, ka);
 				}
 			} catch(NoSuchAlgorithmException e) {
-				System.out.println(e);
-				e.printStackTrace(System.out);
+				Logger.error(this, "ECDH initialization failed: "+e, e);
 			} catch(InvalidKeySpecException e) {
-				System.out.println(e);
-				e.printStackTrace(System.out);
+				Logger.error(this, "ECDH initialization failed: "+e, e);
 			} catch(InvalidKeyException e) {
-				System.out.println(e);
-				e.printStackTrace(System.out);
+				Logger.error(this, "ECDH initialization failed: "+e, e);
 			} catch(InvalidAlgorithmParameterException e) {
-				System.out.println(e);
-				e.printStackTrace(System.out);
+				Logger.error(this, "ECDH initialization failed: "+e, e);
 			}
 			this.modulusSize = modulusSize;
 			this.derivedSecretSize = derivedSecretSize;

@@ -344,7 +344,7 @@ public class NodeClientCore implements Persistable {
 		File oldTemp = node.runDir().file("temp-" + node.getDarknetPortNumber());
 		if (oldTemp.exists() && oldTemp.isDirectory() && !FileUtil
 				.equals(tempDir.dir, oldTemp)) {
-			System.err.println("Deleting old temporary dir: " + oldTemp);
+			Logger.normal(this, "Deleting old temporary dir: " + oldTemp);
 			try {
 				FileUtil.secureDeleteAll(oldTemp);
 			} catch (IOException e) {
@@ -422,15 +422,12 @@ public class NodeClientCore implements Persistable {
 		// Hopefully it will free up enough space for auto-migration...
 		File oldBlobFile = new File(persistentTempDir.dir(), "persistent-blob.tmp");
 		if (oldBlobFile.exists()) {
-			System.err.println("Deleting " + oldBlobFile);
+			Logger.normal(this, "Deleting " + oldBlobFile);
 			if (persistentTempBucketFactory.isEncrypting()) {
 				try {
 					FileUtil.secureDelete(oldBlobFile);
 				} catch (IOException e) {
-					System.err.println("Unable to delete old blob file "
-							   + oldBlobFile + " : error: " + e);
-					System.err.println("Please delete " + oldBlobFile
-							   + " yourself.");
+					Logger.error(this, "Unable to delete old blob file "+oldBlobFile+" : error: "+e+". Please delete it yourself.", e);
 				}
 			} else {
 				oldBlobFile.delete();
@@ -553,7 +550,7 @@ public class NodeClientCore implements Persistable {
 
 					@Override
 					public void realRun() {
-						System.err.println("Stopping database jobs...");
+						Logger.normal(this, "Stopping database jobs...");
 						clientLayerPersister.shutdown();
 					}
 
@@ -567,10 +564,9 @@ public class NodeClientCore implements Persistable {
 					public void realRun() {
 						if (NodeClientCore.this.node.hasPanicked())
 							return;
-						System.out.println("Waiting for jobs to finish");
+						Logger.normal(this, "Waiting for jobs to finish");
 						clientLayerPersister.waitForIdleAndCheckpoint();
-						System.out.println(
-								"Saved persistent requests to disk");
+						Logger.normal(this, "Saved persistent requests to disk");
 					}
 
 				});
@@ -681,8 +677,7 @@ public class NodeClientCore implements Persistable {
 				new NativeThread("Shutdown FEC", NativeThread.HIGH_PRIORITY, true) {
 
 					public void realRun() {
-						System.out.println(
-								"Stopping FEC decode threads...");
+						Logger.normal(this, "Stopping FEC decode threads...");
 						memoryLimitedJobRunner.shutdown();
 					}
 
@@ -692,8 +687,7 @@ public class NodeClientCore implements Persistable {
 
 					public void realRun() {
 						memoryLimitedJobRunner.waitForShutdown();
-						System.out.println(
-								"FEC decoding threads finished.");
+						Logger.normal(this, "FEC decoding threads finished.");
 					}
 
 				});
@@ -733,8 +727,7 @@ public class NodeClientCore implements Persistable {
 		try {
 			initStorage(databaseKey);
 		} catch (MasterKeysWrongPasswordException e) {
-			System.err.println(
-					"Cannot load persistent requests, awaiting password ...");
+			Logger.normal(this, "Cannot load persistent requests, awaiting password ...");
 			node.setDatabaseAwaitingPassword();
 		}
 
@@ -864,7 +857,6 @@ public class NodeClientCore implements Persistable {
 		setUploadAllowedDirs(nodeConfig.getStringArr("uploadAllowedDirs"));
 
 		Logger.normal(this, "Initializing USK Manager");
-		System.out.println("Initializing USK Manager");
 		uskManager.init(clientContext);
 
 		nodeConfig.register("maxBackgroundUSKFetchers", "64", sortOrder++, true, false,
@@ -1044,7 +1036,7 @@ public class NodeClientCore implements Persistable {
     }
 
 	boolean lateInitDatabase(DatabaseKey databaseKey) throws NodeInitException {
-		System.out.println("Late database initialisation: starting middle phase");
+		Logger.normal(this, "Late database initialisation: starting middle phase");
 		try {
 		    initStorage(databaseKey);
 		} catch (MasterKeysWrongPasswordException e) {
@@ -1053,7 +1045,7 @@ public class NodeClientCore implements Persistable {
 		}
 		// Don't actually start the database thread yet, messy concurrency issues.
 		fcpServer.load();
-		System.out.println("Late database initialisation completed.");
+		Logger.normal(this, "Late database initialisation completed.");
 		return true;
 	}
 
@@ -1160,8 +1152,6 @@ public class NodeClientCore implements Persistable {
 				        finishInitStorage();
 				    } catch (Throwable t) {
 				        Logger.error(this, "Failed to migrate and/or cleanup persistent temp buckets: "+t, t);
-				        System.err.println("Failed to migrate and/or cleanup persistent temp buckets: "+t);
-				        t.printStackTrace();
 				        // Start the rest of the node anyway ...
 				    }
 				}
@@ -1718,7 +1708,7 @@ public class NodeClientCore implements Persistable {
 						try {
 							is.wait(SECONDS.toMillis(5));
 						} catch(InterruptedException e) {
-							// Ignore
+							Thread.currentThread().interrupt();
 						}
 					if(is.getStatus() != CHKInsertSender.NOT_FINISHED)
 						break;
@@ -1737,7 +1727,7 @@ public class NodeClientCore implements Persistable {
 					try {
 						is.wait(SECONDS.toMillis(10));
 					} catch(InterruptedException e) {
-						// Go around again
+						Thread.currentThread().interrupt();
 					}
 				}
 				if(is.anyTransfersFailed() && (!hasReceivedRejectedOverload)) {
@@ -1842,7 +1832,7 @@ public class NodeClientCore implements Persistable {
 						try {
 							is.wait(SECONDS.toMillis(5));
 						} catch(InterruptedException e) {
-							// Ignore
+							Thread.currentThread().interrupt();
 						}
 					if(is.getStatus() != SSKInsertSender.NOT_FINISHED)
 						break;
@@ -1861,7 +1851,7 @@ public class NodeClientCore implements Persistable {
 					try {
 						is.wait(SECONDS.toMillis(10));
 					} catch(InterruptedException e) {
-						// Go around again
+						Thread.currentThread().interrupt();
 					}
 				}
 			}

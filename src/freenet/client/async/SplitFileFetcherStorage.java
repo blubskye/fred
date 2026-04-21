@@ -954,7 +954,6 @@ public class SplitFileFetcherStorage {
 
                     @Override
                     public boolean run(ClientContext context) {
-                        System.out.println("Regenerating filters for "+SplitFileFetcherStorage.this);
                         Logger.error(this, "Regenerating filters for "+SplitFileFetcherStorage.this);
                         KeySalter salt = fetcher.getSalter();
                         for(int i=0;i<segments.length;i++) {
@@ -984,7 +983,6 @@ public class SplitFileFetcherStorage {
                         }
                         fetcher.restartedAfterDataCorruption();
                         Logger.warning(this, "Finished regenerating filters for "+SplitFileFetcherStorage.this);
-                        System.out.println("Finished regenerating filters for "+SplitFileFetcherStorage.this);
                         return false;
                     }
                     

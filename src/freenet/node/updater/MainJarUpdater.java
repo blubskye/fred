@@ -184,16 +184,14 @@ public class MainJarUpdater extends NodeUpdater implements Deployer {
 				fetched = true;
 			}
             if(!MainJarDependenciesChecker.validFile(tempFile, expectedHash, expectedLength, executable)) {
-                Logger.error(this, "Unable to download dependency "+filename+" : not the expected size or hash!");
-                System.err.println("Download of "+filename+" for update failed because temp file appears to be corrupted!");
+                Logger.error(this, "Unable to download dependency "+filename+" : not the expected size or hash! Download appears corrupted.");
                 if(cb != null)
                     cb.onFailure(new FetchException(FetchExceptionMode.BUCKET_ERROR, "Downloaded jar from Freenet but failed consistency check: "+tempFile+" length "+tempFile.length()+" "));
                 tempFile.delete();
                 return;
             }
 			if(!FileUtil.moveTo(tempFile, filename)) {
-				Logger.error(this, "Unable to rename temp file "+tempFile+" to "+filename);
-				System.err.println("Download of "+filename+" for update failed because cannot rename from "+tempFile);
+				Logger.error(this, "Unable to rename temp file "+tempFile+" to "+filename+": download failed because cannot rename");
 				if(cb != null)
 				    cb.onFailure(new FetchException(FetchExceptionMode.BUCKET_ERROR, "Unable to rename temp file "+tempFile+" to "+filename));
                 tempFile.delete();
@@ -256,8 +254,7 @@ public class MainJarUpdater extends NodeUpdater implements Deployer {
 							// acceptance but differs from the hash in dependencies.properties.
 							// Re-verify here before signalling success.
 							if(!MainJarDependenciesChecker.validFile(filename, expectedHash, expectedLength, executable)) {
-								Logger.error(this, "UOM-fetched dependency "+filename+" failed hash/length verification — rejecting!");
-								System.err.println("UOM dependency "+filename+" failed integrity check: will not deploy.");
+								Logger.error(this, "UOM-fetched dependency "+filename+" failed hash/length verification — rejecting! Will not deploy.");
 								if(cb != null)
 									cb.onFailure(new FetchException(FetchExceptionMode.BUCKET_ERROR,
 										"UOM-supplied dependency failed hash verification: "+filename));
@@ -292,9 +289,9 @@ public class MainJarUpdater extends NodeUpdater implements Deployer {
 	public JarFetcher fetch(FreenetURI uri, File downloadTo,
 			long expectedLength, byte[] expectedHash, JarFetcherCallback cb, int build, boolean essential, boolean executable) throws FetchException {
 		if(essential)
-			System.out.println("Fetching "+downloadTo+" needed for new Freenet update "+build);
+			Logger.normal(this, "Fetching "+downloadTo+" needed for new Freenet update "+build);
 		else if(build != 0) // build 0 means it's a preload or a multi-file update.
-			System.out.println("Preloading "+downloadTo+" needed for new Freenet update "+build);
+			Logger.normal(this, "Preloading "+downloadTo+" needed for new Freenet update "+build);
 		if(logMINOR) Logger.minor(this, "Fetching "+uri+" to "+downloadTo+" for next update");
 		DependencyJarFetcher fetcher = new DependencyJarFetcher(downloadTo, uri, expectedLength, expectedHash, cb, essential, executable);
 		synchronized(fetchers) {
@@ -342,14 +339,14 @@ public class MainJarUpdater extends NodeUpdater implements Deployer {
 	public void cleanupDependencies() {
 		InputStream is = getClass().getResourceAsStream("/"+DEPENDENCIES_FILE);
 		if(is == null) {
-			System.err.println("Can't find dependencies file. Other nodes will not be able to use Update Over Mandatory through this one.");
+			Logger.error(this, "Can't find dependencies file. Other nodes will not be able to use Update Over Mandatory through this one.");
 			return;
 		}
 		Properties props = new Properties();
 		try {
 			props.load(is);
 		} catch (IOException e) {
-			System.err.println("Can't read dependencies file. Other nodes will not be able to use Update Over Mandatory through this one.");
+			Logger.error(this, "Can't read dependencies file. Other nodes will not be able to use Update Over Mandatory through this one.", e);
 			return;
 		} finally {
 			Closer.close(is);
@@ -374,7 +371,7 @@ public class MainJarUpdater extends NodeUpdater implements Deployer {
             atomicDeployer.deployMultiFileUpdateOffThread();
         } else {
             final long now = System.currentTimeMillis();
-            System.err.println("Not deploying multi-file update for "+atomicDeployer.name+" because auto-update is not enabled.");
+            Logger.normal(this, "Not deploying multi-file update for "+atomicDeployer.name+" because auto-update is not enabled.");
             node.getClientCore().getAlerts().register(new UserAlert() {
 
                 private String l10n(String key) {

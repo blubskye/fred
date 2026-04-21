@@ -539,6 +539,7 @@ public class MessageCore {
 				    if(filter.droppedConnection() != null)
 				        throw new DisconnectedException();
 				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 				}
 				ret = filter.getMessage();
 			}

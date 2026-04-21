@@ -317,7 +317,7 @@ loadMaxDeployedBuild();
 			@Override
 			public void onSuccess(LegacyJarFetcher fetcher) {
 				if (transitionMainJarFetcher.fetched()) {
-					System.out.println("Got legacy jar, announcing...");
+					Logger.normal(this, "Got legacy jar, announcing...");
 					broadcastUOMAnnouncesOld();
 				}
 			}
@@ -330,11 +330,6 @@ loadMaxDeployedBuild();
 								+ fetcher.saveTo
 								+ " : UPDATE OVER MANDATORY WILL NOT WORK WITH OLDER NODES THAN "
 								+ TRANSITION_VERSION + " : " + e, e);
-				System.err
-						.println("Failed to fetch "
-								+ fetcher.saveTo
-								+ " : UPDATE OVER MANDATORY WILL NOT WORK WITH OLDER NODES THAN "
-								+ TRANSITION_VERSION + " : " + e);
 			}
 
 		};
@@ -460,7 +455,7 @@ loadMaxDeployedBuild();
 
 		@Override
 		public void onFailure(FetchException e, ClientGetter state) {
-			System.err.println("Failed to fetch " + filename + " : " + e);
+			Logger.error(this, "Failed to fetch " + filename + " : " + e, e);
 		}
 
 		@Override
@@ -477,31 +472,27 @@ loadMaxDeployedBuild();
 				for (int i = 0; i < 10; i++) {
 					// FIXME add a callback in case it's being used on Windows.
 					if (FileUtil.moveTo(temp, directory.file(filename))) {
-						System.out.println("Successfully fetched " + filename
+						Logger.normal(this, "Successfully fetched " + filename
 								+ " for version " + Version.buildNumber());
 						break;
 					} else {
-						System.out
-								.println("Failed to rename " + temp + " to "
-										+ filename
-										+ " after fetching it from Freenet.");
+						Logger.error(this, "Failed to rename " + temp + " to "
+								+ filename + " after fetching it from Freenet.");
 						try {
 							Thread.sleep(SECONDS.toMillis(1) + node.getFastWeakRandom().nextInt((int) SECONDS.toMillis((long) Math.min(Math.pow(2, i), MINUTES.toSeconds(15)))));
 						} catch (InterruptedException e) {
-							// Ignore
+							Thread.currentThread().interrupt();
 						}
 					}
 				}
 				temp.delete();
 			} catch (IOException e) {
-				System.err
-						.println("Fetched but failed to write out "
+				Logger.error(this, "Fetched but failed to write out "
 								+ filename
 								+ " - please check that the node has permissions to write in "
 								+ directory.dir()
-								+ " and particularly the file " + filename);
-				System.err.println("The error was: " + e);
-				e.printStackTrace();
+								+ " and particularly the file " + filename
+								+ " - error: " + e, e);
 			} finally {
 				Closer.close(fos);
 				Closer.close(result.asBucket());
@@ -775,8 +766,6 @@ loadMaxDeployedBuild();
 			} catch (Throwable t) {
 				// Don't let it block startup, but be very loud!
 				Logger.error(this, "Caught "+t+" setting up Update Over Mandatory", t);
-				System.err.println("Updater error: "+t);
-				t.printStackTrace();
 			}
 			mainUpdater.start();
 			startPluginUpdaters();
@@ -841,7 +830,7 @@ loadMaxDeployedBuild();
 			pluginUpdaters.put(name, updater);
 		}
 		updater.start();
-		System.out.println("Started plugin update fetcher for " + name);
+		Logger.normal(this, "Started plugin update fetcher for " + name);
 	}
 
 	public void stopPluginUpdater(String plugName) {
@@ -1102,20 +1091,17 @@ loadMaxDeployedBuild();
 				if (disabledThisSession) {
 					String msg = "Not deploying update because disabled for this session (bad java version??)";
 					Logger.error(this, msg);
-					System.err.println(msg);
 					return;
 				}
 				if (hasBeenBlown) {
 					String msg = "Trying to update but key has been blown! Not updating, message was "
 							+ revocationMessage;
 					Logger.error(this, msg);
-					System.err.println(msg);
 					return;
 				}
 				if (peersSayBlown) {
 					String msg = "Trying to update but at least one peer says the key has been blown! Not updating.";
 					Logger.error(this, msg);
-					System.err.println(msg);
 					return;
 
 				}
@@ -1150,11 +1136,7 @@ loadMaxDeployedBuild();
 			}
 			// isDeployingUpdate remains true as we are about to restart.
 		} catch (Throwable t) {
-			Logger.error(this, "DEPLOYING UPDATE FAILED: "+t, t);
-			System.err.println("UPDATE FAILED: CAUGHT "+t);
-			System.err.println("YOUR NODE DID NOT UPDATE. THIS IS PROBABLY A BUG OR SERIOUS PROBLEM SUCH AS OUT OF MEMORY.");
-			System.err.println("Cause of the problem: "+t);
-			t.printStackTrace();
+			Logger.error(this, "DEPLOYING UPDATE FAILED: YOUR NODE DID NOT UPDATE. THIS IS PROBABLY A BUG OR SERIOUS PROBLEM SUCH AS OUT OF MEMORY. Cause: "+t, t);
 			failUpdate(t.getMessage());
 			String error = l10n("updateFailedInternalError", "reason", t.getMessage());
 			node.getClientCore().getAlerts().register(new SimpleUserAlert(false,
@@ -1191,11 +1173,11 @@ loadMaxDeployedBuild();
 	 * where you've deployed an update but the exit hasn't actually happened yet. */
 	static void waitForever() {
 	    while(true) {
-	        System.err.println("Waiting for shutdown after deployed update...");
+	        Logger.normal(NodeUpdateManager.class, "Waiting for shutdown after deployed update...");
 	        try {
                 Thread.sleep(60*1000);
             } catch (InterruptedException e) {
-                // Ignore.
+                Thread.currentThread().interrupt();
             }
 	    }
 	}
@@ -1204,7 +1186,7 @@ loadMaxDeployedBuild();
 	 * Deploy the update. Inner method. Doesn't check anything, just does it.
 	 */
 	private boolean innerDeployUpdate(MainJarDependencies deps) {
-		System.err.println("Deploying update "+deps.build+" with "+deps.dependencies.size()+" dependencies...");
+		Logger.normal(this, "Deploying update "+deps.build+" with "+deps.dependencies.size()+" dependencies...");
 		// Write the jars, config etc.
 		// Then restart
 
@@ -1361,7 +1343,7 @@ persistMaxDeployedBuild(deps.build);
 			} else {
 				writeJarTo(newMainJar);
 			}
-			System.out.println("Written new main jar to "+newMainJar);
+			Logger.normal(NodeUpdateManager.class, "Written new main jar to "+newMainJar);
 		} catch (IOException e) {
 			throw new UpdateFailedException("Cannot update: Cannot write to "
 					+ (tryEasyWay ? " temp file " : "new jar ") + newMainJar);
@@ -1371,7 +1353,7 @@ persistMaxDeployedBuild(deps.build);
 			// Do it the easy way. Just rewrite the main jar.
 			backupMainJar.delete();
 			if(FileUtil.copyFile(mainJar, backupMainJar))
-				System.err.println("Written backup of current main jar to "+backupMainJar+" (if freenet fails to start up try renaming "+backupMainJar+" over "+mainJar);
+				Logger.normal(NodeUpdateManager.class, "Written backup of current main jar to "+backupMainJar+" (if freenet fails to start up try renaming "+backupMainJar+" over "+mainJar+")");
 			if (!newMainJar.renameTo(mainJar)) {
 				Logger.error(NodeUpdateManager.class,
 						"Cannot rename temp file " + newMainJar
@@ -1384,17 +1366,17 @@ persistMaxDeployedBuild(deps.build);
 				}
 				// Try the hard way
 			} else {
-				System.err.println("Completed writing new Freenet jar to "+mainJar+".");
+				Logger.normal(NodeUpdateManager.class, "Completed writing new Freenet jar to "+mainJar+".");
 				return false;
 			}
 		}
-		System.err.println("Rewriting wrapper.conf to point to "+newMainJar+" rather than "+mainJar+" (if Freenet fails to start after the update you could try changing wrapper.conf to use the old jar)");
+		Logger.normal(NodeUpdateManager.class, "Rewriting wrapper.conf to point to "+newMainJar+" rather than "+mainJar+" (if Freenet fails to start after the update you could try changing wrapper.conf to use the old jar)");
 		return true;
 	}
 
 	public void writeJarTo(File fNew) throws IOException {
 		if (!fNew.delete() && fNew.exists()) {
-			System.err.println("Can't delete " + fNew + "!");
+			Logger.error(NodeUpdateManager.class, "Can't delete " + fNew + "!");
 		}
 
 		FileOutputStream fos = null;
@@ -1458,16 +1440,14 @@ persistMaxDeployedBuild(deps.build);
 		try {
 			Thread.sleep(MINUTES.toMillis(5));
 		} catch (InterruptedException e) {
-			// Break
+			Thread.currentThread().interrupt();
 		} // in case it's still restarting
-		System.err
-				.println("Failed to restart. Exiting, please restart the node.");
+		Logger.error(NodeUpdateManager.class, "Failed to restart. Exiting, please restart the node.");
 		System.exit(NodeInitException.EXIT_RESTART_FAILED);
 	}
 
 	private void failUpdate(String reason) {
 		Logger.error(this, "Update failed: " + reason);
-		System.err.println("Update failed: " + reason);
 		this.killUpdateAlerts();
 		node.getClientCore().getAlerts().register(new SimpleUserAlert(true,
 				l10n("updateFailedTitle"), l10n("updateFailed", "reason",

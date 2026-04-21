@@ -260,7 +260,6 @@ public class SubConfig implements Comparable<SubConfig> {
 				} catch (InvalidConfigValueException e) {
 					String msg = "Invalid config value: "+prefix+SimpleFieldSet.MULTI_LEVEL_CHAR+key+" = "+val+" : error: "+e;
 					Logger.error(this, msg, e);
-					System.err.println(msg); // might be about logging?
 				} catch (NodeNeedRestartException e) {
 					// Impossible
 					String msg = "Impossible: " + prefix + SimpleFieldSet.MULTI_LEVEL_CHAR + key + " = " + val

@@ -687,33 +687,19 @@ outer:	for(;choosenPriorityClass <= RequestStarter.MINIMUM_FETCHABLE_PRIORITY_CL
         long total = 0;
         for(int i=0;i<priorities.length;i++) {
             RequestClientRGANode prio = priorities[i];
-            if(prio == null || prio.isEmpty())
-                System.out.println("Priority "+i+" : empty");
-            else {
-                System.out.println("Priority "+i+" : "+prio.size());
-                    System.out.println("Clients: "+prio.size()+" for "+prio);
-                    for(int k=0;k<prio.size();k++) {
-                        RequestClient client = prio.getClient(k);
-                        System.out.println("Client "+k+" : "+client);
-                        ClientRequestRGANode requestGrabber = prio.getGrabber(client);
-                        System.out.println("SRGA for client: "+requestGrabber);
-                        for(int l=0;l<requestGrabber.size();l++) {
-                            ClientRequestSchedulerGroup cr = requestGrabber.getClient(l);
-                            System.out.println("Request "+l+" : "+cr);
-                            RandomGrabArray rga = requestGrabber.getGrabber(cr);
-                            System.out.println("Queued SendableRequests: "+rga.size()+" on "+rga);
-                            long sendable = 0;
-                            long all = 0;
-                            for(int m=0;m<rga.size();m++) {
-                                SendableRequest req = (SendableRequest) rga.get(m);
-                                if(req == null) continue;
-                                sendable += req.countSendableKeys(context);
-                                all += req.countAllKeys(context);
-                            }
-                            System.out.println("Sendable keys: "+sendable+" all keys "+all+" diff "+(all-sendable));
-                            total += all;
-                        }
+            if(prio == null || prio.isEmpty()) continue;
+            for(int k=0;k<prio.size();k++) {
+                RequestClient client = prio.getClient(k);
+                ClientRequestRGANode requestGrabber = prio.getGrabber(client);
+                for(int l=0;l<requestGrabber.size();l++) {
+                    ClientRequestSchedulerGroup cr = requestGrabber.getClient(l);
+                    RandomGrabArray rga = requestGrabber.getGrabber(cr);
+                    for(int m=0;m<rga.size();m++) {
+                        SendableRequest req = (SendableRequest) rga.get(m);
+                        if(req == null) continue;
+                        total += req.countAllKeys(context);
                     }
+                }
             }
         }
         return total;

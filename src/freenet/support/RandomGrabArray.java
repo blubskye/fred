@@ -464,7 +464,7 @@ public class RandomGrabArray implements RemoveRandom, RequestSelectionTreeNode {
 				existingGrabber.add(item, null);
 				block.reqs[j] = null;
 			}
-			System.out.println("Moved block in RGA "+this);
+			Logger.normal(this, "Moved block in RGA "+this);
 		}
 	}
 

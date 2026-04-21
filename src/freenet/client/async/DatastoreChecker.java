@@ -176,7 +176,7 @@ public class DatastoreChecker implements PrioRunnable {
 					// Wait for anything.
 					wait(SECONDS.toMillis(100));
 				} catch (InterruptedException e) {
-					// Ok
+					Thread.currentThread().interrupt();
 				}
 			}
 		}

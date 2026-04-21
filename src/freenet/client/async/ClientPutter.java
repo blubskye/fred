@@ -521,10 +521,10 @@ public class ClientPutter extends BaseClientPutter implements PutCompletionCallb
 
 	@Override
 	public void dump() {
-		System.out.println("URI: "+uri);
-		System.out.println("Client: "+client);
-		System.out.println("Finished: "+finished);
-		System.out.println("Data: "+data);
+		Logger.normal(this, "URI: "+uri);
+		Logger.normal(this, "Client: "+client);
+		Logger.normal(this, "Finished: "+finished);
+		Logger.normal(this, "Data: "+data);
 	}
 	
     public byte[] getClientDetail(ChecksumChecker checker) throws IOException {

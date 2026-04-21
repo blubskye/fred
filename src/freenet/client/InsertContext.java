@@ -148,8 +148,6 @@ public class InsertContext implements Cloneable, Serializable {
 	
 	/** Backward compatibility support for network level metadata. */
 	private CompatibilityMode realCompatMode;
-	/** Only for migration. FIXME remove. */
-	private long compatibilityMode;
 	/** If true, don't insert, just generate the CHK */
     public boolean getCHKOnly;
     /** If true, try to find the final URI as quickly as possible, and insert the upper layers as 
@@ -256,8 +254,6 @@ public class InsertContext implements Cloneable, Serializable {
         InsertContext other = (InsertContext) obj;
         if (canWriteClientCache != other.canWriteClientCache)
             return false;
-        if (compatibilityMode != other.compatibilityMode)
-            return false;
         if (compressorDescriptor == null) {
             if (other.compressorDescriptor != null)
                 return false;
@@ -291,19 +287,6 @@ public class InsertContext implements Cloneable, Serializable {
     
     public SplitfileAlgorithm getSplitfileAlgorithm() {
         return splitfileAlgo;
-    }
-    
-    /** Call when migrating from db4o era. FIXME remove.
-     * @deprecated */
-    @Deprecated
-    public void onResume() {
-        // Used to encode it as a long.
-        if(realCompatMode == null)
-            realCompatMode = CompatibilityMode.byCode((short)compatibilityMode);
-        // Max blocks was wrong too.
-        splitfileSegmentDataBlocks = FECCodec.MAX_TOTAL_BLOCKS_PER_SEGMENT;
-        splitfileSegmentCheckBlocks = FECCodec.MAX_TOTAL_BLOCKS_PER_SEGMENT;
-        splitfileAlgo = SplitfileAlgorithm.getByCode(splitfileAlgorithm);
     }
 
 }

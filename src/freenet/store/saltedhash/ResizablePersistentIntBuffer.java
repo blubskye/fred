@@ -203,7 +203,7 @@ public class ResizablePersistentIntBuffer {
 						try {
 							wait();
 						} catch (InterruptedException e) {
-							// Ignore.
+							Thread.currentThread().interrupt();
 						}
 					}
 					if(!dirty) return;
@@ -290,7 +290,7 @@ public class ResizablePersistentIntBuffer {
 						try {
 							wait();
 						} catch (InterruptedException e) {
-							// Ignore.
+							Thread.currentThread().interrupt();
 						}
 					}
 					if(!dirty) return;

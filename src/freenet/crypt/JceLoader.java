@@ -44,7 +44,6 @@ public class JceLoader {
 				    final String msg = "Error with SunPKCS11-NSS. "
 				            + "Unlimited policy file not installed.";
 				    Logger.warning(NSSLoader.class, msg, e);
-				    System.out.println(msg);
 				}
 			} catch(Throwable e) {
 				// FIXME what about Windows/MacOSX/etc?
@@ -61,8 +60,6 @@ public class JceLoader {
 				p = (new BouncyCastleLoader()).load();
 			} catch(Throwable e) {
 				final String msg = "SERIOUS PROBLEM: Unable to load or use BouncyCastle provider.";
-				System.err.println(msg);
-				e.printStackTrace();
 				Logger.error(JceLoader.class, msg, e);
 			}
 		}
@@ -152,9 +149,9 @@ public class JceLoader {
 	}
 	
 	static public void dumpLoaded() {
-		System.out.println("BouncyCastle: "+BouncyCastle);
-		System.out.println("SunPKCS11-NSS: "+NSS);
-		System.out.println("SUN: "+SUN);
-		System.out.println("SunJCE: "+SunJCE);
+		Logger.normal(JceLoader.class, "BouncyCastle: "+BouncyCastle);
+		Logger.normal(JceLoader.class, "SunPKCS11-NSS: "+NSS);
+		Logger.normal(JceLoader.class, "SUN: "+SUN);
+		Logger.normal(JceLoader.class, "SunJCE: "+SunJCE);
 	}
 }

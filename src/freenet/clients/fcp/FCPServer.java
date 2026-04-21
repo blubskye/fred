@@ -157,7 +157,6 @@ public class FCPServer implements Runnable, DownloadCache {
 			}
 		} catch (IOException be) {
 			Logger.error(this, "Couldn't bind to FCP Port "+bindTo+ ':' +port+". FCP Server not started.", be);
-			System.out.println("Couldn't bind to FCP Port "+bindTo+ ':' +port+". FCP Server not started.");
 		}
 
 		this.networkInterface = tempNetworkInterface;
@@ -169,7 +168,6 @@ public class FCPServer implements Runnable, DownloadCache {
 			maybeGetNetworkInterface();
 
 			Logger.normal(this, "Starting FCP server on "+bindTo+ ':' +port+ '.');
-			System.out.println("Starting FCP server on "+bindTo+ ':' +port+ '.');
 
 			if (this.networkInterface != null) {
 				Thread t = new Thread(this, "FCP server");
@@ -178,7 +176,6 @@ public class FCPServer implements Runnable, DownloadCache {
 			}
 		} else {
 			Logger.normal(this, "Not starting FCP server as it's disabled");
-			System.out.println("Not starting FCP server as it's disabled");
 			this.networkInterface = null;
 		}
 		
@@ -205,7 +202,10 @@ public class FCPServer implements Runnable, DownloadCache {
 				return;
 			try{
 				Thread.sleep(2000);
-			}catch (InterruptedException e) {}
+			}catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return;
+			}
 		}
 	}
 
@@ -682,7 +682,8 @@ public class FCPServer implements Runnable, DownloadCache {
 				try {
 					done.await();
 				} catch (InterruptedException e) {
-					// Ignore
+				   Thread.currentThread().interrupt();
+					// Flag is now restored
 				}
 			}
 			return success.get();
@@ -707,10 +708,7 @@ public class FCPServer implements Runnable, DownloadCache {
 					globalForeverClient.removeAll(core.getClientContext());
 					succeeded = true;
 				} catch (Throwable t) {
-					Logger.error(this, "Caught while processing panic: "+t, t);
-					System.err.println("PANIC INCOMPLETE: CAUGHT "+t);
-					t.printStackTrace();
-					System.err.println("Your requests have not been deleted!");
+					Logger.error(this, "PANIC INCOMPLETE: Caught while processing panic, requests have not been deleted: "+t, t);
 				} finally {
 					success.set(succeeded);
 					done.countDown();
@@ -723,7 +721,8 @@ public class FCPServer implements Runnable, DownloadCache {
 			try {
 				done.await();
 			} catch (InterruptedException e) {
-				// Ignore
+			    Thread.currentThread().interrupt();
+				// Flag is restored
 			}
 		}
 		return success.get();
@@ -784,10 +783,14 @@ public class FCPServer implements Runnable, DownloadCache {
 					try {
 						ow.wait();
 					} catch (InterruptedException e) {
-						// Ignore
+					    // 1. Restore the interrupt flag for the rest of the stack
+					    Thread.currentThread().interrupt();
+						// 2. Break the while loop to stop blocking the shutdown
+						break;
 					}
 					continue;
 				}
+				// ... after break, it lands here:
 				if(ow.ioe != null) throw ow.ioe;
 				if(ow.ne != null) throw ow.ne;
 				return;
@@ -834,19 +837,23 @@ public class FCPServer implements Runnable, DownloadCache {
 			}, NativeThread.HIGH_PRIORITY);
 
 			synchronized(ow) {
-				while(true) {
-					if(!ow.done) {
-						try {
-							ow.wait();
-						} catch (InterruptedException e) {
-							// Ignore
-						}
-						continue;
-					}
-					return ow.success;
-				}
-			}
-		}
+                	    while(true) {
+	                        if(!ow.done) {
+            		            try {
+            		                ow.wait();
+            		            } catch (InterruptedException e) {
+            		                // Restore flag and break the loop
+            		                Thread.currentThread().interrupt();
+            		                break;
+            		            }
+            		            continue;
+            		        }
+            		        return ow.success;
+                	}
+                	// If we broke out due to an interrupt, the loop ends here.
+                	// Since we don't have the result yet, returning false is the safest bet.
+                	return false; 
+            	}
 	}
 
 	public void makePersistentGlobalRequest(FreenetURI fetchURI, boolean filterData, String expectedMimeType, String persistenceTypeString, String returnTypeString, boolean realTimeFlag) throws NotAllowedException, IOException {
@@ -1026,7 +1033,10 @@ public class FCPServer implements Runnable, DownloadCache {
 						try {
 							ow.wait();
 						} catch (InterruptedException e) {
-							// Ignore
+							// Restore Interrupt flag
+							Thread.currentThread().interrupt();
+                            				// 2. Break the loop so we stop blocking shutdown
+                            				break;
 						}
 					} else {
 						if(ow.collided != null)
@@ -1087,9 +1097,14 @@ public class FCPServer implements Runnable, DownloadCache {
 					try {
 						ow.wait();
 					} catch (InterruptedException e) {
-						// Ignore
+						// Restore Interrupt Status
+						Thread.currentThread().interrupt();
+						break;
 					}
 				}
+				//This is the "fallback" return
+				//We only reach this line if we 'break' out of the loop.
+				return false;
 			}
 		}
 	}
@@ -1147,10 +1162,13 @@ public class FCPServer implements Runnable, DownloadCache {
 					try {
 						ow.wait();
 					} catch (InterruptedException e) {
-						// Ignore
+						// Restore Interrupt again
+						Thread.currentThread().interrupt();
+						break;
 					}
 				}
 			}
+			return null;
 		}
 	}
 

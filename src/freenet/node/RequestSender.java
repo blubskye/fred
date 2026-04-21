@@ -1536,7 +1536,7 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
                     // did not succeed. This makes the function work if notify() is not called.
                 }
             } catch (InterruptedException e) {
-                // Ignore
+                Thread.currentThread().interrupt();
             }
         }
     	}
@@ -1854,7 +1854,7 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
     					continue;
     				}
 				} catch (InterruptedException e) {
-					// Ignore
+					Thread.currentThread().interrupt();
 					continue;
 				}
 				if(logMINOR) Logger.minor(this, "Took too long waiting for opennet ref on "+this);

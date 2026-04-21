@@ -105,7 +105,7 @@ public class RequestStarter implements Runnable, RandomGrabArrayItemExclusionLis
 		ChosenBlock req = null;
 		// The last time at which we sent a request or decided not to
 		long cycleTime = System.currentTimeMillis();
-		while(true) {
+		while(!Thread.currentThread().isInterrupted()) {
 			// Allow 5 minutes before we start killing requests due to not connecting.
 			OpennetManager om;
 			if(core.getNode().getPeers().countConnectedPeers() < 3 && (om = core.getNode().getOpennet()) != null &&
@@ -115,8 +115,9 @@ public class RequestStarter implements Runnable, RandomGrabArrayItemExclusionLis
 						wait(1000);
 					}
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					// Restore flag and exit
+					Thread.currentThread().interrupt();
+					return;
 				}
 				continue;
 			}
@@ -139,7 +140,9 @@ public class RequestStarter implements Runnable, RandomGrabArrayItemExclusionLis
 								Thread.sleep(sleepUntil - now);
 								if(logMINOR) Logger.minor(this, "Slept: "+(sleepUntil-now)+"ms");
 							} catch (InterruptedException e) {
-								// Ignore
+								// Restore glag and exit loop
+								Thread.currentThread().interrupt();
+								return;
 							}
 					} while(now < sleepUntil);
 				}
@@ -186,11 +189,16 @@ public class RequestStarter implements Runnable, RandomGrabArrayItemExclusionLis
 						try {
 							wait();
 						} catch (InterruptedException e) {
-							// Ignore
+							// Exit cleanly when interrupted while waiting for work
+							Thread.currentThread().interrupt();
+							return;
 						}
 					}
 				}
 			}
+			// Final check before starting a potentially heavy request
+			if(Thread.currentThread().isInterrupted()) return;
+			
 			if(req == null) continue;
 			if(!startRequest(req, logMINOR)) {
 				// Don't log if it's a cancelled transient request.

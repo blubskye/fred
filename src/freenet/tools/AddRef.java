@@ -100,7 +100,9 @@ public class AddRef {
 		}finally {
 			try{
 				Thread.sleep(3000);
-			}catch (InterruptedException e) {}
+			}catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 		}
 	}
 

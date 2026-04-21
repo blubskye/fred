@@ -220,7 +220,7 @@ public class NodeARKInserter implements ClientPutCallback, RequestClient {
 		try {
 			Thread.sleep(5000);
 		} catch (InterruptedException e1) {
-			// Ignore
+			Thread.currentThread().interrupt();
 		}
 		
 		startInserter();

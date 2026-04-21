@@ -61,25 +61,23 @@ public class FilePersistentConfig extends PersistentConfig {
 		boolean tempFilenameExists = tempFilename.exists();
 		if(filenameExists && !filename.canWrite()) {
 			Logger.error(FilePersistentConfig.class, "Warning: Cannot write to config file: "+filename);
-			System.err.println("Warning: Cannot write to config file: "+filename);
 		}
 		if(tempFilenameExists && !tempFilename.canWrite()) {
 			Logger.error(FilePersistentConfig.class, "Warning: Cannot write to config tempfile: "+tempFilename);
-			System.err.println("Warning: Cannot write to config tempfile: "+tempFilename);
 		}
 		if(filenameExists) {
 			if(filename.canRead() && filename.length() > 0) {
 				try {
 					return initialLoad(filename);
 				} catch (FileNotFoundException e) {
-					System.err.println("Cannot open config file "+filename+" : "+e+" - checking for temp file "+tempFilename);
+					Logger.error(FilePersistentConfig.class, "Cannot open config file "+filename+" : "+e+" - checking for temp file "+tempFilename);
 				} catch (EOFException e) {
-					System.err.println("Empty config file "+filename+" (end of file)");
+					Logger.error(FilePersistentConfig.class, "Empty config file "+filename+" (end of file)");
 				}
 				// Other IOE's indicate a more serious problem.
 			} else {
 				// We probably won't be able to write it either.
-				System.err.println("Cannot read config file "+filename);
+				Logger.error(FilePersistentConfig.class, "Cannot read config file "+filename);
 			}
 		}
 		if(tempFilename.exists()) {
@@ -87,14 +85,14 @@ public class FilePersistentConfig extends PersistentConfig {
 				try {
 					return initialLoad(tempFilename);
 				} catch (FileNotFoundException e) {
-					System.err.println("Cannot open temp config file either: "+tempFilename+" : "+e);
+					Logger.error(FilePersistentConfig.class, "Cannot open temp config file either: "+tempFilename+" : "+e);
 				} // Other IOE's indicate a more serious problem.
 			} else {
-				System.err.println("Cannot read (temp) config file "+tempFilename);
+				Logger.error(FilePersistentConfig.class, "Cannot read (temp) config file "+tempFilename);
 				throw new IOException("Cannot read (temp) config file "+tempFilename);
 			}
 		}
-		System.err.println("No config file found, creating new: "+filename);
+		Logger.normal(FilePersistentConfig.class, "No config file found, creating new: "+filename);
 		return null;
 	}
 
@@ -145,10 +143,7 @@ public class FilePersistentConfig extends PersistentConfig {
 				innerStore();
 			}
 		} catch (IOException e) {
-			String err = "Cannot store config: "+e;
-			Logger.error(this, err, e);
-			System.err.println(err);
-			e.printStackTrace();
+			Logger.error(this, "Cannot store config: "+e, e);
 		}
 	}
 

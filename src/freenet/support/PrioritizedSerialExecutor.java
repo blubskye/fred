@@ -71,7 +71,7 @@ public class PrioritizedSerialExecutor implements Executor {
 							//NB: notify only on adding work or this quits early.
 							jobs.wait(jobTimeout);
 						} catch (InterruptedException e) {
-							// Ignore
+							Thread.currentThread().interrupt();
 						}
 						waiting=false;
 						job = checkQueue();

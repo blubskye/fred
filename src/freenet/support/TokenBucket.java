@@ -156,7 +156,8 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 			try {
 				wait(delay);
 			} catch (InterruptedException e) {
-				// Go around the loop again.
+				Thread.currentThread().interrupt();
+				break;
 			}
 		}
 		if(logMINOR) Logger.minor(this, "Blocking grab finished: current="+current);
@@ -221,9 +222,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 	synchronized long tokensToAdd() {
 		long nowNS = NANOSECONDS.convert(System.currentTimeMillis(), MILLISECONDS);
 		if(timeLastTick > nowNS) {
-			System.err.println("CLOCK SKEW DETECTED! CLOCK WENT BACKWARDS BY AT LEAST "+TimeUtil.formatTime(MILLISECONDS.convert(timeLastTick - nowNS, NANOSECONDS), 2, true));
-			System.err.println("FREENET WILL BREAK SEVERELY IF THIS KEEPS HAPPENING!");
-			Logger.error(this, "CLOCK SKEW DETECTED! CLOCK WENT BACKWARDS BY AT LEAST "+TimeUtil.formatTime(MILLISECONDS.convert(timeLastTick - nowNS, NANOSECONDS), 2, true));
+			Logger.error(this, "CLOCK SKEW DETECTED! CLOCK WENT BACKWARDS BY AT LEAST "+TimeUtil.formatTime(MILLISECONDS.convert(timeLastTick - nowNS, NANOSECONDS), 2, true)+" - FREENET WILL BREAK SEVERELY IF THIS KEEPS HAPPENING!");
 			timeLastTick = nowNS;
 			return 0;
 		}

@@ -482,15 +482,13 @@ public class NodeIPDetector {
 				synchronized(this) {
 					hasValidAddressOverride = false;
 				}
-				String msg = "Invalid IP override syntax: "+overrideIPAddressString+" in config: "+e.getMessage();
+				String msg = "Invalid IP override syntax: "+overrideIPAddressString+" in config: "+e.getMessage()+" but starting up anyway, ignoring the configured IP override";
 				Logger.error(this, msg);
-				System.err.println(msg+" but starting up anyway, ignoring the configured IP override");
 				overrideIPAddress = null;
 			} catch (UnknownHostException e) {
 				// **FIXME** This never happens for this reason with current FreenetInetAddress(String, boolean, boolean) code; perhaps it needs review?
-				String msg = "Unknown host: "+overrideIPAddressString+" in config: "+e.getMessage();
+				String msg = "Unknown host: "+overrideIPAddressString+" in config: "+e.getMessage()+" but starting up anyway with no IP override";
 				Logger.error(this, msg);
-				System.err.println(msg+" but starting up anyway with no IP override");
 				overrideIPAddress = null;
 			}
 		}
@@ -524,9 +522,7 @@ public class NodeIPDetector {
 			try {
 				oldIPAddress = new FreenetInetAddress(ipHintString, false);
 			} catch (UnknownHostException e) {
-				String msg = "Unknown host: "+ipHintString+" in config: "+e.getMessage();
-				Logger.error(this, msg);
-				System.err.println(msg);
+				Logger.error(this, "Unknown host: "+ipHintString+" in config: "+e.getMessage());
 				oldIPAddress = null;
 			}
 		}

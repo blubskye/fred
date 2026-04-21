@@ -201,7 +201,6 @@ public class UdpSocketHandler implements PrioRunnable, PacketSocketHandler, Port
 				t.printStackTrace();
 			} catch (Throwable tt) {}
 		} finally {
-			System.err.println("run() exiting for UdpSocketHandler on port " + localAddress.getPort());
 			Logger.error(this, "run() exiting for UdpSocketHandler on port " + localAddress.getPort());
 			synchronized (this) {
 				_isDone = true;
@@ -215,8 +214,6 @@ public class UdpSocketHandler implements PrioRunnable, PacketSocketHandler, Port
 			try {
 				realRun();
 			} catch (Throwable t) {
-				System.err.println("Caught "+t);
-				t.printStackTrace(System.err);
 				Logger.error(this, "Caught " + t, t);
 			}
 		}
@@ -366,7 +363,7 @@ public class UdpSocketHandler implements PrioRunnable, PacketSocketHandler, Port
 		int newSize = innerCalculateMaxPacketSize();
 		maxPacketSize = newSize;
 		if(oldSize != newSize)
-			System.out.println("Max packet size: "+newSize);
+			Logger.normal(this, "Max packet size: "+newSize);
 		return maxPacketSize;
 	}
 	
@@ -405,6 +402,7 @@ public class UdpSocketHandler implements PrioRunnable, PacketSocketHandler, Port
 				try {
 					wait(2000);
 				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 					e.printStackTrace();
 				}
 			}

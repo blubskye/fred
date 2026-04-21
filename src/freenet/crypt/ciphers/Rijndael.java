@@ -87,8 +87,6 @@ public class Rijndael implements BlockCipher {
 					if (provider != bcastle_provider) {
 						long time_def = benchmark(c, k, IV);
 						long time_bcastle = benchmark(bcastle_cipher, k, IV);
-						System.out.println(algo + " (" + provider + "): " + time_def + "ns");
-						System.out.println(algo + " (" + bcastle_provider + "): " + time_bcastle + "ns");
 						Logger.minor(clazz, algo + "/" + provider + ": " + time_def + "ns");
 						Logger.minor(clazz, algo + "/" + bcastle_provider + ": " + time_bcastle + "ns");
 						if (time_bcastle < time_def) {
@@ -109,7 +107,6 @@ public class Rijndael implements BlockCipher {
 			c.init(Cipher.ENCRYPT_MODE, k, IV);
 			c.doFinal(plaintext);
 			Logger.normal(Rijndael.class, "Using JCA: provider "+provider);
-			System.out.println("Using JCA cipher provider: "+provider);
 			return provider;
 		} catch (GeneralSecurityException e) {
 			Logger.warning(Rijndael.class, "Not using JCA as it is crippled (can't use 256-bit keys). Will use built-in encryption. ", e);

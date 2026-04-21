@@ -67,21 +67,20 @@ public class FilenameGenerator {
 				for(int i=0;i<filenames.length;i++) {
 					WrapperManager.signalStarting((int) MINUTES.toMillis(5));
 					if(i % 1024 == 0 && i > 0)
-						// User may want some feedback during startup
-						System.err.println("Deleted "+wipedFiles+" temp files ("+(i - wipeableFiles)+" non-temp files in temp dir)");
+						Logger.normal(this, "Deleted "+wipedFiles+" temp files ("+(i - wipeableFiles)+" non-temp files in temp dir)");
 					File f = filenames[i];
 					String name = f.getName();
 					if((((File.separatorChar == '\\') && name.toLowerCase().startsWith(prefix.toLowerCase())) ||
 							name.startsWith(prefix))) {
 						wipeableFiles++;
 						if((!f.delete()) && f.exists())
-							System.err.println("Unable to delete temporary file "+f+" - permissions problem?");
+							Logger.error(this, "Unable to delete temporary file "+f+" - permissions problem?");
 						else
 							wipedFiles++;
 					}
 				}
 				long endWipe = System.currentTimeMillis();
-				System.err.println("Deleted "+wipedFiles+" of "+wipeableFiles+" temporary files ("+(filenames.length-wipeableFiles)+" non-temp files in temp directory) in "+TimeUtil.formatTime(endWipe-startWipe));
+				Logger.normal(this, "Deleted "+wipedFiles+" of "+wipeableFiles+" temporary files ("+(filenames.length-wipeableFiles)+" non-temp files in temp directory) in "+TimeUtil.formatTime(endWipe-startWipe));
 			}
 		}
 	}

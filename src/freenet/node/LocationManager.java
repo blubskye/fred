@@ -444,7 +444,7 @@ public class LocationManager implements ByteCounter {
                             if(diff > 0)
                                 Thread.sleep(Math.min((int)diff, SECONDS.toMillis(10)));
                         } catch (InterruptedException e) {
-                            // Ignore
+                            Thread.currentThread().interrupt();
                         }
                         if(System.currentTimeMillis() >= endTime) break;
                     }

@@ -329,11 +329,12 @@ public abstract class PersistentJobRunnerImpl implements PersistentJobRunner {
         synchronized(sync) {
             while(runningJobs > 0 || writing) {
                 if(!enableCheckpointing) return;
-                System.out.println("Waiting to shutdown: "+runningJobs+" running"+(writing ? " (writing)" : ""));
+                Logger.normal(this, "Waiting to shutdown: "+runningJobs+" running"+(writing ? " (writing)" : ""));
                 try {
                     sync.wait();
                 } catch (InterruptedException e) {
-                    // Ignore.
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
         }
@@ -354,7 +355,8 @@ public abstract class PersistentJobRunnerImpl implements PersistentJobRunner {
                 try {
                     sync.wait();
                 } catch (InterruptedException e) {
-                    // Ignore.
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
             if(writing) {
@@ -364,7 +366,8 @@ public abstract class PersistentJobRunnerImpl implements PersistentJobRunner {
                     try {
                         sync.wait();
                     } catch (InterruptedException e) {
-                        // Ignore.
+                        Thread.currentThread().interrupt();
+                        break;
                     }
                 }
                 return;
@@ -382,7 +385,8 @@ public abstract class PersistentJobRunnerImpl implements PersistentJobRunner {
                 try {
                     sync.wait();
                 } catch (InterruptedException e) {
-                    // Ignore.
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
         }
@@ -394,7 +398,8 @@ public abstract class PersistentJobRunnerImpl implements PersistentJobRunner {
                 try {
                     sync.wait();
                 } catch (InterruptedException e) {
-                    // Ignore.
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
         }
@@ -407,7 +412,8 @@ public abstract class PersistentJobRunnerImpl implements PersistentJobRunner {
                 try {
                     sync.wait();
                 } catch (InterruptedException e) {
-                    // Ignore.
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
         }
@@ -436,7 +442,8 @@ public abstract class PersistentJobRunnerImpl implements PersistentJobRunner {
                 try {
                     sync.wait();
                 } catch (InterruptedException e) {
-                    // Ignore.
+                    Thread.currentThread().interrupt();
+                    break;
                 }
                 if(killed) throw new PersistenceDisabledException();
             }

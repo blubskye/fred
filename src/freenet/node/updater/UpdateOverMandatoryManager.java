@@ -207,9 +207,9 @@ public class UpdateOverMandatoryManager implements RequestClient {
 					// Tell the user
 					alertUser();
 
-					System.err.println("Your peer " + source.userToString() +
+					Logger.error(this, "Your peer " + source.userToString() +
 							" (build #" + source.getSimpleVersion() + ") says that the auto-update key is blown!");
-					System.err.println("Attempting to fetch it...");
+					Logger.error(this, "Attempting to fetch it...");
 
 					tryFetchRevocation(source);
 					
@@ -220,9 +220,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			} catch(MalformedURLException e) {
 				// Should maybe be a useralert?
 				Logger.error(this, "Node " + source + " sent us a UOMAnnouncement claiming that the auto-update key was blown, but it had an invalid revocation URI: " + revocationKey + " : " + e, e);
-				System.err.println("Node " + source.userToString() + " sent us a UOMAnnouncement claiming that the revocation key was blown, but it had an invalid revocation URI: " + revocationKey + " : " + e);
 			} catch(NotConnectedException e) {
-				System.err.println("Node " + source + " says that the auto-update key was blown, but has now gone offline! Something bad may be happening!");
 				Logger.error(this, "Node " + source + " says that the auto-update key was blown, but has now gone offline! Something bad may be happening!");
 				synchronized(UpdateOverMandatoryManager.this) {
 					nodesSayKeyRevoked.remove(source);
@@ -274,7 +272,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			@Override
 			public void disconnected() {
 				// :(
-				System.err.println("Failed to send request for revocation key to " + source.userToString() + 
+				Logger.error(UpdateOverMandatoryManager.this, "Failed to send request for revocation key to " + source.userToString() +
 						" (build #" + source.getSimpleVersion() + ") because it disconnected!");
 				source.failedRevocationTransfer();
 				synchronized(UpdateOverMandatoryManager.this) {
@@ -285,7 +283,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			@Override
 			public void fatalError() {
 				// Not good!
-				System.err.println("Failed to send request for revocation key to " + source.userToString() + " because of a fatal error.");
+				Logger.error(UpdateOverMandatoryManager.this, "Failed to send request for revocation key to " + source.userToString() + " because of a fatal error.");
 			}
 
 			@Override
@@ -304,7 +302,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 					if(nodesSayKeyRevokedTransferring.contains(source)) return;
 					nodesSayKeyRevoked.remove(source);
 				}
-				System.err.println("Peer "+source+" (build #" + source.getSimpleVersion() + ") said that the auto-update key had been blown, but did not transfer the revocation certificate. The most likely explanation is that the key has not been blown (the node is buggy or malicious), so we are ignoring this.");
+				Logger.error(UpdateOverMandatoryManager.this, "Peer "+source+" (build #" + source.getSimpleVersion() + ") said that the auto-update key had been blown, but did not transfer the revocation certificate. The most likely explanation is that the key has not been blown (the node is buggy or malicious), so we are ignoring this.");
 				maybeNotRevoked();
 			}
 
@@ -339,7 +337,6 @@ public class UpdateOverMandatoryManager implements RequestClient {
 				if(!isOutdated) {
 					String howLong = TimeUtil.formatTime(now - started);
 					Logger.error(this, "The update process seems to have been stuck for " + howLong + "; let's switch to UoM! SHOULD NOT HAPPEN! (1)");
-					System.out.println("The update process seems to have been stuck for " + howLong + "; let's switch to UoM! SHOULD NOT HAPPEN! (1)");
 				} else if(logMINOR)
 					Logger.minor(this, "Fetching via UOM as our build is deprecated");
 				// Fetch it
@@ -349,12 +346,11 @@ public class UpdateOverMandatoryManager implements RequestClient {
 						sendUOMRequest(source, true);
 					else
 					    // FIXME don't log if it's the transitional version.
-						System.err.println("Node " + source.userToString() + " offered us a new main jar (version " + mainJarVersion + ") but his key was different to ours:\n" +
+						Logger.error(this, "Node " + source.userToString() + " offered us a new main jar (version " + mainJarVersion + ") but his key was different to ours:\n" +
 							"our key: " + updateManager.getURI() + "\nhis key:" + mainJarURI);
 				} catch(MalformedURLException e) {
 					// Should maybe be a useralert?
 					Logger.error(this, "Node " + source + " sent us a UOMAnnouncement claiming to have a new ext jar, but it had an invalid URI: " + jarKey + " : " + e, e);
-					System.err.println("Node " + source.userToString() + " sent us a UOMAnnouncement claiming to have a new ext jar, but it had an invalid URI: " + jarKey + " : " + e);
 				}
 				synchronized(this) {
 					allNodesOfferedMainJar.add(source);
@@ -377,7 +373,6 @@ public class UpdateOverMandatoryManager implements RequestClient {
 							return;
 						if(!updateManager.getNode().isOudated()) {
 							Logger.error(this, "The update process seems to have been stuck for too long; let's switch to UoM! SHOULD NOT HAPPEN! (2) (ext)");
-							System.out.println("The update process seems to have been stuck for too long; let's switch to UoM! SHOULD NOT HAPPEN! (2) (ext)");
 						}
 						maybeRequestMainJar();
 					}
@@ -430,7 +425,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			if(addOnFail && askedSendJar.size() + sendingJar.size() >= MAX_NODES_SENDING_JAR) {
 				HashSet<PeerNode> offeredJar = nodesOfferedMainJar;
 				if(offeredJar.add(source))
-					System.err.println("Offered "+lname+" jar by " + source.userToString() + " (already fetching from " + sendingJar.size() + "), but will use this offer if our current fetches fail).");
+					Logger.normal(this, "Offered "+lname+" jar by " + source.userToString() + " (already fetching from " + sendingJar.size() + "), but will use this offer if our current fetches fail).");
 				return;
 			} else {
 				if(sendingJar.contains(source)) {
@@ -450,7 +445,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			DMT.createUOMRequestMainJar(updateManager.getNode().getRandom().nextLong());
 
 		try {
-			System.err.println("Fetching "+lname+" jar from " + source.userToString());
+			Logger.normal(this, "Fetching "+lname+" jar from " + source.userToString());
 			source.sendAsync(msg, new AsyncMessageCallback() {
 
 				@Override
@@ -791,8 +786,6 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			revocationURI = new FreenetURI(key);
 		} catch(MalformedURLException e) {
 			Logger.error(this, "Failed receiving recovation because URI not parsable: " + e + " for " + key, e);
-			System.err.println("Failed receiving recovation because URI not parsable: " + e + " for " + key);
-			e.printStackTrace();
 			synchronized(this) {
 				// Wierd case of a failed transfer
 				// This is definitely not valid, don't add to nodesSayKeyRevokedFailedTransfer.
@@ -805,7 +798,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 		}
 
 		if(!revocationURI.equals(updateManager.getRevocationURI())) {
-			System.err.println("Node sending us a revocation certificate from the wrong URI:\n" +
+			Logger.error(this, "Node sending us a revocation certificate from the wrong URI:\n" +
 				"Node: " + source.userToString() + "\n" +
 				"Our   URI: " + updateManager.getRevocationURI() + "\n" +
 				"Their URI: " + revocationURI);
@@ -828,7 +821,6 @@ public class UpdateOverMandatoryManager implements RequestClient {
 		}
 
 		if(length > NodeUpdateManager.MAX_REVOCATION_KEY_BLOB_LENGTH) {
-			System.err.println("Node " + source.userToString() + " offered us a revocation certificate " + SizeUtil.formatSize(length) + " long. This is unacceptably long so we have refused the transfer. No real revocation cert would be this big.");
 			Logger.error(this, "Node " + source.userToString() + " offered us a revocation certificate " + SizeUtil.formatSize(length) + " long. This is unacceptably long so we have refused the transfer. No real revocation cert would be this big.");
 			synchronized(UpdateOverMandatoryManager.this) {
 				nodesSayKeyRevoked.remove(source);
@@ -840,7 +832,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 		}
 		
 		if(length <= 0) {
-			System.err.println("Revocation key is zero bytes from "+source+" - ignoring as this is almost certainly a bug or an attack, it is definitely not valid.");
+			Logger.error(this, "Revocation key is zero bytes from "+source+" - ignoring as this is almost certainly a bug or an attack, it is definitely not valid.");
 			synchronized(UpdateOverMandatoryManager.this) {
 				nodesSayKeyRevoked.remove(source);
 				// This is almost certainly not valid, don't add to nodesSayKeyRevokedFailedTransfer.
@@ -851,7 +843,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			return true;
 		}
 		
-		System.err.println("Transferring auto-updater revocation certificate length "+length+" from "+source);
+		Logger.normal(this, "Transferring auto-updater revocation certificate length "+length+" from "+source);
 
 		// Okay, we can receive it
 
@@ -861,8 +853,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			temp = File.createTempFile("revocation-", ".fblob.tmp", updateManager.getNode().getClientCore().getPersistentTempDir());
 			temp.deleteOnExit();
 		} catch(IOException e) {
-			System.err.println("Cannot save revocation certificate to disk and therefore cannot fetch it from our peer!: " + e);
-			e.printStackTrace();
+			Logger.error(this, "Cannot save revocation certificate to disk and therefore cannot fetch it from our peer!: " + e, e);
 			updateManager.blow("Cannot fetch the revocation certificate from our peer because we cannot write it to disk: " + e, true);
 			cancelSend(source, uid);
 			return true;
@@ -902,7 +893,6 @@ public class UpdateOverMandatoryManager implements RequestClient {
 					processRevocationBlob(temp, source);
 				else {
 					Logger.error(this, "Failed to transfer revocation certificate from " + source);
-					System.err.println("Failed to transfer revocation certificate from " + source);
 					source.failedRevocationTransfer();
 					int count = source.countFailedRevocationTransfers();
 					boolean retry = count < 3;
@@ -921,8 +911,6 @@ public class UpdateOverMandatoryManager implements RequestClient {
 				}
 				} catch (Throwable t) {
 					Logger.error(this, "Caught error while transferring revocation certificate from "+source+" : "+t, t);
-					System.err.println("Peer "+source+" said that the revocation key has been blown, but we got an internal error while transferring it:");
-					t.printStackTrace();
 					updateManager.blow("Internal error while fetching the revocation certificate from our peer "+source+" : "+t, true);
 					synchronized(UpdateOverMandatoryManager.this) {
 						nodesSayKeyRevokedTransferring.remove(source);
@@ -983,28 +971,21 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			BinaryBlob.readBinaryBlob(dis, blocks, true);
 		} catch(FileNotFoundException e) {
 			Logger.error(this, "Somebody deleted " + temp + " ? We lost the revocation certificate from " + source + "!");
-			System.err.println("Somebody deleted " + temp + " ? We lost the revocation certificate from " + source + "!");
 			if(!fromDisk)
 				updateManager.blow("Somebody deleted " + temp + " ? We lost the revocation certificate from " + source + "!", true);
 			return;
 		} catch (EOFException e) {
 			Logger.error(this, "Peer " + source + " sent us an invalid revocation certificate! (data too short, might be truncated): " + e + " (data in " + temp + ")", e);
-			System.err.println("Peer " + source + " sent us an invalid revocation certificate! (data too short, might be truncated): " + e + " (data in " + temp + ")");
 			// Probably malicious, might just be buggy, either way, it's not blown
-			e.printStackTrace();
 			// FIXME file will be kept until exit for debugging purposes
 			return;
 		} catch(BinaryBlobFormatException e) {
 			Logger.error(this, "Peer " + source + " sent us an invalid revocation certificate!: " + e + " (data in " + temp + ")", e);
-			System.err.println("Peer " + source + " sent us an invalid revocation certificate!: " + e + " (data in " + temp + ")");
 			// Probably malicious, might just be buggy, either way, it's not blown
-			e.printStackTrace();
 			// FIXME file will be kept until exit for debugging purposes
 			return;
 		} catch(IOException e) {
 			Logger.error(this, "Could not read revocation cert from temp file " + temp + " from node " + source + " ! : "+e, e);
-			System.err.println("Could not read revocation cert from temp file " + temp + " from node " + source + " ! : "+e);
-			e.printStackTrace();
 			if(!fromDisk)
 				updateManager.blow("Could not read revocation cert from temp file " + temp + " from node " + source + " ! : "+e, true);
 			// FIXME will be kept until exit for debugging purposes
@@ -1036,13 +1017,12 @@ public class UpdateOverMandatoryManager implements RequestClient {
 				if(e.mode == FetchExceptionMode.CANCELLED) {
 					// Eh?
 					Logger.error(this, "Cancelled fetch from store/blob of revocation certificate from " + source);
-					System.err.println("Cancelled fetch from store/blob of revocation certificate from " + source + " to " + temp + " - please report to developers");
 				// Probably best to keep files around for now.
 				} else if(e.isFatal()) {
 					// Blown: somebody inserted a revocation message, but it was corrupt as inserted
 					// However it had valid signatures etc.
 
-					System.err.println("Got revocation certificate from " + source + " (fatal error i.e. someone with the key inserted bad data) : "+e);
+					Logger.error(this, "Got revocation certificate from " + source + " (fatal error i.e. someone with the key inserted bad data) : "+e);
 					// Blow the update, and propagate the revocation certificate.
 					updateManager.getRevocationChecker().onFailure(e, state, cleanedBlob);
 					// Don't delete it if it's from disk, as it's already in the right place.
@@ -1056,7 +1036,6 @@ public class UpdateOverMandatoryManager implements RequestClient {
 						(fromDisk ? " : did you change the revocation key?" : 
 							" : this is almost certainly bogus i.e. the auto-update is fine but the node is broken.");
 					Logger.error(this, message);
-					System.err.println(message);
 					// This is almost certainly bogus.
 					// Delete it, even if it's fromDisk.
 					temp.free();
@@ -1066,7 +1045,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 
 			@Override
 			public void onSuccess(FetchResult result, ClientGetter state) {
-				System.err.println("Got revocation certificate from " + source);
+				Logger.normal(this, "Got revocation certificate from " + source);
 				updateManager.getRevocationChecker().onSuccess(result, state, cleanedBlob);
 				if(!fromDisk)
 					temp.free();
@@ -1090,8 +1069,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 		try {
 			updateManager.getNode().getClientCore().getClientContext().start(cg);
 		} catch(FetchException e1) {
-			System.err.println("Failed to decode UOM blob: " + e1);
-			e1.printStackTrace();
+			Logger.error(this, "Failed to decode UOM blob: " + e1, e1);
 			myCallback.onFailure(e1, cg);
 		} catch (PersistenceDisabledException e) {
 			// Impossible
@@ -1325,8 +1303,6 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			jarURI = new FreenetURI(key).setSuggestedEdition(version);
 		} catch(MalformedURLException e) {
 			Logger.error(this, "Failed receiving main jar " + version + " because URI not parsable: " + e + " for " + key, e);
-			System.err.println("Failed receiving main jar " + version + " because URI not parsable: " + e + " for " + key);
-			e.printStackTrace();
 			cancelSend(source, uid);
 			synchronized(this) {
 				this.nodesAskedSendMainJar.remove(source);
@@ -1335,7 +1311,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 		}
 
 		if(!jarURI.equals(updateManager.getURI().setSuggestedEdition(version))) {
-			System.err.println("Node sending us a main jar update (" + version + ") from the wrong URI:\n" +
+			Logger.error(this, "Node sending us a main jar update (" + version + ") from the wrong URI:\n" +
 				"Node: " + source.userToString() + "\n" +
 				"Our   URI: " + updateManager.getURI() + "\n" +
 				"Their URI: " + jarURI);
@@ -1357,7 +1333,6 @@ public class UpdateOverMandatoryManager implements RequestClient {
 		}
 
 		if(length > NodeUpdateManager.MAX_MAIN_JAR_LENGTH) {
-			System.err.println("Node " + source.userToString() + " offered us a main jar (" + version + ") " + SizeUtil.formatSize(length) + " long. This is unacceptably long so we have refused the transfer.");
 			Logger.error(this, "Node " + source.userToString() + " offered us a main jar (" + version + ") " + SizeUtil.formatSize(length) + " long. This is unacceptably long so we have refused the transfer.");
 			// If the transfer fails, we don't try again.
 			cancelSend(source, uid);
@@ -1368,7 +1343,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 		}
 
 		// Okay, we can receive it
-		System.out.println("Receiving main jar "+version+" from "+source.userToString());
+		Logger.normal(this, "Receiving main jar "+version+" from "+source.userToString());
 
 		final File temp;
 
@@ -1376,8 +1351,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			temp = File.createTempFile("main-", ".fblob.tmp", updateManager.getNode().getClientCore().getPersistentTempDir());
 			temp.deleteOnExit();
 		} catch(IOException e) {
-			System.err.println("Cannot save new main jar to disk and therefore cannot fetch it from our peer!: " + e);
-			e.printStackTrace();
+			Logger.error(this, "Cannot save new main jar to disk and therefore cannot fetch it from our peer!: " + e, e);
 			cancelSend(source, uid);
 			synchronized(this) {
 				this.nodesAskedSendMainJar.remove(source);
@@ -1418,7 +1392,6 @@ public class UpdateOverMandatoryManager implements RequestClient {
 						processMainJarBlob(temp, source, version, jarURI);
 					else {
 						Logger.error(this, "Failed to transfer main jar " + version + " from " + source);
-						System.err.println("Failed to transfer main jar " + version + " from " + source);
 						temp.delete();
 					}
 				} finally {
@@ -1444,17 +1417,13 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			BinaryBlob.readBinaryBlob(dis, blocks, true);
 		} catch(FileNotFoundException e) {
 			Logger.error(this, "Somebody deleted " + temp + " ? We lost the main jar (" + version + ") from " + toString + "!");
-			System.err.println("Somebody deleted " + temp + " ? We lost the main jar (" + version + ") from " + toString + "!");
 			return;
 		} catch(IOException e) {
 			Logger.error(this, "Could not read main jar (" + version + ") from temp file " + temp + " from node " + toString + " !");
-			System.err.println("Could not read main jar (" + version + ") from temp file " + temp + " from node " + toString + " !");
 			// FIXME will be kept until exit for debugging purposes
 			return;
 		} catch(BinaryBlobFormatException e) {
 			Logger.error(this, "Peer " + toString + " sent us an invalid main jar (" + version + ")!: " + e, e);
-			System.err.println("Peer " + toString + " sent us an invalid main jar (" + version + ")!: " + e);
-			e.printStackTrace();
 			// FIXME will be kept until exit for debugging purposes
 			return;
 		} finally {
@@ -1480,8 +1449,6 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			b = new FileBucket(f, false, false, true, true);
 		} catch(IOException e) {
 			Logger.error(this, "Cannot share main jar from " + toString + " with our peers because cannot write the cleaned version to disk: " + e, e);
-			System.err.println("Cannot share main jar from " + toString + " with our peers because cannot write the cleaned version to disk: " + e);
-			e.printStackTrace();
 			b = null;
 			f = null;
 		}
@@ -1494,35 +1461,31 @@ public class UpdateOverMandatoryManager implements RequestClient {
 			public void onFailure(FetchException e, ClientGetter state) {
 				if(e.mode == FetchExceptionMode.CANCELLED) {
 					// Eh?
-					Logger.error(this, "Cancelled fetch from store/blob of main jar (" + version + ") from " + toString);
-					System.err.println("Cancelled fetch from store/blob of main jar (" + version + ") from " + toString + " to " + temp + " - please report to developers");
+					Logger.error(this, "Cancelled fetch from store/blob of main jar (" + version + ") from " + toString + " to " + temp + " - please report to developers");
 				// Probably best to keep files around for now.
 				} else if(e.newURI != null) {
 					temp.delete();
 					Logger.error(this, "URI changed fetching main jar "+version+" from "+toString);
-					System.out.println("URI changed fetching main jar "+version+" from "+toString);
 				} else if(e.isFatal()) {
 					// Bogus as inserted. Ignore.
 					temp.delete();
 					Logger.error(this, "Failed to fetch main jar " + version + " from " + toString + " : fatal error (update was probably inserted badly): " + e, e);
-					System.err.println("Failed to fetch main jar " + version + " from " + toString + " : fatal error (update was probably inserted badly): " + e);
 				} else {
 					Logger.error(this, "Failed to fetch main jar " + version + " from blob from " + toString);
-					System.err.println("Failed to fetch main jar " + version + " from blob from " + toString);
 				}
 			}
 
 			@Override
 			public void onSuccess(FetchResult result, ClientGetter state) {
-				System.err.println("Got main jar version " + version + " from " + toString);
+				Logger.normal(this, "Got main jar version " + version + " from " + toString);
 				if(result.size() == 0) {
-					System.err.println("Ignoring because 0 bytes long");
+					Logger.error(this, "Got main jar version " + version + " from " + toString + " but ignoring because 0 bytes long");
 					return;
 				}
 
 				NodeUpdater mainUpdater = updateManager.getMainUpdater();
 				if(mainUpdater == null) {
-					System.err.println("Not updating because updater is disabled!");
+					Logger.error(this, "Not updating because updater is disabled!");
 					return;
 				}
 				mainUpdater.onSuccess(result, state, cleanedBlobFile, version);
@@ -1907,7 +1870,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 				}
 				synchronized(this) {
 					if(!peersFailed.isEmpty()) {
-						System.out.println("UOM trying peers which have failed downloads for "+saveTo.getName()+" because nowhere else to go ...");
+						Logger.normal(this, "UOM trying peers which have failed downloads for "+saveTo.getName()+" because nowhere else to go ...");
 						peersFailed.clear();
 						tryEverything = true;
 					}
@@ -1928,7 +1891,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 					File tmp = null;
 					FileRandomAccessBuffer raf = null;
 					try {
-						System.out.println("Fetching "+saveTo+" from "+fetchFrom);
+						Logger.normal(this, "Fetching "+saveTo+" from "+fetchFrom);
 						long uid = updateManager.getNode().getFastWeakRandom().nextLong();
 						fetchFrom.sendAsync(DMT.createUOMFetchDependency(uid, expectedHash, size), null, updateManager.getByteCounter());
 						tmp = FileUtil.createTempFile(saveTo.getName(), NodeUpdateManager.TEMP_FILE_SUFFIX, saveTo.getParentFile());
@@ -1957,7 +1920,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 										if(completed) return;
 									}
 									failed = true;
-									System.err.println("Update failing: Saved dependency to "+tmp+" for "+saveTo+" but cannot rename it! Permissions problems?");
+									Logger.error(this, "Update failing: Saved dependency to "+tmp+" for "+saveTo+" but cannot rename it! Permissions problems?");
 								}
 								peerMaybeFreeAllSlots(fetchFrom);
 							} else {
@@ -1965,29 +1928,24 @@ public class UpdateOverMandatoryManager implements RequestClient {
 									if(completed) return;
 								}
 								failed = true;
-								System.err.println("Update failing: Downloaded file "+saveTo+" from "+fetchFrom+" but file does not match expected hash.");
+								Logger.error(this, "Update failing: Downloaded file "+saveTo+" from "+fetchFrom+" but file does not match expected hash.");
 								// Wrong length -> transfer would have failed.
 							}
 						} else {
-							System.out.println("Download failed: "+saveTo+" from "+fetchFrom);
+							Logger.normal(this, "Download failed: "+saveTo+" from "+fetchFrom);
 							failed = true;
 						}
 					} catch (NotConnectedException e) {
 						// Not counting this as a failure.
-						System.out.println("Disconnected while downloading "+saveTo+" from "+fetchFrom);
+						Logger.normal(this, "Disconnected while downloading "+saveTo+" from "+fetchFrom);
 					} catch (IOException e) {
 						// This isn't their fault either.
 						// User might be able to understand and fix this.
-						System.out.println("IOException while downloading "+saveTo+" from "+fetchFrom+" : "+e);
 						Logger.error(this, "IOException while downloading "+saveTo+" from "+fetchFrom+" : "+e, e);
 					} catch (RuntimeException e) {
 						Logger.error(this, "Caught fetching "+saveTo+" from "+fetchFrom +" : "+e, e);
-						System.err.println("Fetch failed due to internal error (bug or severe local problem?): "+e);
-						e.printStackTrace();
 					} catch (Error e) {
 						Logger.error(this, "Caught fetching "+saveTo+" from "+fetchFrom +" : "+e, e);
-						System.err.println("Fetch failed due to internal error (bug or severe local problem?): "+e);
-						e.printStackTrace();
 					} finally {
 						boolean connected = fetchFrom.isConnected();
 						boolean addFailed = failed && connected;

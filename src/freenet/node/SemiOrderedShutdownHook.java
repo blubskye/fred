@@ -4,6 +4,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.ArrayList;
 
+import freenet.support.Logger;
+
 public class SemiOrderedShutdownHook extends Thread {
 
 	private static final long TIMEOUT = SECONDS.toMillis(100);
@@ -35,7 +37,7 @@ public class SemiOrderedShutdownHook extends Thread {
 	
 	@Override
 	public void run() {
-		System.err.println("Shutting down...");
+		Logger.normal(this, "Shutting down...");
 		// First run early jobs, all at once, and wait for them to all complete.
 		
 		Thread[] early = getEarlyJobs();
@@ -47,6 +49,7 @@ public class SemiOrderedShutdownHook extends Thread {
 			try {
 				r.join(TIMEOUT);
 			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt(); // Restore the signal				
 				// :(
 				// May as well move on
 			}
@@ -62,11 +65,12 @@ public class SemiOrderedShutdownHook extends Thread {
 			try {
 				r.join(TIMEOUT);
 			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt(); // Restore the signal
 				// :(
 				// May as well move on
 			}
 		}
-		
+
 	}
 
 	private synchronized Thread[] getEarlyJobs() {

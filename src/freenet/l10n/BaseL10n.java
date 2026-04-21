@@ -344,11 +344,10 @@ public class BaseL10n {
 			if (in != null) {
 				result = SimpleFieldSet.readFrom(in, false, false);
 			} else {
-				System.err.println("Could not get resource : " + this.getL10nFileName(lang));
+				Logger.error(this.getClass(), "Could not get resource : " + this.getL10nFileName(lang));
 			}
 		} catch (Exception e) {
-			System.err.println("Error while loading the l10n file from " + this.getL10nFileName(lang) + " :" + e.getMessage());
-			e.printStackTrace();
+			Logger.error(this.getClass(), "Error while loading the l10n file from " + this.getL10nFileName(lang) + " :" + e.getMessage(), e);
 			result = null;
 		} finally {
 			Closer.close(in);
@@ -583,9 +582,7 @@ public class BaseL10n {
         String result = this.fallbackTranslation.get(key);
 
         if (result == null) {
-            Logger.error(this.getClass(), "The default translation for " + key + " hasn't been found!");
-            System.err.println("The default translation for " + key + " hasn't been found!");
-            new Exception().printStackTrace();
+            Logger.error(this.getClass(), "The default translation for " + key + " hasn't been found!", new Exception("stack trace"));
         }
         return result;
     }

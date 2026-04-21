@@ -109,11 +109,8 @@ public class HashResult implements Comparable<HashResult>, Cloneable, Serializab
 		}
 		for(int i=0;i<results.length;i++) {
 			if(results[i].type != hashes[i].type) {
-				// FIXME Db4o kludge
-				if(HashType.valueOf(results[i].type.name()) != HashType.valueOf(hashes[i].type.name())) {
-					Logger.error(HashResult.class, "Hashes not the same type: "+results[i].type.name()+" vs "+hashes[i].type.name());
-					return false;
-				}
+				Logger.error(HashResult.class, "Hashes not the same type: "+results[i].type.name()+" vs "+hashes[i].type.name());
+				return false;
 			}
 			if(!Arrays.equals(results[i].result, hashes[i].result)) {
 				Logger.error(HashResult.class, "Hash "+results[i].type.name()+" not equal");
@@ -125,14 +122,14 @@ public class HashResult implements Comparable<HashResult>, Cloneable, Serializab
 
 	public static boolean contains(HashResult[] hashes, HashType type) {
 		for(HashResult res : hashes)
-			if(res.type == type || type.name().equals(res.type.name()))
+			if(res.type == type)
 				return true;
 		return false;
 	}
 
 	public static byte[] get(HashResult[] hashes, HashType type) {
 		for(HashResult res : hashes)
-			if(res.type == type || type.name().equals(res.type.name()))
+			if(res.type == type)
 				return res.result;
 		return null;
 	}

@@ -64,7 +64,8 @@ public class PutWaiter implements ClientPutCallback {
 			try {
 				wait();
 			} catch (InterruptedException e) {
-				// Ignore
+				Thread.currentThread().interrupt();
+				break;
 			}
 		}
 		if(error != null) {

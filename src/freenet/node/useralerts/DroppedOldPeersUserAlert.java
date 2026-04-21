@@ -41,7 +41,6 @@ public class DroppedOldPeersUserAlert implements UserAlert {
             droppedOldPeersDate = e.buildDate;
         }
         String shortError = getLogWarning(e);
-        System.err.println(shortError);
         Logger.error(this, shortError);
     }
 

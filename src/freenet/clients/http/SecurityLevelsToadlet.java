@@ -156,7 +156,7 @@ public class SecurityLevelsToadlet extends Toadlet {
 								sendChangePasswordForm(ctx, false, false, newPhysicalLevel.name());
 								return;
 							} catch (MasterKeysWrongPasswordException e) {
-								System.err.println("Wrong password!");
+								Logger.warning(this, "Wrong password when setting master password");
 								PageNode page = ctx.getPageMaker().getPageNode(l10nSec("passwordPageTitle"), ctx);
 								HTMLNode contentNode = page.getContentNode();
 
@@ -197,10 +197,9 @@ public class SecurityLevelsToadlet extends Toadlet {
 							} catch (IOException e) {
 								if(!core.getNode().getMasterPasswordFile().exists()) {
 									// Ok.
-									System.out.println("Master password file no longer exists, assuming this is deliberate");
+									Logger.normal(this, "Master password file no longer exists, assuming this is deliberate");
 								} else {
-									System.err.println("Cannot change password as cannot write new passwords file: "+e);
-									e.printStackTrace();
+									Logger.error(this, "Cannot change password as cannot write new passwords file: "+e, e);
 									String msg = "<html><head><title>"+l10nSec("cantWriteNewMasterKeysFileTitle")+
 										"</title></head><body><h1>"+l10nSec("cantWriteNewMasterKeysFileTitle")+"</h1><p>"+l10nSec("cantWriteNewMasterKeysFile")+"<pre>";
 									StringWriter sw = new StringWriter();
@@ -214,7 +213,7 @@ public class SecurityLevelsToadlet extends Toadlet {
 									return;
 								}
 							} catch (MasterKeysWrongPasswordException e) {
-								System.err.println("Wrong password!");
+								Logger.warning(this, "Wrong password when changing master password");
 								PageNode page = ctx.getPageMaker().getPageNode(l10nSec("passwordForDecryptTitle"), ctx);
 								HTMLNode contentNode = page.getContentNode();
 
@@ -300,11 +299,10 @@ public class SecurityLevelsToadlet extends Toadlet {
 				// Allow empty master password — master.keys stores keys with iterations=0
 				// for the empty-string case; blocking it here prevents existing installs
 				// with no password from unlocking their encrypted client store.
-				System.err.println("Setting master password");
+				Logger.normal(this, "Setting master password");
 				try {
 					node.setMasterPassword(masterPassword, false);
 				} catch (AlreadySetPasswordException e) {
-					System.err.println("Already set master password");
 					Logger.error(this, "Already set master password");
 					MultiValueTable<String,String> headers = MultiValueTable.from("Location", "/");
 					ctx.sendReplyHeaders(302, "Found", headers, null, 0);

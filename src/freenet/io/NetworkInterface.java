@@ -105,7 +105,7 @@ public class NetworkInterface implements Closeable {
 		NetworkInterface iface = new NetworkInterface(port, allowedHosts, executor);
 		String[] failedBind = iface.setBindTo(bindTo, ignoreUnbindableIP6);
 		if(failedBind != null) {
-			System.err.println("Could not bind to some of the interfaces specified for port "+port+" : "+Arrays.toString(failedBind));
+			Logger.error(NetworkInterface.class, "Could not bind to some of the interfaces specified for port "+port+" : "+Arrays.toString(failedBind));
 		}
 		return iface;
 	}
@@ -188,7 +188,6 @@ public class NetworkInterface implements Closeable {
 						addr.getAddress() instanceof Inet6Address) {
 					continue;
 				}
-				System.err.println("Unable to bind to address "+address+" for port "+port);
 				Logger.error(this, "Unable to bind to address "+address+" for port "+port);
 				if(brokenList == null) brokenList = new ArrayList<String>();
 				brokenList.add(address);

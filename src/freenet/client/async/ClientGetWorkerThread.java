@@ -207,7 +207,7 @@ public class ClientGetWorkerThread extends Thread {
 			try {
 				wait();
 			} catch(InterruptedException e) {
-				//Do nothing
+				Thread.currentThread().interrupt();
 			}
 		}
 		getError();

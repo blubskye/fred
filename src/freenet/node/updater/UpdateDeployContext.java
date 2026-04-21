@@ -193,11 +193,11 @@ public class UpdateDeployContext {
 						Dependency dep = findDependencyByRHSFilename(new File(rhs));
 						if(dep != null) {
 						    if(dep.oldFilename() != null)
-						        System.out.println("Found old dependency "+dep.oldFilename());
+						        Logger.normal(UpdateDeployContext.class, "Found old dependency "+dep.oldFilename());
 						    else
-						        System.out.println("Found new dependency "+dep.newFilename());
+						        Logger.normal(UpdateDeployContext.class, "Found new dependency "+dep.newFilename());
 						} else { // dep == null
-						    System.out.println("Found unknown jar in classpath, will keep: "+rhs);
+						    Logger.normal(UpdateDeployContext.class, "Found unknown jar in classpath, will keep: "+rhs);
 							// If not, it's something the user has added, we just keep it.
 							classpath.add(rhs);
 						}
@@ -244,7 +244,7 @@ public class UpdateDeployContext {
 		// As above, we need to write ALL the dependencies BEFORE we write the main jar.
 		int count = 1; // Classpath is 1-based.
 		for(Dependency d : deps.dependencies) {
-		    System.out.println("Writing dependency "+d.newFilename()+" priority "+d.order());
+		    Logger.normal(UpdateDeployContext.class, "Writing dependency "+d.newFilename()+" priority "+d.order());
 			bw.write("wrapper.java.classpath."+count+"="+d.newFilename()+'\n');
 			count++;
 		}
@@ -319,7 +319,7 @@ public class UpdateDeployContext {
 		
 		// New config installed.
 		
-		System.err.println("Rewritten wrapper.conf for build "+deps.build+" and "+deps.dependencies.size()+" dependencies.");
+		Logger.normal(UpdateDeployContext.class, "Rewritten wrapper.conf for build "+deps.build+" and "+deps.dependencies.size()+" dependencies.");
 	}
 
 	private Dependency findDependencyByRHSFilename(File rhs) {
@@ -427,7 +427,7 @@ public class UpdateDeployContext {
 		
 		} catch (IOException e) {
 			newConfig.delete();
-			System.err.println("Unable to rewrite wrapper.conf with new memory limit.");
+			Logger.error(UpdateDeployContext.class, "Unable to rewrite wrapper.conf with new memory limit.");
 			return CHANGED.FAIL;
 		} finally {
 			Closer.close(br);
@@ -442,16 +442,16 @@ public class UpdateDeployContext {
 		if(success) {
 			if(!newConfig.renameTo(oldConfig)) {
 				if(!oldConfig.delete()) {
-					System.err.println("Unable to move rewritten wrapper.conf with new memory limit "+newConfig+" over old config "+oldConfig+" : unable to delete old config");
+					Logger.error(UpdateDeployContext.class, "Unable to move rewritten wrapper.conf with new memory limit "+newConfig+" over old config "+oldConfig+" : unable to delete old config");
 					return CHANGED.FAIL;
 				}
 				if(!newConfig.renameTo(oldConfig)) {
-					System.err.println("Old wrapper.conf deleted but new wrapper.conf cannot be renamed!");
-					System.err.println("FREENET WILL NOT START UNTIL YOU RENAME "+newConfig+" to "+oldConfig);
+					Logger.error(UpdateDeployContext.class, "Old wrapper.conf deleted but new wrapper.conf cannot be renamed!");
+					Logger.error(UpdateDeployContext.class, "FREENET WILL NOT START UNTIL YOU RENAME "+newConfig+" to "+oldConfig);
 					System.exit(NodeInitException.EXIT_BROKE_WRAPPER_CONF);
 				}
 			}
-			System.err.println("Rewritten wrapper.conf for new memory limit");
+			Logger.normal(UpdateDeployContext.class, "Rewritten wrapper.conf for new memory limit");
 			return CHANGED.SUCCESS;
 		} else {
 			newConfig.delete();

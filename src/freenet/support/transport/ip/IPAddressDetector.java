@@ -283,7 +283,8 @@ public class IPAddressDetector implements Runnable {
 			try {
 				Thread.sleep(interval);
 			} catch (InterruptedException e) {
-				// Ignore
+				Thread.currentThread().interrupt();
+				break;
 			}
 			try {
 				if(checkpoint()) {

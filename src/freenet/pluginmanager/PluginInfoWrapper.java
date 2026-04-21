@@ -141,7 +141,7 @@ public class PluginInfoWrapper implements Comparable<PluginInfoWrapper> {
 	public void startShutdownPlugin(PluginManager manager, boolean reloading) {
 		unregister(manager, reloading);
 		// TODO add a timeout for plug.terminate() too
-		System.out.println("Terminating plugin "+this.getFilename());
+		Logger.normal(this, "Terminating plugin "+this.getFilename());
 
 		// set the plugin’s class loader as context class loader
 		ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
@@ -151,8 +151,6 @@ public class PluginInfoWrapper implements Comparable<PluginInfoWrapper> {
 			plug.terminate();
 		} catch (Throwable t) {
 			Logger.error(this, "Error while terminating plugin.", t);
-			System.err.println("Error while terminating plugin: "+t);
-			t.printStackTrace();
 		} finally {
 			Thread.currentThread().setContextClassLoader(originalClassLoader);
 		}
@@ -170,12 +168,12 @@ public class PluginInfoWrapper implements Comparable<PluginInfoWrapper> {
 				try {
 					thread.join(maxWaitTime);
 				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 					Logger.normal(this, "stopPlugin interrupted while join()ed to terminating plugin thread - maybe one plugin stopping another???");
 				}
 				if(thread.isAlive()) {
 					String error = "Waited for "+thread+" for "+plug+" to exit for "+maxWaitTime+"ms, and it is still alive!";
 					Logger.error(this, error);
-					System.err.println(error);
 					success = false;
 				}
 			}

@@ -76,7 +76,6 @@ public class PacketSender implements Runnable {
 	void start(NodeStats stats) {
 		this.stats = stats;
 		Logger.normal(this, "Starting PacketSender");
-		System.out.println("Starting PacketSender");
 		myThread.start();
 	}
 
@@ -124,8 +123,6 @@ public class PacketSender implements Runnable {
 				realRun();
 			} catch(Throwable t) {
 				Logger.error(this, "Caught in PacketSender: " + t, t);
-				System.err.println("Caught in PacketSender: " + t);
-				t.printStackTrace();
 			}
 		}
 	}

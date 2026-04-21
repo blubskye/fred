@@ -50,8 +50,7 @@ public class SplitFileInserterCrossSegmentStorage {
     
     // Set to true to encode block keys during *cross-segment* encoding, and thus detect e.g. storage bugs.
     // This will cause more disk I/O as we have to write the keys (more or less randomly).
-    // FIXME turn off before merging into master.
-    static final boolean DEBUG_ENCODE = true;
+    static final boolean DEBUG_ENCODE = false;
     
     public SplitFileInserterCrossSegmentStorage(SplitFileInserterStorage parent, int segNo, 
             boolean persistent, int segLen, int crossCheckBlocks) {

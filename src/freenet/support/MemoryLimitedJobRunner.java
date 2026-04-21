@@ -133,7 +133,7 @@ public class MemoryLimitedJobRunner {
             try {
                 wait();
             } catch (InterruptedException e) {
-                // Ignore.
+                Thread.currentThread().interrupt();
             }
         }
     }

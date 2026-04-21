@@ -158,7 +158,7 @@ public class PluginManager {
 		if(lastVersion < 1237 && contains(toStart, "XMLLibrarian") && !contains(toStart, "Library")) {
 			toStart = Arrays.copyOf(toStart, toStart.length+1);
 			toStart[toStart.length-1] = "Library";
-			System.err.println("Loading Library plugin, replaces XMLLibrarian, when upgrading from pre-1237");
+			Logger.normal(this, "Loading Library plugin, replaces XMLLibrarian, when upgrading from pre-1237");
 		}
 
 		if(contains(toStart, "KeyExplorer")) {
@@ -166,7 +166,7 @@ public class PluginManager {
 				if("KeyExplorer".equals(toStart[i]))
 					toStart[i] = "KeyUtils";
 			}
-			System.err.println("KeyExplorer plugin renamed to KeyUtils");
+			Logger.normal(this, "KeyExplorer plugin renamed to KeyUtils");
 		}
 
 		// ignore this in config files.
@@ -243,26 +243,23 @@ public class PluginManager {
 				try {
 					list = pluginList(loadedPlugins.getLoadedPlugins());
 					Logger.error(this, "Plugins still shutting down at timeout:\n"+list);
-					System.err.println("Plugins still shutting down at timeout:\n"+list);
 				} catch (ConcurrentModificationException e) {
 					Logger.error(this, "Error during shutdown: "+ e);
 					Logger.error(this, "Plugins still shutting down at timeout:\n"+list);
 				}
 			} else {
 				for (PluginInfoWrapper pluginInfoWrapper : loadedPlugins.getLoadedPlugins()) {
-					System.out.println("Waiting for plugin to finish shutting down: " + pluginInfoWrapper.getFilename());
+					Logger.normal(this, "Waiting for plugin to finish shutting down: " + pluginInfoWrapper.getFilename());
 					if (pluginInfoWrapper.finishShutdownPlugin(this, delta, false)) {
 						loadedPlugins.removeLoadedPlugin(pluginInfoWrapper);
 					}
 				}
 				if (!loadedPlugins.hasLoadedPlugins()) {
 					Logger.normal(this, "All plugins unloaded");
-					System.out.println("All plugins unloaded");
 					return;
 				}
 				String list = pluginList(loadedPlugins.getLoadedPlugins());
 				Logger.error(this, "Plugins still shutting down:\n"+list);
-				System.err.println("Plugins still shutting down:\n"+list);
 			}
 		}
 	}
@@ -422,9 +419,6 @@ public class PluginManager {
 		} catch (UnsupportedClassVersionError e) {
 			Logger.error(this, "Could not load plugin " + filename + " : " + e,
 					e);
-			System.err.println("Could not load plugin " + filename + " : " + e);
-			e.printStackTrace();
-			System.err.println("Plugin " + filename + " appears to require a later JVM");
 			Logger.error(this, "Plugin " + filename + " appears to require a later JVM");
 			PluginLoadFailedUserAlert newAlert =
 				new PluginLoadFailedUserAlert(filename, pdl.isOfficialPluginLoader(), false, l10n("pluginReqNewerJVMTitle", "name", filename));
@@ -433,9 +427,6 @@ public class PluginManager {
 			core.getAlerts().unregister(oldAlert);
 		} catch (Throwable e) {
 			Logger.error(this, "Could not load plugin " + filename + " : " + e, e);
-			System.err.println("Could not load plugin " + filename + " : " + e);
-			e.printStackTrace();
-			System.err.println("Plugin "+filename+" is broken, but we want to retry after next startup");
 			Logger.error(this, "Plugin "+filename+" is broken, but we want to retry after next startup");
 			PluginLoadFailedUserAlert newAlert =
 				new PluginLoadFailedUserAlert(filename, pdl.isOfficialPluginLoader(), false, e);
@@ -1084,7 +1075,7 @@ public class PluginManager {
 			if (!pluginFile.exists() || pluginFile.length() == 0) {
 				try {
 					downloadWasAttempted = true;
-					System.err.println("Downloading plugin " + name);
+					Logger.normal(this, "Downloading plugin " + name);
 					WrapperManager.signalStarting((int) MINUTES.toMillis(5));
 					try {
 						downloadPluginFile(pdl, pluginDirectory, pluginFile, progress);
@@ -1299,7 +1290,7 @@ public class PluginManager {
 	}
 
 	private void verifyPluginVersion(String name, JarClassLoader jarClassLoader, FredPlugin plugin) throws PluginTooOldException {
-		System.err.println("Loading official plugin " + name);
+		Logger.normal(this, "Loading official plugin " + name);
 		// Check the version after loading it!
 		// FIXME IMPORTANT Build the version into the manifest. This is actually pretty easy and just involves changing build.xml.
 		// We already do similar things elsewhere.
@@ -1320,7 +1311,6 @@ public class PluginManager {
 
 		// FIXME l10n the PluginNotFoundException errors.
 		if (ver < minVer) {
-			System.err.println("Failed to load plugin " + name + " : TOO OLD: need at least version " + minVer + " but is " + ver);
 			Logger.error(this, "Failed to load plugin " + name + " : TOO OLD: need at least version " + minVer + " but is " + ver);
 
 			// At this point, the constructor has run, so it's theoretically possible that the plugin has e.g. created some threads.

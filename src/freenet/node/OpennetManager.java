@@ -363,7 +363,6 @@ public class OpennetManager {
 					p = new Peer(u, false, true);
 				} catch (HostnameSyntaxException e) {
 					Logger.error(this, "Invalid hostname or IP Address syntax error while loading opennet peer node reference: "+u);
-					System.err.println("Invalid hostname or IP Address syntax error while loading opennet peer node reference: "+u);
 					continue;
 				} catch (PeerParseException e) {
 					throw (IOException)new IOException().initCause(e);
@@ -1196,7 +1195,8 @@ public class OpennetManager {
 				try {
 					wait();
 				} catch (InterruptedException e) {
-					// Ignore
+					Thread.currentThread().interrupt();
+					break;
 				}
 			if(timedOut) throw new WaitedTooLongForOpennetNoderefException();
 			return returned;
@@ -1223,7 +1223,6 @@ public class OpennetManager {
 	}
 	
 	public static void waitForOpennetNoderef(final boolean isReply, final PeerNode source, final long uid, final ByteCounter ctr, final NoderefCallback callback, final Node node) {
-		// FIXME remove back compat code
 		MessageFilter mf =
 			MessageFilter.create().setSource(source).setField(DMT.UID, uid).
 			setTimeout(RequestSender.OPENNET_TIMEOUT).

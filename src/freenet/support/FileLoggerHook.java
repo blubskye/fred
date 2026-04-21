@@ -359,7 +359,7 @@ public class FileLoggerHook extends LoggerHook implements Closeable {
 									}
 								}
 							} catch (InterruptedException e) {
-								// Ignored.
+								Thread.currentThread().interrupt();
 							}
 							if(o == null) {
 								if(timeWaitingForSync == -1) {
@@ -486,6 +486,7 @@ public class FileLoggerHook extends LoggerHook implements Closeable {
 					try {
 						Thread.sleep(sleepTime);
 					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
 					}
 					sleepTime += sleepTime;
 					if (sleepTime > maxSleepTime)
@@ -520,6 +521,7 @@ public class FileLoggerHook extends LoggerHook implements Closeable {
 					try {
 						Thread.sleep(sleepTime);
 					} catch (InterruptedException ex) {
+						Thread.currentThread().interrupt();
 					}
 					sleepTime += sleepTime;
 				}
@@ -1103,7 +1105,7 @@ public class FileLoggerHook extends LoggerHook implements Closeable {
 					try {
 						list.wait(wait);
 					} catch (InterruptedException e) {
-						// Ok.
+						Thread.currentThread().interrupt();
 					}
 				}
 				System.out.println("Completed writing logs to disk.");
@@ -1200,7 +1202,7 @@ public class FileLoggerHook extends LoggerHook implements Closeable {
 				try {
 					wait(Math.max(1, endTime-now));
 				} catch (InterruptedException e) {
-					// Ignore
+					Thread.currentThread().interrupt();
 				}
 			}
 		}

@@ -169,7 +169,6 @@ public class PeerManager {
 		peerNodeRoutingBackoffReasonsBulk = new PeerStatusTracker<String>();
 		allPeersStatuses = new PeerStatusTracker<Integer>();
 		darknetPeersStatuses = new PeerStatusTracker<Integer>();
-		System.out.println("Creating PeerManager");
 		myPeers = new PeerNode[0];
 		connectedPeers = new PeerNode[0];
 		this.node = node;
@@ -217,12 +216,11 @@ public class PeerManager {
 						msg = "Read " + getDarknetPeers().length + " darknet peers from " + peersFile;
 					}
 					Logger.normal(this, msg);
-					System.out.println(msg);
 					return;
 				}
 		}
 		if (!isOpennet) {
-			System.out.println("No darknet peers file found.");
+			Logger.normal(this, "No darknet peers file found.");
 		}
 		// The other cases are less important.
 	}
@@ -258,19 +256,15 @@ public class PeerManager {
 				createdNodes.add(PeerNode.create(fs, node, crypto, opennet, this));
 			} catch (FSParseException e2) {
 				Logger.error(this, "Could not parse peer due to broken fieldset syntax: " + e2 + '\n' + fs.toString(), e2);
-				System.err.println("Cannot parse a friend from the peers file due to broken fieldset syntax: "+e2);
 				someBroken = true;
 			} catch (PeerParseException e2) {
 				Logger.error(this, "Could not parse peer: " + e2 + '\n' + fs.toString(), e2);
-				System.err.println("Cannot parse a friend from the peers file: "+e2);
 				someBroken = true;
 			} catch (ReferenceSignatureVerificationException e2) {
 				Logger.error(this, "Could not verify signature of peer: " + e2 + '\n' + fs.toString(), e2);
-				System.err.println("Cannot verify signature of a friend from the peers file: "+e2);
 				someBroken = true;
 			} catch (RuntimeException e2) {
 				Logger.error(this, "Could not parse peer: " + e2 + '\n' + fs.toString(), e2);
-				System.err.println("Cannot parse a friend from the peers file: " + e2);
 				someBroken = true;
 				// FIXME tell the user???
 			}  catch (PeerTooOldException e) {
@@ -309,9 +303,9 @@ public class PeerManager {
 				FileUtil.copy(fis, fos, -1);
 				fos.close();
 				fis.close();
-				System.err.println("Broken peers file copied to " + brokenPeersFile);
+				Logger.normal(this, "Broken peers file copied to " + brokenPeersFile);
 			} catch (IOException e) {
-				System.err.println("Unable to copy broken peers file.");
+				Logger.error(this, "Unable to copy broken peers file.");
 			}
 		}
 		if (!droppedOldPeers.isEmpty()) {
@@ -1656,7 +1650,6 @@ public class PeerManager {
 		}
 		String msg = "Extra peer data reading and processing completed";
 		Logger.normal(this, msg);
-		System.out.println(msg);
 	}
 
 	public void start() {

@@ -28,6 +28,7 @@ import javax.net.ssl.SSLServerSocket;
 
 import freenet.crypt.SSL;
 import freenet.support.Executor;
+import freenet.support.Logger;
 
 /**
  * An SSL extension to the {@link NetworkInterface}
@@ -39,7 +40,7 @@ public class SSLNetworkInterface extends NetworkInterface {
 		NetworkInterface iface = new SSLNetworkInterface(port, allowedHosts, executor);
 		String[] failedBind = iface.setBindTo(bindTo, ignoreUnbindableIP6);
 		if(failedBind != null) {
-			System.err.println("Could not bind to some of the interfaces specified for port "+port+" : "+Arrays.toString(failedBind));
+			Logger.error(SSLNetworkInterface.class, "Could not bind to some of the interfaces specified for port "+port+" : "+Arrays.toString(failedBind));
 		}
 		return iface;
 	}

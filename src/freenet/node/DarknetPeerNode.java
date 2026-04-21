@@ -183,13 +183,13 @@ public class DarknetPeerNode extends PeerNode {
 				trustLevel = FRIEND_TRUST.valueOf(s);
 			} else {
 				trustLevel = node.getSecurityLevels().getDefaultFriendTrust();
-				System.err.println("Assuming friend ("+name+") trust is opposite of friend seclevel: "+trustLevel);
+				Logger.warning(this, "Assuming friend ("+name+") trust is opposite of friend seclevel: "+trustLevel);
 			}
 			s = metadata.get("ourVisibility");
 			if(s != null) {
 				ourVisibility = FRIEND_VISIBILITY.valueOf(s);
 			} else {
-				System.err.println("Assuming friend ("+name+") wants to be invisible");
+				Logger.warning(this, "Assuming friend ("+name+") wants to be invisible");
 				node.createVisibilityAlert();
 				ourVisibility = FRIEND_VISIBILITY.NO;
 			}
@@ -955,9 +955,7 @@ public class DarknetPeerNode extends PeerNode {
 						Logger.minor(this, "Received file");
 					try {
 						if(!receiver.receive()) {
-							String err = "Failed to receive "+this;
-							Logger.error(this, err);
-							System.err.println(err);
+							Logger.error(this, "Failed to receive "+this);
 							onReceiveFailure();
 						} else {
 							data.close();
@@ -1000,9 +998,7 @@ public class DarknetPeerNode extends PeerNode {
 						Logger.minor(this, "Sending file");
 					try {
 						if(!transmitter.send()) {
-							String err = "Failed to send "+uid+" for "+FileOffer.this;
-							Logger.error(this, err);
-							System.err.println(err);
+							Logger.error(this, "Failed to send "+uid+" for "+FileOffer.this);
 						}
 					} catch (Throwable t) {
 						Logger.error(this, "Caught "+t+" sending file", t);
@@ -1794,7 +1790,7 @@ public class DarknetPeerNode extends PeerNode {
 	public void fatalTimeout() {
 		if(node.isStopping()) return;
 		Logger.error(this, "Disconnecting from darknet node "+this+" because of fatal timeout", new Exception("error"));
-		System.err.println("Your friend node \""+getName()+"\" ("+getPeer()+" version "+getVersion()+") is having severe problems. We have disconnected to try to limit the effect on us. It will reconnect soon.");
+		Logger.warning(this, "Your friend node \""+getName()+"\" ("+getPeer()+" version "+getVersion()+") is having severe problems. We have disconnected to try to limit the effect on us. It will reconnect soon.");
 		// FIXME post a useralert
 		// Disconnect.
 		forceDisconnect();

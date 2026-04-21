@@ -95,8 +95,6 @@ public class NodeCryptoConfig {
 		}catch (Exception e){
 			// FIXME is this really necessary?
 			Logger.error(this, "Caught "+e, e);
-			System.err.println(e);
-			e.printStackTrace();
 			portNumber = -1;
 		}
 		

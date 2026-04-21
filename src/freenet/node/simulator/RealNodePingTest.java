@@ -73,7 +73,8 @@ public class RealNodePingTest {
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException e) {
-                // Shouldn't happen
+                Thread.currentThread().interrupt();
+                break;
             }
             pingID++;
         }

@@ -14,7 +14,8 @@ public class WaitingMultiMessageCallback extends MultiMessageCallback {
 			try {
 				wait();
 			} catch (InterruptedException e) {
-				// Ignore
+				Thread.currentThread().interrupt();
+				break;
 			}
 		}
 	}

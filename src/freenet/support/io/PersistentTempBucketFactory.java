@@ -26,7 +26,7 @@ import freenet.support.api.RandomAccessBucket;
  * changing the directory, i.e. moving the files).
  * 
  * These temporary files are encrypted using an ephemeral key (unless the node is configured not to encrypt
- * temporary files as happens with physical security level LOW). FIXME NO CRYPTO AT THE MOMENT. 
+ * temporary files as happens with physical security level LOW).
  * 
  * Note that the files are only deleted *after* the transaction containing their deletion reaches 
  * disk - so we should not leak temporary files, or forget that we deleted a bucket and try to 

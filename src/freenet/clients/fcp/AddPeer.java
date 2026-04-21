@@ -197,7 +197,7 @@ public class AddPeer extends FCPMessage {
 			if(!node.addPeerConnection(pn)) {
 				throw new MessageInvalidException(ProtocolErrorMessage.DUPLICATE_PEER_REF, "Node already has a peer with that identity", identifier, false);
 			}
-			System.out.println("Added opennet peer: "+pn);
+			Logger.normal(this, "Added opennet peer: "+pn);
 		} else {
 			try {
 				pn = node.createNewDarknetNode(fs, trust, visibility);
@@ -215,7 +215,7 @@ public class AddPeer extends FCPMessage {
 			if(!node.addPeerConnection(pn)) {
 				throw new MessageInvalidException(ProtocolErrorMessage.DUPLICATE_PEER_REF, "Node already has a peer with that identity", identifier, false);
 			}
-			System.out.println("Added darknet peer: "+pn);
+			Logger.normal(this, "Added darknet peer: "+pn);
 		}
 		handler.send(new PeerMessage(pn, true, true, identifier));
 	}

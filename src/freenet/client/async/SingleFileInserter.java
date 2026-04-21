@@ -167,8 +167,6 @@ class SingleFileInserter implements ClientPutState, Serializable {
 			cb.onFailure(e, SingleFileInserter.this, context);
         } catch (Throwable t) {
             Logger.error(this, "Caught in OffThreadCompressor: "+t, t);
-            System.err.println("Caught in OffThreadCompressor: "+t);
-            t.printStackTrace();
             // Try to fail gracefully
 			cb.onFailure(new InsertException(InsertExceptionMode.INTERNAL_ERROR, t, null), SingleFileInserter.this, context);
 		}

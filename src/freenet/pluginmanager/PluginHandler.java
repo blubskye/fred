@@ -77,8 +77,6 @@ public class PluginHandler {
 					pi.getPlugin().runPlugin(pi.getPluginRespirator());
 				} catch (Throwable t) {
 					Logger.normal(this, "Caught Throwable while running plugin: "+t, t);
-					System.err.println("Caught Throwable while running plugin: "+t);
-					t.printStackTrace();
 				}
 				pi.unregister(pm, false); // If not already unregistered
 				pm.removePlugin(pi);

@@ -795,7 +795,6 @@ public class IPDetectorPluginManager implements ForwardPortCallback {
 				int countClosed = 0;
 				for(DetectedIP d: list) {
 					Logger.normal(this, "Detected IP: "+d.publicAddress+ " : type "+d.natType);
-					System.out.println("Detected IP: "+d.publicAddress+ " : type "+d.natType);
 					switch(d.natType) {
 					case DetectedIP.FULL_CONE_NAT:
 						countFullCone++;

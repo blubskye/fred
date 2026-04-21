@@ -200,8 +200,7 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 		bloomFile = new File(this.baseDir, name + ".bloom");
 		if(bloomFile.exists()) {
 			bloomFile.delete();
-			System.err.println("Deleted old bloom filter for "+name+" - obsoleted by slot filter");
-			System.err.println("We will need to rebuild the slot filters, it will take a while and there will be a lot of disk access, but once it's done there should be a lot less disk access.");
+			Logger.warning(this, "Deleted old bloom filter for "+name+" - obsoleted by slot filter. Will need to rebuild slot filters; expect increased disk access until complete.");
 		}
 
 		File slotFilterFile = new File(this.baseDir, name + ".slotfilter");
@@ -209,22 +208,22 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 		slotFilterDisabled = !enableSlotFilters;
 		if(!slotFilterDisabled) {
 			slotFilter = new ResizablePersistentIntBuffer(slotFilterFile, size);
-			System.err.println("Slot filter (" + slotFilterFile + ") for " + name + " is loaded (new="+slotFilter.isNew()+").");
+			Logger.normal(this, "Slot filter (" + slotFilterFile + ") for " + name + " is loaded (new="+slotFilter.isNew()+").");
 			if(newStore && slotFilter.isNew())
 				slotFilter.fill(SLOT_CHECKED);
 		} else {
 			if(slotFilterFile.exists()) {
 				if(slotFilterFile.delete()) {
-					System.err.println("Old slot filter file deleted as slot filters are disabled, keeping it might cause data loss when they are turned back on.");
+					Logger.warning(this, "Old slot filter file deleted as slot filters are disabled; keeping it might cause data loss when they are turned back on.");
 				} else {
-					System.err.println("Old slot filter file "+slotFilterFile+" could not be deleted. If you turn on slot filters later you might lose data from your datastore. Please delete it manually.");
+					Logger.error(this, "Old slot filter file "+slotFilterFile+" could not be deleted. If you turn on slot filters later you might lose data from your datastore. Please delete it manually.");
 				}
 			}
 			slotFilter = null;
 		}
 
 		if ((flags & FLAG_DIRTY) != 0)
-			System.err.println("Datastore(" + name + ") is dirty.");
+			Logger.warning(this, "Datastore(" + name + ") is dirty.");
 
 		flags |= FLAG_DIRTY; // datastore is now dirty until flushAndClose()
 		writeConfigFile();
@@ -237,7 +236,7 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 
 		// finish all resizing before continue
 		if (resizeOnStart && prevStoreSize != 0 && cleanerGlobalLock.tryLock()) {
-			System.out.println("Resizing datastore (" + name + ")");
+			Logger.normal(this, "Resizing datastore (" + name + ")");
 			try {
 				cleanerThread.resizeStore(prevStoreSize, false);
 			} finally {
@@ -248,9 +247,9 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 		
 		if(((!slotFilterDisabled) && slotFilter.isNew()) && !newStore) {
 			flags |= FLAG_REBUILD_BLOOM;
-			System.out.println("Rebuilding slot filter because new");
+			Logger.warning(this, "Rebuilding slot filter because new");
 		} else if((flags & FLAG_REBUILD_BLOOM) != 0)
-			System.out.println("Slot filter still needs rebuilding");
+			Logger.warning(this, "Slot filter still needs rebuilding");
 	}
 
 	private boolean started = false;
@@ -325,6 +324,8 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 					throw new IOException("lock timeout (20s)");
 			}
 		} catch(InterruptedException e) {
+			//Restore interrupt flag
+			Thread.currentThread().interrupt();
 			throw new IOException("interrupted: " +e);
 		}
 		byte[] digestedKey = cipherManager.getDigestedKey(routingKey);
@@ -435,6 +436,8 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 					throw new IOException("lock timeout (20s)");
 			}
 		} catch(InterruptedException e) {
+			//Restore interrupt status
+			Thread.currentThread().interrupt();
 			throw new IOException("interrupted: " +e);
 		}
 		byte[] digestedKey = cipherManager.getDigestedKey(routingKey);
@@ -1222,7 +1225,6 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 			} catch (IOException e) {
 				// HO-63: Back up rather than delete — prevents total data loss on transient I/O errors.
 				Logger.error(this, "config file corrupted, trying to create a new store: " + name, e);
-				System.err.println("config file corrupted, trying to create a new store: " + name);
 				File corruptConfig = new File(configFile.getParentFile(), configFile.getName() + ".corrupt");
 				File metaFile = new File(baseDir, name + ".metadata");
 				File corruptMeta   = new File(metaFile.getParentFile(),   metaFile.getName()   + ".corrupt");
@@ -1322,7 +1324,12 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 			if(!NO_CLEANER_SLEEP) {
 				try {
 					Thread.sleep((int)(CLEANER_PERIOD / 2 + CLEANER_PERIOD * random.nextDouble()));
-				} catch (InterruptedException e){}
+				} catch (InterruptedException e){
+				//Restore flag
+				Thread.currentThread().interrupt();
+				//Exit immedeitatly. No point in starting a clean if we are being told to stop
+				return;
+			   	}		
 			}
 
 			if (shutdown)
@@ -1371,7 +1378,11 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 					try {
 						cleanerCondition.await(CLEANER_PERIOD, TimeUnit.MILLISECONDS);
 					} catch (InterruptedException e) {
-						Logger.debug(this, "interrupted", e);
+						Thread.currentThread().interrupt();
+						// We don't need a 'break' here because the 'while(!shutdown)' 
+                        			// will catch it on the next loop iteration, but a break 
+			                        // is safer to ensure we don't do any more work.
+						break;
 					}
 				} finally {
 					cleanerLock.unlock();
@@ -1385,8 +1396,7 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 		 * Move old entries to new location and resize store
 		 */
 		private void resizeStore(final long _prevStoreSize, final boolean sleep) {
-			Logger.normal(this, "Starting datastore resize");
-			System.out.println("Resizing datastore "+name);
+			Logger.normal(this, "Resizing datastore "+name);
 
 			BatchProcessor<T> resizeProcesser = new BatchProcessor<T>() {
 				Deque<Entry> oldEntryList = new LinkedList<Entry>();
@@ -1571,8 +1581,7 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 					} finally {
 						configLock.writeLock().unlock();
 					}
-					System.out.println(name + " cleaner finished successfully.");
-					Logger.normal(this, "Finish rebuilding bloom filter (" + name + ")");
+					Logger.normal(this, name + " cleaner finished successfully. Finish rebuilding bloom filter (" + name + ")");
 				}
 				
 				public boolean wantFreeEntries() {
@@ -1611,8 +1620,7 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 					}
 
 					if (i++ % 64 == 0)
-						System.err.println(name + " cleaner in progress: " + (entriesTotal - entriesLeft) + "/"
-						        + entriesTotal);
+						Logger.normal(this, name + " cleaner in progress: " + (entriesTotal - entriesLeft) + "/" + entriesTotal);
 
 					batchProcessEntries(curOffset, RESIZE_MEMORY_ENTRIES, processor);
 					entriesLeft = reverse ? curOffset : Math.max(storeSize - curOffset - RESIZE_MEMORY_ENTRIES, 0);
@@ -1626,6 +1634,8 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 							Thread.sleep(100);
 					} catch (InterruptedException e) {
 						processor.abort();
+						//Restore interrupt flag for the Cleaner thread
+						Thread.currentThread().interrupt();
 						return;
 					}
 				}
@@ -1935,11 +1945,11 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 		if(shrinkNow) {
 			configLock.writeLock().lock();
 			try {
-				System.err.println("Waiting for resize to complete...");
+				Logger.normal(this, "Waiting for resize to complete...");
 				while(prevStoreSize == old) {
 					resizeCompleteCondition.awaitUninterruptibly();
 				}
-				System.err.println("Completed shrink, old size was "+old+" new size was "+newStoreSize+" size is now "+storeSize+" (prev="+prevStoreSize+")");
+				Logger.normal(this, "Completed shrink, old size was "+old+" new size was "+newStoreSize+" size is now "+storeSize+" (prev="+prevStoreSize+")");
 			} finally {
 				configLock.writeLock().unlock();
 			}

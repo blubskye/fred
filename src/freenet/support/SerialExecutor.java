@@ -57,8 +57,8 @@ public class SerialExecutor implements Executor {
 						try {
 					job = jobs.poll(NEWJOB_TIMEOUT, TimeUnit.MILLISECONDS);
 						} catch (InterruptedException e) {
-					// ignore
-						}
+						Thread.currentThread().interrupt();
+					}
 				synchronized (syncLock) {
 						threadWaiting=false;
 						}

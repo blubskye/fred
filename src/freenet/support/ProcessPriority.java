@@ -64,10 +64,10 @@ public class ProcessPriority {
                 WindowsHolder lib = WindowsHolder.INSTANCE;
 
                 if (lib.SetPriorityClass(lib.GetCurrentProcess(), WindowsHolder.BELOW_NORMAL_PRIORITY_CLASS)) {
-                    System.out.println("SetPriorityClass() succeeded!");
+                    Logger.normal(ProcessPriority.class, "SetPriorityClass() succeeded!");
                     return background = true;
                 } else {
-                    System.err.println("SetPriorityClass() failed :"+lib.GetLastError());
+                    Logger.error(ProcessPriority.class, "SetPriorityClass() failed :"+lib.GetLastError());
                     return false;
                 }
             } else if (Platform.isLinux()) {
@@ -82,10 +82,10 @@ public class ProcessPriority {
 
     private static boolean handleReturn(int ret) {
         if (ret == 0) {
-            System.out.println("setpriority() succeeded!");
+            Logger.normal(ProcessPriority.class, "setpriority() succeeded!");
             return background = true;
         } else {
-            System.err.println("setpriority() failed :"+ret);
+            Logger.error(ProcessPriority.class, "setpriority() failed :"+ret);
             return false;
         }
     }

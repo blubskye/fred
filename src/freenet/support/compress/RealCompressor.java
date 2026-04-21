@@ -51,8 +51,6 @@ public class RealCompressor {
                                 j.onFailure(e, null, context);
                             } catch (Throwable t) {
                                 Logger.error(this, "Caught in OffThreadCompressor: " + t, t);
-                                System.err.println("Caught in OffThreadCompressor: " + t);
-                                t.printStackTrace();
                                 // Try to fail gracefully
                                 j.onFailure(
                                     new InsertException(InsertExceptionMode.INTERNAL_ERROR, t,

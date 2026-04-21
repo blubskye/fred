@@ -22,17 +22,17 @@ public class FreenetFilePersistentConfig extends FilePersistentConfig {
 				while(!hasNodeStarted){
 					try {
 						wait(1000);
-					} catch (InterruptedException e) {}
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						break;
+					}
 				}
 			}
 
 			try {
 				innerStore();
 			} catch (IOException e) {
-				String err = "Cannot store config: "+e;
-				Logger.error(this, err, e);
-				System.err.println(err);
-				e.printStackTrace();
+				Logger.error(this, "Cannot store config: "+e, e);
 			}
 			synchronized (storeSync) {
 				isWritingConfig = false;

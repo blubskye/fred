@@ -1663,7 +1663,12 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 		while(threadLimit < getActiveThreadCount()){
 			try{
 				Thread.sleep(5000);
-			} catch (InterruptedException e) {}
+			} catch (InterruptedException e) {
+			// Restore the interrupt flag so RequestStarter knows we are shutting down
+			Thread.currentThread().interrupt();
+    		        // 2. Break the loop immediately
+			return;
+			}
 		}
 	}
 

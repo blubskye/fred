@@ -671,13 +671,12 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
                     } catch (InsufficientDiskSpaceException e) {
                         if(!saidSo) {
                             Logger.error(this, "Insufficient disk space to migrate in-RAM buckets to disk!");
-                            System.err.println("Out of disk space!");
                             saidSo = true;
                         }
                         try {
                             Thread.sleep(1000);
                         } catch (InterruptedException e1) {
-                            // Ignore.
+                            Thread.currentThread().interrupt();
                         }
                         continue;
                     }
@@ -694,13 +693,12 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
                     } catch (InsufficientDiskSpaceException e) {
                         if(!saidSo) {
                             Logger.error(this, "Insufficient disk space to migrate in-RAM buckets to disk!");
-                            System.err.println("Out of disk space!");
                             saidSo = true;
                         }
                         try {
                             Thread.sleep(1000);
                         } catch (InterruptedException e1) {
-                            // Ignore.
+                            Thread.currentThread().interrupt();
                         }
                     }
 				}

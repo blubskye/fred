@@ -225,7 +225,7 @@ public class SSKInsertHandler implements PrioRunnable, ByteCounter {
                 	if(sender.getStatus() == SSKInsertSender.NOT_FINISHED)
                 		sender.wait(5000);
                 } catch (InterruptedException e) {
-                	// Ignore
+                	Thread.currentThread().interrupt();
                 }
             }
 

@@ -229,6 +229,7 @@ public class PushDataManager {
 			try {
 				wait();
 			} catch (InterruptedException ie) {
+				Thread.currentThread().interrupt();
 				return null;
 			}
 		}

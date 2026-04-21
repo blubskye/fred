@@ -399,9 +399,7 @@ public class NodeDispatcher implements Dispatcher, Runnable {
 		if(remove) {
 			node.getPeers().disconnectAndRemove(source, false, false, false);
 			if(source instanceof DarknetPeerNode)
-				// FIXME remove, dirty logs.
-				// FIXME add a useralert?
-				System.out.println("Disconnecting permanently from your friend \""+((DarknetPeerNode)source).getName()+"\" because they asked us to remove them.");
+				Logger.warning(this, "Disconnecting permanently from your friend \""+((DarknetPeerNode)source).getName()+"\" because they asked us to remove them.");
 		}
 		// If true, purge all references to this node. Otherwise, we can keep the node
 		// around in secondary tables etc in order to more easily reconnect later. 
@@ -439,7 +437,8 @@ public class NodeDispatcher implements Dispatcher, Runnable {
 					boolean isSSK = msg.getSpec() == DMT.FNPSSKDataRequest;
 					innerHandleDataRequest(msg, (PeerNode)msg.getSource(), isSSK);
 				} catch (InterruptedException e) {
-					// Ignore
+					Thread.currentThread().interrupt();
+					break;
 				}
 			}
 		}

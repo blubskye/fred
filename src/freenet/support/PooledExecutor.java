@@ -227,7 +227,7 @@ public class PooledExecutor implements Executor {
 							try {
 								wait(TIMEOUT);
 							} catch(InterruptedException e) {
-								// Ignore
+								Thread.currentThread().interrupt();
 							}
 						}
 					}

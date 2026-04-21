@@ -43,7 +43,7 @@ public class PluginJarUpdater extends NodeUpdater {
 			} else if(deployOnNextNoRevocation) {
 				deployOnNoRevocation = true;
 				deployOnNextNoRevocation = false;
-				System.out.println("Deploying "+pluginName+" after next revocation check");
+				Logger.normal(this, "Deploying "+pluginName+" after next revocation check");
 				return true;
 			} else
 				return false;
@@ -54,14 +54,12 @@ public class PluginJarUpdater extends NodeUpdater {
 			tempBlobFile.delete();
 			return false;
 		}
-		System.out.println("Deploying new version of "+pluginName+" : unloading old version...");
+		Logger.normal(this, "Deploying new version of "+pluginName+" : unloading old version...");
 		// Write the new version of the plugin before shutting down, so if there is a deadlock in terminate, we will still get the new version after a restart.
 		try {
 			writeJar();
 		} catch (IOException e) {
 			Logger.error(this, "Cannot deploy: "+e, e);
-			System.err.println("Cannot deploy new version of "+pluginName+" : "+e);
-			e.printStackTrace();
 			return false; // Not much we can do ...
 			// FIXME post a useralert
 		}
@@ -96,7 +94,6 @@ public class PluginJarUpdater extends NodeUpdater {
 		requiredNodeVersion = -1;
 		parseManifest(result);
 		if(requiredNodeVersion != -1) {
-			System.err.println("Required node version for plugin "+pluginName+": "+requiredNodeVersion);
 			Logger.normal(this, "Required node version for plugin "+pluginName+": "+requiredNodeVersion);
 		}
 	}
@@ -110,7 +107,7 @@ public class PluginJarUpdater extends NodeUpdater {
 	
 	@Override
 	protected void onStartFetching() {
-		System.err.println("Starting to fetch plugin "+pluginName);
+		Logger.normal(this, "Starting to fetch plugin "+pluginName);
 	}
 
 	@Override
@@ -118,7 +115,7 @@ public class PluginJarUpdater extends NodeUpdater {
 		Bucket oldResult = null;
 		synchronized(this) {
 			if(requiredNodeVersion > Version.buildNumber()) {
-				System.err.println("Found version "+fetchedVersion+" of "+pluginName+" but needs node version "+requiredNodeVersion);
+				Logger.normal(this, "Found version "+fetchedVersion+" of "+pluginName+" but needs node version "+requiredNodeVersion);
 				// FIXME deploy it with the main jar
 				tempBlobFile.delete();
 				return;
@@ -133,7 +130,6 @@ public class PluginJarUpdater extends NodeUpdater {
 		
 		if(loaded == null) {
 			if(!node.getPluginManager().isPluginLoadedOrLoadingOrWantLoad(pluginName)) {
-				System.err.println("Don't want plugin: "+pluginName);
 				Logger.error(this, "Don't want plugin: "+pluginName);
 				tempBlobFile.delete();
 				return;
@@ -207,7 +203,7 @@ public class PluginJarUpdater extends NodeUpdater {
 		}
 		synchronized(writeJarSync) {
 			if (!fNew.delete() && fNew.exists()) {
-				System.err.println("Can't delete " + fNew + "!");
+				Logger.error(this, "Can't delete " + fNew + "!");
 			}
 
 			FileOutputStream fos;
@@ -225,7 +221,7 @@ public class PluginJarUpdater extends NodeUpdater {
 		synchronized(this) {
 			writtenVersion = fetched;
 		}
-		System.err.println("Written " + jarName() + " to " + fNew);
+		Logger.normal(this, "Written " + jarName() + " to " + fNew);
 	}
 
 	void writeJar() throws IOException {
@@ -254,10 +250,10 @@ public class PluginJarUpdater extends NodeUpdater {
 	public synchronized void arm(boolean wasRunning) {
 		if(wasRunning) {
 			deployOnNextNoRevocation = true;
-			System.out.println("Deploying "+pluginName+" after next but one revocation check");
+			Logger.normal(this, "Deploying "+pluginName+" after next but one revocation check");
 		} else {
 			deployOnNoRevocation = true;
-			System.out.println("Deploying "+pluginName+" after next revocation check");
+			Logger.normal(this, "Deploying "+pluginName+" after next revocation check");
 		}
 	}
 

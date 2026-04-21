@@ -278,7 +278,7 @@ public class PluginRespirator {
 	    try {
             stores.writePluginStore(name, store);
         } catch (IOException e) {
-            System.err.println("Unable to write plugin data for "+name+" : "+e);
+            Logger.error(this, "Unable to write plugin data for "+name+" : "+e, e);
             return;
         }
 	}

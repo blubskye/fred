@@ -236,8 +236,6 @@ public class Util {
 						if (md.getProvider() != sun_md.getProvider()) {
 							long time_def = benchmark(md);
 							long time_sun = benchmark(sun_md);
-							System.out.println(algo + " (" + md.getProvider() + "): " + time_def + "ns");
-							System.out.println(algo + " (" + sun_md.getProvider() + "): " + time_sun + "ns");
 							Logger.minor(clazz, algo + " (" + md.getProvider() + "): " + time_def + "ns");
 							Logger.minor(clazz, algo + " (" + sun_md.getProvider() + "): " + time_sun + "ns");
 							if (time_sun < time_def) {
@@ -253,7 +251,6 @@ public class Util {
 					}
 				}
 				Provider mdProvider = md.getProvider();
-				System.out.println(algo + ": using " + mdProvider);
 				Logger.normal(clazz, algo + ": using " + mdProvider);
 				mdProviders_internal.put(algo, mdProvider);
 			}

@@ -29,7 +29,8 @@ public class FProxyFetchWaiter {
 						wait();
 						hasWaited = true;
 					} catch (InterruptedException e) {
-						// Ignore
+						Thread.currentThread().interrupt();
+						break;
 					}
 				}
 			} else {
@@ -42,8 +43,8 @@ public class FProxyFetchWaiter {
 					awoken = false;
 					try {
 						wait(5000);
-					} catch (InterruptedException e) { 
-						// Not likely
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
 					}
 					hasWaited = true;
 				}

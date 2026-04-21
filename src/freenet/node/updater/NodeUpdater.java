@@ -150,14 +150,13 @@ public abstract class NodeUpdater implements ClientGetCallback, USKCallback, Req
 
 			realAvailableVersion = found;
 			if(found > maxDeployVersion) {
-				System.err.println("Ignoring "+jarName() + " update edition "+l+": version too new (min "+minDeployVersion+" max "+maxDeployVersion+")");
+				Logger.normal(this, "Ignoring "+jarName() + " update edition "+l+": version too new (min "+minDeployVersion+" max "+maxDeployVersion+")");
 				found = maxDeployVersion;
 			}
 			
 			if(found <= availableVersion)
 				return;
-			System.err.println("Found " + jarName() + " update edition " + found);
-			Logger.minor(this, "Updating availableVersion from " + availableVersion + " to " + found + " and queueing an update");
+			Logger.normal(this, "Found " + jarName() + " update edition " + found);
 			this.availableVersion = found;
 		}
 		finishOnFoundEdition(found);
@@ -172,7 +171,7 @@ public abstract class NodeUpdater implements ClientGetCallback, USKCallback, Req
 		}, SECONDS.toMillis(60)); // leave some time in case we get later editions
 		// LOCKING: Always take the NodeUpdater lock *BEFORE* the NodeUpdateManager lock
 		if(found <= currentVersion) {
-			System.err.println("Cancelling fetch for "+found+": not newer than current version "+currentVersion);
+			Logger.normal(this, "Cancelling fetch for "+found+": not newer than current version "+currentVersion);
 			return;
 		}
 		onStartFetching();
@@ -205,8 +204,7 @@ public abstract class NodeUpdater implements ClientGetCallback, USKCallback, Req
 			fetchingVersion = availableVersion;
 
 			if(availableVersion > currentVersion) {
-				Logger.normal(this, "Starting the update process (" + availableVersion + ')');
-				System.err.println("Starting the update process: found the update (" + availableVersion + "), now fetching it.");
+				Logger.normal(this, "Starting the update process: found the update (" + availableVersion + "), now fetching it.");
 			}
 			if(logMINOR)
 				Logger.minor(this, "Starting the update process (" + availableVersion + ')');
@@ -216,7 +214,7 @@ public abstract class NodeUpdater implements ClientGetCallback, USKCallback, Req
 					if(logMINOR)
 						Logger.minor(this, "Scheduling request for " + URI.setSuggestedEdition(availableVersion));
 					if(availableVersion > currentVersion)
-						System.err.println("Starting " + jarName() + " fetch for " + availableVersion);
+						Logger.normal(this, "Starting " + jarName() + " fetch for " + availableVersion);
 					tempBlobFile =
 						File.createTempFile(blobFilenamePrefix + availableVersion + "-", ".fblob.tmp", manager.getNode().getClientCore().getPersistentTempDir());
 					FreenetURI uri = URI.setSuggestedEdition(availableVersion);
@@ -226,7 +224,7 @@ public abstract class NodeUpdater implements ClientGetCallback, USKCallback, Req
 						null, new BinaryBlobWriter(new FileBucket(tempBlobFile, false, false, false, false)), null);
 					toStart = cg;
 				} else {
-					System.err.println("Already fetching "+jarName() + " fetch for " + fetchingVersion + " want "+availableVersion);
+					Logger.normal(this, "Already fetching "+jarName() + " fetch for " + fetchingVersion + " want "+availableVersion);
 				}
 				isFetching = true;
 			} catch(Exception e) {
@@ -280,7 +278,6 @@ public abstract class NodeUpdater implements ClientGetCallback, USKCallback, Req
 			if(result == null || result.asBucket() == null || result.asBucket().size() == 0) {
 				tempBlobFile.delete();
 				Logger.error(this, "Cannot update: result either null or empty for " + availableVersion);
-				System.err.println("Cannot update: result either null or empty for " + availableVersion);
 				// Try again
 				if(result == null || result.asBucket() == null || availableVersion > fetchedVersion)
 					node.getTicker().queueTimedJob(new Runnable() {
@@ -305,9 +302,8 @@ public abstract class NodeUpdater implements ClientGetCallback, USKCallback, Req
 					}
 			}
 			this.fetchedVersion = fetchedVersion;
-			System.out.println("Found " + jarName() + " version " + fetchedVersion);
 			if(fetchedVersion > currentVersion)
-				Logger.normal(this, "Found version " + fetchedVersion + ", setting up a new UpdatedVersionAvailableUserAlert");
+				Logger.normal(this, "Found "+jarName()+" version " + fetchedVersion + ", setting up a new UpdatedVersionAvailableUserAlert");
 			maybeParseManifest(result, fetchedVersion);
 			this.cg = null;
 		}
@@ -468,8 +464,7 @@ public abstract class NodeUpdater implements ClientGetCallback, USKCallback, Req
 				}
 			}, 0);
 		} else {
-			Logger.error(this, "Canceling fetch : " + e.getMessage());
-			System.err.println("Unexpected error fetching update: " + e.getMessage());
+			Logger.error(this, "Unexpected error fetching update: " + e.getMessage(), e);
 			if(e.isFatal()) {
 				// Wait for the next version
 			} else
@@ -576,13 +571,13 @@ public abstract class NodeUpdater implements ClientGetCallback, USKCallback, Req
 				if(realAvailableVersion != availableVersion && availableVersion < requiredExt && realAvailableVersion >= requiredExt) {
 					// We found a revision but didn't fetch it because it wasn't within the range for the old jar.
 					// The new one requires it, however.
-					System.err.println("Previously out-of-range edition "+realAvailableVersion+" is now needed by the new jar; scheduling fetch.");
+					Logger.normal(this, "Previously out-of-range edition "+realAvailableVersion+" is now needed by the new jar; scheduling fetch.");
 					callFinishedFound = availableVersion = realAvailableVersion;
 				} else if(availableVersion < requiredExt) {
 					// Including if it hasn't been found at all
 					// Just try it ...
 					callFinishedFound = availableVersion = requiredExt;
-					System.err.println("Need minimum edition "+requiredExt+" for new jar, found "+availableVersion+"; scheduling fetch.");
+					Logger.normal(this, "Need minimum edition "+requiredExt+" for new jar, found "+availableVersion+"; scheduling fetch.");
 				}
 			}
 		}

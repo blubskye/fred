@@ -51,10 +51,7 @@ class Persister implements Runnable {
 		try {
 			persistThrottle();
 		} catch (Throwable t) {
-			Logger.error(this, "Caught in ThrottlePersister: "+t, t);
-			System.err.println("Caught in ThrottlePersister: "+t);
-			t.printStackTrace();
-			System.err.println("Will restart ThrottlePersister...");
+			Logger.error(this, "Caught in ThrottlePersister, will restart: "+t, t);
 		}
 		ps.queueTimedJob(this, PERIOD);
 	}
@@ -107,7 +104,7 @@ class Persister implements Runnable {
 		SemiOrderedShutdownHook.get().addEarlyJob(new Thread() {
 			
 			public void run() {
-				System.out.println("Writing "+persistTarget+" on shutdown");
+				Logger.normal(this, "Writing "+persistTarget+" on shutdown");
 				persistThrottle();
 			}
 			

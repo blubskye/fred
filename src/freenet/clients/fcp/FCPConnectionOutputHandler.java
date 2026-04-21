@@ -87,7 +87,7 @@ public class FCPConnectionOutputHandler implements Runnable {
 							try {
 								outQueue.wait(1000);
 							} catch (InterruptedException e) {
-								// Ignore
+								Thread.currentThread().interrupt();
 							}
 							continue;
 						}
@@ -168,6 +168,7 @@ public class FCPConnectionOutputHandler implements Runnable {
 				try {
 					outQueue.wait(1500);
 				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 					continue;
 				}
 			}

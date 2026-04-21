@@ -993,7 +993,7 @@ public final class CHKInsertSender extends BaseSender implements PrioRunnable, A
 					try {
 						backgroundTransfers.wait(SECONDS.toMillis(100));
 					} catch (InterruptedException e) {
-						// Ignore
+						Thread.currentThread().interrupt();
 					}
 				}				
 			}
@@ -1010,7 +1010,7 @@ public final class CHKInsertSender extends BaseSender implements PrioRunnable, A
 			try {
 				CHKInsertSender.this.wait(SECONDS.toMillis(100));
 			} catch (InterruptedException e) {
-				// Ignore
+				Thread.currentThread().interrupt();
 			}
 		}
 	}

@@ -252,10 +252,9 @@ public class SECURITY_PHYSICAL implements Step {
 				} catch (IOException e) {
 					if(!core.getNode().getMasterPasswordFile().exists()) {
 						// Ok.
-						System.out.println("Master password file no longer exists, assuming this is deliberate");
+						Logger.normal(this, "Master password file no longer exists, assuming this is deliberate");
 					} else {
-						System.err.println("Cannot change password as cannot write new passwords file: "+e);
-						e.printStackTrace();
+						Logger.error(this, "Cannot change password as cannot write new passwords file: "+e, e);
 						throw new IOException("cantWriteNewMasterKeysFile", e);
 					}
 				} catch (MasterKeysWrongPasswordException e) {
@@ -263,7 +262,7 @@ public class SECURITY_PHYSICAL implements Step {
 				} catch (MasterKeysFileSizeException e) {
 					return errorCorrupt;
 				} catch (Node.AlreadySetPasswordException e) {
-					System.err.println("Already set a password when changing it - maybe master.keys copied in at the wrong moment???");
+					Logger.error(this, "Already set a password when changing it - maybe master.keys copied in at the wrong moment???");
 				}
 			}
 
@@ -289,7 +288,7 @@ public class SECURITY_PHYSICAL implements Step {
 	 */
 	private String promptPassword(SecurityLevels.PHYSICAL_THREAT_LEVEL newThreatLevel, PASSWORD_PROMPT type) {
 		if (type == PASSWORD_PROMPT.DECRYPT_WRONG) {
-			System.err.println("Wrong password!");
+			Logger.warning(this, "Wrong password!");
 		}
 		StringBuilder destination = new StringBuilder(FirstTimeWizardToadlet.WIZARD_STEP.SECURITY_PHYSICAL+
 		        "&error=pass&newThreatLevel=").append(newThreatLevel.name()).append("&type=").append(type.name());
@@ -303,9 +302,9 @@ public class SECURITY_PHYSICAL implements Step {
 			core.getNode().lateSetupDatabase(null);
 		} catch (MasterKeysWrongPasswordException e) {
 			// Ignore, impossible???
-			System.err.println("Failed starting up database while switching physical security level to "+newThreatLevel+" from "+oldThreatLevel+" : wrong password - this is impossible, it should have been handled by the other cases, suggest you remove master.keys");
+			Logger.error(this, "Failed starting up database while switching physical security level to "+newThreatLevel+" from "+oldThreatLevel+" : wrong password - this is impossible, it should have been handled by the other cases, suggest you remove master.keys");
 		} catch (MasterKeysFileSizeException e) {
-			System.err.println("Failed starting up database while switching physical security level to "+newThreatLevel+" from "+oldThreatLevel+" : "+core.getNode().getMasterPasswordFile()+" is too " + e.sizeToString());
+			Logger.error(this, "Failed starting up database while switching physical security level to "+newThreatLevel+" from "+oldThreatLevel+" : "+core.getNode().getMasterPasswordFile()+" is too " + e.sizeToString());
 		}
 	}
 

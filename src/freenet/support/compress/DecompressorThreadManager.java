@@ -133,7 +133,7 @@ public class DecompressorThreadManager {
 				if(time > MINUTES.toMillis(20))
 					Logger.error(this, "Still waiting for decompressor chain after "+TimeUtil.formatTime(time));
 			} catch(InterruptedException e) {
-				//Do nothing
+				Thread.currentThread().interrupt();
 			}
 		}
 		if(error != null) throw error;

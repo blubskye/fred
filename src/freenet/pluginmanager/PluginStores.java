@@ -13,6 +13,7 @@ import freenet.node.Node;
 import freenet.node.NodeInitException;
 import freenet.node.ProgramDirectory;
 import freenet.support.IllegalBase64Exception;
+import freenet.support.Logger;
 import freenet.support.SimpleFieldSet;
 import freenet.support.api.Bucket;
 import freenet.support.io.FileBucket;
@@ -30,7 +31,7 @@ public class PluginStores {
                 "NodeClientCore.pluginStoresDir", "NodeClientCore.pluginStoresDir", null, null);
         File dir = pluginStoresDir.dir();
         if(!(dir.mkdirs() || (dir.exists() && dir.isDirectory() && dir.canRead() && dir.canWrite()))) {
-            System.err.println("Unable to create folder for plugin data: "+pluginStoresDir.dir());
+            Logger.error(PluginStores.class, "Unable to create folder for plugin data: "+pluginStoresDir.dir());
         }
     }
 
@@ -124,20 +125,17 @@ public class PluginStores {
             }
         } catch (IOException e) {
             // Hence, if close() throws, we DO need to catch it here.
-            System.err.println("Unable to load plugin data for "+storeIdentifier+" : "+e);
-            System.err.println("This could be caused by data corruption or bugs in Freenet.");
+            Logger.error(PluginStores.class, "Unable to load plugin data for "+storeIdentifier+" : "+e+". This could be caused by data corruption or bugs in Freenet.", e);
             // FIXME crypto - possible it's caused by attack while offline.
             return null;
         } catch (IllegalBase64Exception e) {
             // Hence, if close() throws, we DO need to catch it here.
-            System.err.println("Unable to load plugin data for "+storeIdentifier+" : "+e);
-            System.err.println("This could be caused by data corruption or bugs in Freenet.");
+            Logger.error(PluginStores.class, "Unable to load plugin data for "+storeIdentifier+" : "+e+". This could be caused by data corruption or bugs in Freenet.", e);
             // FIXME crypto - possible it's caused by attack while offline.
             return null;
         } catch (FSParseException e) {
             // Hence, if close() throws, we DO need to catch it here.
-            System.err.println("Unable to load plugin data for "+storeIdentifier+" : "+e);
-            System.err.println("This could be caused by data corruption or bugs in Freenet.");
+            Logger.error(PluginStores.class, "Unable to load plugin data for "+storeIdentifier+" : "+e+". This could be caused by data corruption or bugs in Freenet.", e);
             // FIXME crypto - possible it's caused by attack while offline.
             return null;
         }
@@ -152,7 +150,7 @@ public class PluginStores {
         }
         if(main.exists()) {
             if(!main.renameTo(backup))
-                System.err.println("Unable to rename "+main+" to "+backup+" when writing pluginstore for "+storeIdentifier);
+                Logger.error(PluginStores.class, "Unable to rename "+main+" to "+backup+" when writing pluginstore for "+storeIdentifier);
         }
         writePluginStoreInner(storeIdentifier, store, isEncrypted, false);
         File f = getPluginStoreFile(storeIdentifier, !isEncrypted, true);

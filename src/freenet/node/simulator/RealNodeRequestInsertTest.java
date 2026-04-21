@@ -166,6 +166,7 @@ public class RealNodeRequestInsertTest extends RealNodeRoutingTest {
         try {
             Thread.sleep(100);
         } catch (InterruptedException e1) {
+            Thread.currentThread().interrupt();
         }
         String dataString = baseString + requestNumber;
         // Pick random node to insert to

@@ -61,7 +61,6 @@ public class PrioritizedTicker implements Ticker, Runnable {
 	
 	public void start() {
 		Logger.normal(this, "Starting Ticker");
-		System.out.println("Starting Ticker");
 		myThread.start();
 	}
 
@@ -73,8 +72,6 @@ public class PrioritizedTicker implements Ticker, Runnable {
 				realRun();
 			} catch(Throwable t) {
 				Logger.error(this, "Caught in PacketSender: " + t, t);
-				System.err.println("Caught in PacketSender: " + t);
-				t.printStackTrace();
 			}
 		}
 	}
@@ -126,10 +123,7 @@ public class PrioritizedTicker implements Ticker, Runnable {
 					try {
 						executor.execute(r.job, r.name, true);
 					} catch(Throwable t) {
-						Logger.error(this, "Caught in PacketSender: " + t, t);
-						System.err.println("Caught in PacketSender: " + t);
-						t.printStackTrace();
-                                                System.err.println("Will retry above failed operation...");
+						Logger.error(this, "Caught in PacketSender, will retry: " + t, t);
                                                 queueTimedJob(r.job, r.name, 200, true, false);
 					}
 			}

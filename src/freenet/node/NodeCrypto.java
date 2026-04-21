@@ -186,8 +186,6 @@ public class NodeCrypto {
 					break;
 				} catch (Exception e) {
 					Logger.normal(this, "Could not use port: "+bindto+ ':' +portNo+": "+e, e);
-					System.err.println("Could not use port: "+bindto+ ':' +portNo+": "+e);
-					e.printStackTrace();
 					continue;
 				}
 			}
@@ -198,15 +196,12 @@ public class NodeCrypto {
 				u = new UdpSocketHandler(port, bindto.getAddress(), node, startupTime, getTitle(port), node.getCollector());
 			} catch (Exception e) {
 				Logger.error(this, "Caught "+e, e);
-				System.err.println(e);
-				e.printStackTrace();
 				throw new NodeInitException(NodeInitException.EXIT_IMPOSSIBLE_USM_PORT, "Could not bind to port: "+port+" (node already running?)");
 			}
 		}
 		socket = u;
 
 		Logger.normal(this, "FNP port created on "+bindto+ ':' +port);
-		System.out.println("FNP port created on "+bindto+ ':' +port);
 		portNumber = port;
 		config.setPort(port);
 
@@ -577,8 +572,7 @@ public class NodeCrypto {
 						// FIXME likewise, FOAFs should not boot darknet connections.
 						continue;
 					}
-					Logger.error(this, "Dropping peer "+pn+" because don't want connection due to others on the same IP address!");
-					System.out.println("Disconnecting permanently from your friend \""+((DarknetPeerNode)pn).getName()+"\" because your friend \""+((DarknetPeerNode)peerNode).getName()+"\" is using the same IP address "+address+"!");
+					Logger.error(this, "Dropping peer "+pn+" because don't want connection due to others on the same IP address! Disconnecting permanently from friend \""+((DarknetPeerNode)pn).getName()+"\" because friend \""+((DarknetPeerNode)peerNode).getName()+"\" is using the same IP address "+address);
 				}
 				node.getPeers().disconnectAndRemove(pn, true, true, pn.isOpennet());
 			}

@@ -41,7 +41,7 @@ public class HostnameUtil {
 		//       described in RFC3490.  Such an assertion has not be
 		//       thoroughly tested.
 		if(!hn.matches("(?:[-!#\\$%&'\\*+\\\\/0-9=?A-Z^_`a-z{|}]+\\.)+[a-zA-Z]{2,6}")) {
-			System.err.println("Failed to match "+hn+" as a hostname or IPv4/IPv6 IP address");
+			Logger.minor(HostnameUtil.class, "Failed to match "+hn+" as a hostname or IPv4/IPv6 IP address");
 			return false;
 		}
 		return true;

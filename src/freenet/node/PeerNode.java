@@ -566,17 +566,20 @@ public abstract class PeerNode implements USKRetrieverCallback, BasePeerNode, Pe
 					} catch(HostnameSyntaxException e) {
 						if(fromLocal)
 							Logger.error(this, "Invalid hostname or IP Address syntax error while parsing peer reference in local peers list: " + phys);
-						System.err.println("Invalid hostname or IP Address syntax error while parsing peer reference: " + phys);
+						else
+							Logger.normal(this, "Invalid hostname or IP Address syntax error while parsing peer reference: " + phys);
 						continue;
 					} catch (PeerParseException e) {
 						if(fromLocal)
 							Logger.error(this, "Invalid hostname or IP Address syntax error while parsing peer reference in local peers list: " + phys);
-						System.err.println("Invalid hostname or IP Address syntax error while parsing peer reference: " + phys);
+						else
+							Logger.normal(this, "Invalid hostname or IP Address syntax error while parsing peer reference: " + phys);
 						continue;
 					} catch (UnknownHostException e) {
 						if(fromLocal)
 							Logger.error(this, "Invalid hostname or IP Address syntax error while parsing peer reference in local peers list: " + phys);
-						System.err.println("Invalid hostname or IP Address syntax error while parsing peer reference: " + phys);
+						else
+							Logger.normal(this, "Invalid hostname or IP Address syntax error while parsing peer reference: " + phys);
 						continue;
 					}
 					if(!nominalPeer.contains(p))
@@ -1158,7 +1161,6 @@ public abstract class PeerNode implements USKRetrieverCallback, BasePeerNode, Pe
 
 		if(shouldDisconnect) {
 			String time = TimeUtil.formatTime(FNPPacketMangler.MAX_SESSION_KEY_REKEYING_DELAY);
-			System.err.println("The peer (" + this + ") has been asked to rekey " + time + " ago... force disconnect.");
 			Logger.error(this, "The peer (" + this + ") has been asked to rekey " + time + " ago... force disconnect.");
 			forceDisconnect();
 		} else if (shouldReturn || hasLiveHandshake(now)) {
@@ -1678,7 +1680,7 @@ public abstract class PeerNode implements USKRetrieverCallback, BasePeerNode, Pe
 				try {
 					wait(waitTime);
 				} catch(InterruptedException e) {
-				// Ignore
+					Thread.currentThread().interrupt();
 				}
 			}
 		}
@@ -4652,7 +4654,7 @@ public abstract class PeerNode implements USKRetrieverCallback, BasePeerNode, Pe
 							}
 						}
 					} catch (InterruptedException e) {
-						// Ignore
+						Thread.currentThread().interrupt();
 					}
 				}
 				if(!timedOut) {

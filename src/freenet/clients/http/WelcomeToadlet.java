@@ -192,7 +192,7 @@ public class WelcomeToadlet extends Toadlet {
             if (node.isUsingWrapper()) {
             	ctx.getPageMaker().getInfobox("#", l10n("threadDumpSubTitle"), contentNode, "thread-dump-generation", true).
             		addChild("#", l10n("threadDumpWithFilename", "filename", WrapperManager.getProperties().getProperty("wrapper.logfile")));
-                System.out.println("Thread Dump:");
+                Logger.normal(this, "Thread Dump requested via FProxy");
                 WrapperManager.requestThreadDump();
             } else {
             	ctx.getPageMaker().getInfobox("infobox-error", l10n("threadDumpSubTitle"), contentNode, "thread-dump-generation", true).

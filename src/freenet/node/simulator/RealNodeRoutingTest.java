@@ -100,7 +100,7 @@ public class RealNodeRoutingTest extends RealNodeTest {
 			try {
 				Thread.sleep(sleepTime);
 			} catch(InterruptedException e) {
-				// Ignore
+				Thread.currentThread().interrupt();
 			}
 			for(int i = 0; i < nodes.length; i++) {
 				System.err.println("Cycle " + cycleNumber + " node " + i + ": " + nodes[i].getLocation());
@@ -137,6 +137,7 @@ public class RealNodeRoutingTest extends RealNodeTest {
 				try {
 					Thread.sleep(sleepTime);
 				} catch(InterruptedException e1) {
+					Thread.currentThread().interrupt();
 				}
 				try {
 					Node randomNode = nodes[random.nextInt(nodes.length)];

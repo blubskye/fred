@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 import freenet.client.async.ClientContext;
+import freenet.support.Logger;
 
 /**
  * Event handeling for clients. SimpleEventProducer is a simple
@@ -68,9 +69,7 @@ public class SimpleEventProducer implements ClientEventProducer, Serializable {
             try {
                 cel.receive(ce, context);
             } catch (Exception ue) {
-                System.err.println("---Unexpected Exception------------------");
-                ue.printStackTrace();
-                System.err.println("-----------------------------------------");
+                Logger.error(this, "Unexpected exception in event listener: "+ue, ue);
             }
         }
     }
