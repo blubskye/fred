@@ -855,7 +855,8 @@ public class FCPServer implements Runnable, DownloadCache {
                 	return false; 
             	}
 	}
-
+	}
+	
 	public void makePersistentGlobalRequest(FreenetURI fetchURI, boolean filterData, String expectedMimeType, String persistenceTypeString, String returnTypeString, boolean realTimeFlag) throws NotAllowedException, IOException {
 		makePersistentGlobalRequest(fetchURI, filterData, expectedMimeType, persistenceTypeString, returnTypeString, realTimeFlag, core.getDownloadsDir());
 	}
