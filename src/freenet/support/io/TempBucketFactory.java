@@ -484,8 +484,9 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 		}
 		
 		@Override
+		@SuppressWarnings("removal")
 		protected void finalize() throws Throwable {
-		    // If it's been converted to a TempRandomAccessBuffer, finalize() will only be called 
+		    // If it's been converted to a TempRandomAccessBuffer, finalize() will only be called
 		    // if *neither* object is reachable.
 			if (!hasBeenFreed) {
 				if (TRACE_BUCKET_LEAKS)
@@ -494,7 +495,6 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 				    Logger.error(this, "TempBucket not freed, size=" + size() + ", isRAMBucket=" + isRAMBucket()+" : "+this);
 				free();
 			}
-                        super.finalize();
 		}
 
         @Override
@@ -899,9 +899,10 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
         }
         
         @Override
+        @SuppressWarnings("removal")
         protected void finalize() throws Throwable {
             if(original != null) return; // TempBucket's responsibility if there was one.
-            // If it's been converted to a TempRandomAccessBuffer, finalize() will only be called 
+            // If it's been converted to a TempRandomAccessBuffer, finalize() will only be called
             // if *neither* object is reachable.
             if (!hasBeenFreed()) {
                 if (TRACE_BUCKET_LEAKS)
@@ -910,7 +911,6 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
                     Logger.error(this, "TempRandomAccessBuffer not freed, size=" + size() +" : "+this);
                 free();
             }
-            super.finalize();
         }
 
 	}

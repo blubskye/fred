@@ -148,6 +148,7 @@ public class ClientSSK extends ClientKey {
 	 * @return the provided argument
 	 * @deprecated mutable data cannot safely be interned
 	 */
+	@Deprecated
 	public static byte[] internExtra(byte[] buf) {
 		return buf;
 	}

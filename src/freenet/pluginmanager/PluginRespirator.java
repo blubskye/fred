@@ -57,9 +57,9 @@ public class PluginRespirator {
 	 * and all subsystems.  Prefer the narrower methods on {@link PluginRespirator}
 	 * (e.g. {@link #getHLSimpleClient()}, {@link #getPageMaker()}).  Only call
 	 * this if you truly need something that has no dedicated accessor.
+	 * Get the node. Use this if you need access to low-level stuff, node config etc.
 	 */
-	/** Get the node. Use this if you need access to low-level stuff, node config
-	 * etc. */
+	@Deprecated
 	public Node getNode(){
 		// HO-37: Log which plugin is requesting the full Node reference so that
 		// operators can audit unofficial plugins that use this broad API.

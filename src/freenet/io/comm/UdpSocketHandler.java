@@ -186,9 +186,7 @@ public class UdpSocketHandler implements PrioRunnable, PacketSocketHandler, Port
 			} catch (Throwable tt) {}
 			try {
 				System.gc();
-				System.runFinalization();
 				System.gc();
-				System.runFinalization();
 			} catch (Throwable tt) {}
 			try {
 				Runtime r = Runtime.getRuntime();

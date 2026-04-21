@@ -88,10 +88,8 @@ public class PluginTalker {
 				return;
 			}
 			plug.handle(replysender, plugparams, data2, access);
-		} catch (ThreadDeath td) {
-			throw td;  // Fatal, thread is stop()'ed
-		} catch (VirtualMachineError vme) {
-			throw vme; // OOM is included here
+		} catch (Error e) {
+			throw e;  // Fatal errors (ThreadDeath, OOM, etc.) must propagate
 		} catch (Throwable t) {
 			Logger.error(this, "Cought error while execute fcp plugin handler for '"+pluginName+"', report it to the plugin author: " + t.getMessage(), t);
 		}

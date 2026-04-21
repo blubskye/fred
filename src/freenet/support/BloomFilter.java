@@ -230,9 +230,9 @@ public abstract class BloomFilter {
 	}
 
 	@Override
+	@SuppressWarnings("removal")
 	protected void finalize() throws Throwable {
 		close();
-                super.finalize();
 	}
 	
 	public int getSizeBytes() {

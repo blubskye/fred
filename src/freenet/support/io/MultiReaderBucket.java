@@ -183,9 +183,9 @@ public class MultiReaderBucket implements Serializable {
 		}
 		
 		@Override
+		@SuppressWarnings("removal")
 		protected void finalize() throws Throwable {
 			free();
-                        super.finalize();
 		}
 
 		@Override
