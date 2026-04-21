@@ -852,8 +852,9 @@ public class FCPServer implements Runnable, DownloadCache {
                 	}
                 	// If we broke out due to an interrupt, the loop ends here.
                 	// Since we don't have the result yet, returning false is the safest bet.
-                	return false; 
+                	return false;
             	}
+	}
 	}
 
 	public void makePersistentGlobalRequest(FreenetURI fetchURI, boolean filterData, String expectedMimeType, String persistenceTypeString, String returnTypeString, boolean realTimeFlag) throws NotAllowedException, IOException {
