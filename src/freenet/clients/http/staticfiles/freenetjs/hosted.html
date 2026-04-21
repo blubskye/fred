@@ -305,10 +305,10 @@ gwtOnLoad = function(errFn, modName, modBase){
 }
 
 function simpleEscape(originalString) {
-  return originalString.replace("&","&amp;")
-    .replace("<","&lt;")
-    .replace(">","&gt;")
-    .replace("\"","&quot;");
+   return originalString.replace(/&/g,"&amp;")                                                                                                                                                     
+     .replace(/</g,"&lt;")                                                                                                                                                                         
+     .replace(/>/g,"&gt;")                                                                                                                                                                         
+     .replace(/"/g,"&quot;");   
 }
 
 window.onunload = function() {
