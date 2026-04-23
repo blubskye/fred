@@ -24,6 +24,7 @@ import freenet.support.LoggerHook.InvalidThresholdException;
 import freenet.support.api.RandomAccessBucket;
 import freenet.support.io.FileUtil;
 
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class BootstrapPushPullTest {
 
 	public static int TEST_SIZE = 1024*1024;

@@ -31,6 +31,7 @@ import freenet.support.LoggerHook.InvalidThresholdException;
  * - Prints on the logger when packets are sent, when they are
  *   received, (by both sides), and their sequence numbers.
  */
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class RealNodePingTest {
 	
 	public static final int DARKNET_PORT1 = RealNodeBusyNetworkTest.DARKNET_PORT_END;

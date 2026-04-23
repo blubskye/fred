@@ -28,6 +28,7 @@ public class ProcessPriority {
     private static volatile boolean background = false;
     
     /// Windows interface (kernel32.dll) ///
+    @SuppressWarnings("deprecation") // Native.loadLibrary() deprecated in JNA 5.x; Native.load() is JNA-5 only
     public interface WindowsHolder extends StdCallLibrary {
         WindowsHolder INSTANCE = (WindowsHolder) Native.loadLibrary("kernel32", WindowsHolder.class);
 

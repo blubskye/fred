@@ -772,7 +772,7 @@ public class TextModeClientInterface implements Runnable {
                     in.close();
                 } else {
                 	outsb.append("Given string seems to be an URL, loading...\r\n");
-                    URL url = new URL(key);
+                    URL url = URI.create(key).toURL();
                     content = AddPeer.getReferenceFromURL(url).toString();
                 }
             } else {

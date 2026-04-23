@@ -26,6 +26,7 @@ import static java.util.concurrent.TimeUnit.DAYS;
  * load limiting and block transfer.
  * @author toad
  */
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class RealNodeBusyNetworkTest extends RealNodeRoutingTest {
 
     static final int NUMBER_OF_NODES = 25;

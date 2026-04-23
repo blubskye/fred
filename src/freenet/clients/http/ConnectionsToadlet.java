@@ -670,7 +670,7 @@ public abstract class ConnectionsToadlet extends Toadlet {
 					  ref = AddPeer.getReferenceFromFreenetURI(refUri, client);
 					} catch (MalformedURLException | FetchException e) {
 						Logger.warning(this, "Url cannot be used as Freenet URI, trying to fetch as URL: " + urltext);
-						URL url = new URL(urltext);
+						URL url = URI.create(urltext).toURL();
 					  ref = AddPeer.getReferenceFromURL(url);
 					}
 				} catch (IOException e) {

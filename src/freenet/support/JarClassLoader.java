@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.NoSuchElementException;
@@ -181,7 +182,7 @@ public class JarClassLoader extends ClassLoader implements Closeable {
 				return null;
 			}
 
-			return new URL("jar:" + new File(tempJarFile.getName()).toURI().toURL() + "!/" + name);
+			return URI.create("jar:" + new File(tempJarFile.getName()).toURI().toURL() + "!/" + name).toURL();
 		} catch (MalformedURLException e) {
 		}
 		return null;
@@ -202,7 +203,7 @@ public class JarClassLoader extends ClassLoader implements Closeable {
 					JarEntry jarEntry = jarFileEntries.nextElement();
 					if (jarEntry.getName().equals(name) || jarEntry.getName().equals(name + "/")) {
 						try {
-							nextElement = new URL("jar:" + new File(tempJarFile.getName()).toURI().toURL() + "!/" + name);
+							nextElement = URI.create("jar:" + new File(tempJarFile.getName()).toURI().toURL() + "!/" + name).toURL();
 						} catch (MalformedURLException e) {
 							/* ignore. */
 						}

@@ -12,6 +12,7 @@ import freenet.support.Logger;
 import freenet.support.SimpleFieldSet;
 import freenet.support.api.Bucket;
 
+@SuppressWarnings("deprecation") // Uses PluginReplySender which is deprecated; whole class is part of legacy plugin FCP API
 public abstract class AbstractFCPHandler {
 
 	private static volatile boolean logDEBUG;

@@ -108,6 +108,7 @@ public class DefaultThreadDiagnostics implements Runnable, ThreadDiagnostics {
      * @param thread Thread object to get the CPU usage
      * @return Delta CPU time (nanoseconds)
      */
+    @SuppressWarnings("deprecation") // Thread.getId() deprecated in Java 19; replacement threadId() unavailable on Java 17
     private long getCpuTimeDelta(Thread thread) {
         long jobId, current;
         String name;
@@ -132,6 +133,7 @@ public class DefaultThreadDiagnostics implements Runnable, ThreadDiagnostics {
      * @param thread
      * @return Job ID or Thread ID.
      */
+    @SuppressWarnings("deprecation") // Thread.getId() deprecated in Java 19; replacement threadId() unavailable on Java 17
     private long getJobId(Thread thread) {
         long jobId = thread.getId();
         if ((thread instanceof PooledExecutor.MyThread)) {
@@ -190,6 +192,7 @@ public class DefaultThreadDiagnostics implements Runnable, ThreadDiagnostics {
     }
 
     @Override
+    @SuppressWarnings("deprecation") // Thread.getId() deprecated in Java 19; replacement threadId() unavailable on Java 17
     public void run() {
         List<NodeThreadInfo> threads = Arrays.stream(nodeStats.getThreads())
                 .filter(Objects::nonNull)

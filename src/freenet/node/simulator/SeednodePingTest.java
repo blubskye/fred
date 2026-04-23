@@ -46,6 +46,7 @@ import freenet.support.LoggerHook.InvalidThresholdException;
 /**
  * @author Florent Daigni&egrave;re &lt;nextgens@freenetproject.org&gt;
  */
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class SeednodePingTest extends RealNodeTest {
 
 	static File STATUS_DIR = new File("/var/www/freenet/tests/seednodes/status/");

@@ -16,6 +16,7 @@ import freenet.support.Logger.LogLevel;
 import freenet.support.LoggerHook.InvalidThresholdException;
 import freenet.support.io.FileUtil;
 
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class BootstrapSeedTest {
 
 	public static int EXIT_NO_SEEDNODES = 257;

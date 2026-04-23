@@ -31,6 +31,7 @@ import freenet.support.io.FileUtil;
  * Unlike LongTermPushPullTest, this only inserts one key per day. That key
  * is then re-pulled at increasing intervals.
  */
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class LongTermPushRepullTest extends LongTermTest {
 	private static final int TEST_SIZE = 64 * 1024;
 

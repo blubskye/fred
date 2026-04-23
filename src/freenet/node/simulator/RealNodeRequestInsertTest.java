@@ -43,6 +43,7 @@ import freenet.support.math.SimpleRunningAverage;
 /**
  * @author amphibian
  */
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class RealNodeRequestInsertTest extends RealNodeRoutingTest {
 
     static final int NUMBER_OF_NODES = 100;

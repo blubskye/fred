@@ -57,6 +57,7 @@ import freenet.support.io.FileUtil;
  * This should be transformed into a Heavy Unit Test.
  * @author toad
  */
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class RealNodeULPRTest extends RealNodeTest {
 	
 	// Exit codes

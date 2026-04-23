@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 
@@ -19,7 +20,7 @@ public class PluginDownLoaderURL extends PluginDownLoader<URL> {
 	@Override
 	public URL checkSource(String source) throws PluginNotFoundException {
 		try {
-			URL url = new URL(source);
+			URL url = URI.create(source).toURL();
 			// P-5: Reject plain HTTP and FTP — only HTTPS is acceptable for plugin loading.
 			// A MITM on a plain-HTTP connection can silently replace the jar with malicious
 			// bytecode that then runs with full node privileges.
@@ -99,7 +100,7 @@ public class PluginDownLoaderURL extends PluginDownLoader<URL> {
 					URL target = null;
 					if (loc != null)
 					{
-						target = new URL(base, loc);
+						target = URI.create(base.toString()).resolve(loc).toURL();
 					}
 					http.disconnect();
 					// Redirection should be allowed only for HTTP and HTTPS

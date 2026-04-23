@@ -26,6 +26,7 @@ public class PluginInfoMessage extends FCPMessage {
 	private final long longVersion;
 	private final String version;
 
+	@SuppressWarnings("deprecation") // isFCPPlugin() deprecated but still needed for old plugin FCP API compatibility
 	PluginInfoMessage(PluginInfoWrapper pi, String identifier, boolean detail) {
 		this.identifier = identifier;
 		this.detailed = detail;

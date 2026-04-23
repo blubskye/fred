@@ -35,6 +35,7 @@ import freenet.support.io.FileUtil;
  * Pulls CHK's for (2^n)-1 days ago, from 0 to 8, but obviously only if
  * there is a CHK for the given date in the log.
  */
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class LongTermPushPullCHKTest extends LongTermTest {
 	private static final int TEST_SIZE = 64 * 1024;
 

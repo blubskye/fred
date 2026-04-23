@@ -1,5 +1,6 @@
 package freenet.config;
 
+import freenet.config.Dimension;
 import freenet.support.Fields;
 import freenet.support.api.IntCallback;
 
@@ -18,7 +19,7 @@ public class BandwidthOption extends IntOption {
 
 	public BandwidthOption(SubConfig conf, String optionName, Integer defaultValue, int sortOrder, boolean expert,
 	                 boolean forceWrite, String shortDesc, String longDesc, IntCallback cb) {
-		super(conf, optionName, defaultValue, sortOrder, expert, forceWrite, shortDesc, longDesc, cb, true);
+		super(conf, optionName, defaultValue, sortOrder, expert, forceWrite, shortDesc, longDesc, cb, Dimension.SIZE);
 	}
 
 	@Override

@@ -199,7 +199,7 @@ public class RequestHandler implements PrioRunnable, HighHtlAware, ByteCounter, 
 				if(logMINOR) Logger.minor(this, "Propagating RejectedOverload on "+this);
 				// Forward RejectedOverload
 				//Note: This message is only discernible from the terminal messages by the IS_LOCAL flag being false. (!IS_LOCAL)->!Terminal
-				Message msg = DMT.createFNPRejectedOverload(uid, false, true, realTimeFlag);
+				Message msg = DMT.createFNPRejectedOverload(uid, false);
 				source.sendAsync(msg, null, this);
 				//If the status changes (e.g. to SUCCESS), there is little need to send yet another reject overload.
 				sentRejectedOverload = true;
@@ -427,7 +427,7 @@ public class RequestHandler implements PrioRunnable, HighHtlAware, ByteCounter, 
 					// Locally generated.
 					// Propagate back to source who needs to reduce send rate
 					///@bug: we may not want to translate fatal timeouts into non-fatal timeouts.
-					Message reject = DMT.createFNPRejectedOverload(uid, true, true, realTimeFlag);
+					Message reject = DMT.createFNPRejectedOverload(uid, true);
 					sendTerminal(reject);
 					return;
 				case RequestSender.ROUTE_NOT_FOUND:
@@ -448,7 +448,7 @@ public class RequestHandler implements PrioRunnable, HighHtlAware, ByteCounter, 
 						maybeCompleteTransfer();
 						return;
 					}
-					reject = DMT.createFNPRejectedOverload(uid, true, true, realTimeFlag);
+					reject = DMT.createFNPRejectedOverload(uid, true);
 					sendTerminal(reject);
 					return;
 				case RequestSender.TRANSFER_FAILED:
@@ -461,7 +461,7 @@ public class RequestHandler implements PrioRunnable, HighHtlAware, ByteCounter, 
 					return;
 				default:
 					// Treat as internal error
-					reject = DMT.createFNPRejectedOverload(uid, true, true, realTimeFlag);
+					reject = DMT.createFNPRejectedOverload(uid, true);
 					sendTerminal(reject);
 					throw new IllegalStateException("Unknown status code " + status);
 			}
@@ -491,7 +491,7 @@ public class RequestHandler implements PrioRunnable, HighHtlAware, ByteCounter, 
 				// Bug! This is impossible!
 				Logger.error(this, "Status is "+status+" but we never started a transfer on " + uid);
 				// Obviously this node is confused, send a terminal reject to make sure the requestor is not waiting forever.
-				reject = DMT.createFNPRejectedOverload(uid, true, false, false);
+				reject = DMT.createFNPRejectedOverload(uid, true);
 			} else {
 				xferFinished = readyToFinishTransfer();
 				xferSuccess = transferSuccess;

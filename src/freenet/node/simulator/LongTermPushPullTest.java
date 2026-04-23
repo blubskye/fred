@@ -57,6 +57,7 @@ import freenet.support.io.FileUtil;
  * 
  * @author sdiz
  */
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class LongTermPushPullTest extends LongTermTest {
 	private static final int TEST_SIZE = 64 * 1024;
 

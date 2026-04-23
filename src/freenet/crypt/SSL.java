@@ -303,6 +303,7 @@ public class SSL {
 		}
 	}
 	
+	@SuppressWarnings("deprecation") // X509V3CertificateGenerator/X509Name/X509Extensions: bcpkix jar not in deps; suppress until added
 	private static void createSelfSignedCertificate() throws NoSuchAlgorithmException, CertificateException, IOException, IllegalArgumentException, KeyStoreException, UnrecoverableKeyException, KeyManagementException, InvalidKeyException, NoSuchProviderException, SignatureException {
 		// If keystore not exist, create keystore and server certificate
 		keystore.load(null, keyStorePass.toCharArray());

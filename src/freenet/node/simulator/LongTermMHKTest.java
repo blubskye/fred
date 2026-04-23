@@ -40,6 +40,7 @@ import freenet.support.io.FileUtil;
  * @author Matthew Toseland <toad@amphibian.dyndns.org> (0xE43DA450)
  *
  */
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class LongTermMHKTest extends LongTermTest {
 	
 	private static final int TEST_SIZE = 64 * 1024;

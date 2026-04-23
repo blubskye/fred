@@ -86,7 +86,7 @@ public class JceLoader {
 				try {
 					Class<?> c = 
 					        Class.forName("org.bouncycastle.jce.provider.BouncyCastleProvider");
-					p = (Provider)c.newInstance();
+					p = (Provider)c.getDeclaredConstructor().newInstance();
 					Security.addProvider(p);
 				} catch(Throwable e) {
 					throw e;

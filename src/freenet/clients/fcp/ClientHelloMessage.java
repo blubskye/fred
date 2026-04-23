@@ -42,6 +42,7 @@ public class ClientHelloMessage extends FCPMessage {
 	}
 
 	@Override
+	@SuppressWarnings("deprecation") // FCPConnectionHandler.connectionIdentifier deprecated; changing breaks FCP wire format
 	public void run(FCPConnectionHandler handler, Node node) {
 		// We know the Hello is valid.
 		FCPMessage msg = new NodeHelloMessage(handler.connectionIdentifier);

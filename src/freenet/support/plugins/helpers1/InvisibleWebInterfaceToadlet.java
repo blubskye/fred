@@ -23,6 +23,7 @@ public class InvisibleWebInterfaceToadlet extends WebInterfaceToadlet {
 	}
 
 	@Override
+	@SuppressWarnings("deprecation") // Overrides deprecated showAsToadlet(); the ToadletContext-param version delegates to this
 	public Toadlet showAsToadlet() {
 		return _showAsToadlet;
 	}

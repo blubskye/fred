@@ -50,7 +50,7 @@ public class RemovePlugin extends FCPMessage {
 		node.getExecutor().execute(new Runnable() {
 			@Override
 			public void run() {
-				PluginInfoWrapper pi = node.getPluginManager().getPluginInfo(plugname);
+				PluginInfoWrapper pi = node.getPluginManager().getPluginInfoByClassName(plugname);
 				if (pi == null) {
 					handler.send(new ProtocolErrorMessage(ProtocolErrorMessage.NO_SUCH_PLUGIN, false, "Plugin '"+ plugname + "' does not exist or is not a FCP plugin", identifier, false));
 				} else {

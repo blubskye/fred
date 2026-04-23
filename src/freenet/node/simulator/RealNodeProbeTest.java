@@ -28,6 +28,7 @@ import java.text.NumberFormat;
  *
  * Then present a user interface to run different types of probes from random nodes.
  */
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class RealNodeProbeTest extends RealNodeRoutingTest {
 
 	static final int NUMBER_OF_NODES = 100;

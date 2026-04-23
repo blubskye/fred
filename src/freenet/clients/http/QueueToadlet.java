@@ -1065,6 +1065,7 @@ public class QueueToadlet extends Toadlet implements RequestCompletionCallback, 
 		writeHTMLReply(context, 400, "Bad request", page.generate());
 	}
 
+	@SuppressWarnings("deprecation") // NodeClientCore.clientContext is deprecated but replacement requires larger refactor
 	public void handleMethodGET(URI uri, final HTTPRequest request, final ToadletContext ctx)
 	throws ToadletContextClosedException, IOException, RedirectException {
 

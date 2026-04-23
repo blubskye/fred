@@ -68,6 +68,7 @@ import freenet.support.math.SimpleRunningAverage;
  * plot "<(grep 'Routed ping' real-node-pitch-black-mitigation-test-results-11.log | grep success | sed 's/Routed ping //;s/ success: / /g')" using 1:(($0+1)/$1):2 palette pt 3 ps 1 lw 1 title "succeeded", "<(grep 'Routed ping' real-node-pitch-black-mitigation-test-results-11.log | grep FAILED | sed 's/Routed ping //;s/FAILED from//')" using 1:(($0+1)/$1) pt 6 ps 1 lw 1 title "FAILED"
  *
  */
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class RealNodePitchBlackMitigationTest extends RealNodeTest {
 
 	static final int NUMBER_OF_NODES = 300;

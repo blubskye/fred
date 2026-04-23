@@ -173,6 +173,7 @@ public class FCPPluginClientMessage extends DataCarryingMessage {
     }
 
 	@Override
+	@SuppressWarnings("deprecation") // PluginTalker is deprecated; legacy code path kept for backward compat
 	public void run(final FCPConnectionHandler handler, final Node node) throws MessageInvalidException {
         // There are 2 code paths for deploying plugin messages:
         // 1. The new interface FCPPluginConnection. This is only available if the plugin implements

@@ -17,6 +17,7 @@ public class PluginContext {
 	public final HighLevelSimpleClient hlsc;
 	public final Node node;
 
+	@SuppressWarnings("deprecation") // PluginRespirator.getNode() is deprecated; no non-deprecated replacement available here
 	public PluginContext(PluginRespirator pluginRespirator2) {
 		this.pluginRespirator = pluginRespirator2;
 		this.clientCore = pluginRespirator.getNode().getClientCore();

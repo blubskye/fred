@@ -43,6 +43,7 @@ import freenet.support.io.FileUtil;
  * days, for n in 0...8.
  * @author Matthew Toseland <toad@amphibian.dyndns.org> (0xE43DA450)
  */
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class LongTermManySingleBlocksTest extends LongTermTest {
 	
 	public static class InsertBatch {

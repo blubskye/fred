@@ -32,6 +32,7 @@ import freenet.support.math.MersenneTwister;
  * bootstrap a newbie node and pull it from that.
  * @author Matthew Toseland <toad@amphibian.dyndns.org> (0xE43DA450)
  */
+@SuppressWarnings("deprecation") // NodeStarter.globalTestInit/createTestNode deprecated; migration to TestNodeParameters is substantial
 public class BootstrapPullTest {
 
 	public static int TEST_SIZE = 1024*1024;

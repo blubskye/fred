@@ -70,6 +70,7 @@ public final class KeyGenUtils {
      * @param type The algorithm format that the key pair should be generated for.
      * @return Returns the generated key pair
      */
+    @SuppressWarnings("deprecation") // References KeyPairType.DSA only to explicitly reject it
     public static KeyPair genKeyPair(KeyPairType type) {
         if(type.equals(KeyPairType.DSA)){
             throw new UnsupportedTypeException(type);
@@ -96,6 +97,7 @@ public final class KeyGenUtils {
      * @param pub Public key as byte[]
      * @return Public key as PublicKey
      */
+    @SuppressWarnings("deprecation") // References KeyPairType.DSA only to explicitly reject it
     public static PublicKey getPublicKey(KeyPairType type, byte[] pub){
         if(type.equals(KeyPairType.DSA)){
             throw new UnsupportedTypeException(type);
@@ -156,6 +158,7 @@ public final class KeyGenUtils {
      * @param pri Private key as byte[]
      * @return The public key and private key in a KeyPair
      */
+    @SuppressWarnings("deprecation") // References KeyPairType.DSA only to explicitly reject it
     public static KeyPair getKeyPair(KeyPairType type, byte[] pub, byte[] pri) {
         if(type.equals(KeyPairType.DSA)){
             throw new UnsupportedTypeException(type);
