@@ -28,7 +28,6 @@ import freenet.support.Logger;
 import freenet.support.api.Bucket;
 import freenet.support.compress.Compressor;
 import freenet.support.compress.DecompressorThreadManager;
-import freenet.support.io.Closer;
 import freenet.support.io.InsufficientDiskSpaceException;
 import freenet.support.Logger.LogLevel;
 import freenet.support.io.NativeThread;
@@ -152,8 +151,8 @@ public class USKRetriever extends BaseClientGetter implements USKCallback {
 			onFailure(new FetchException(FetchExceptionMode.INTERNAL_ERROR, t), state, context);
 			return;
 		} finally {
-			Closer.close(output);
-			Closer.close(pipeOut);
+			if (output != null) try { output.close(); } catch (IOException e2) { Logger.error(this, "Failed to close output: " + e2, e2); }
+			if (pipeOut != null) try { pipeOut.close(); } catch (IOException e2) { Logger.error(this, "Failed to close pipeOut: " + e2, e2); }
 		}
 
 		final FetchResult result = new FetchResult(clientMetadata, finalResult);
@@ -167,7 +166,7 @@ public class USKRetriever extends BaseClientGetter implements USKCallback {
 
 			@Override
 			public int getPriority() {
-				return NativeThread.NORM_PRIORITY;
+				return NativeThread.PriorityLevel.NORM_PRIORITY.value;
 			}
 
 		});

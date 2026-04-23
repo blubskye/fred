@@ -45,7 +45,6 @@ import freenet.support.Executor;
 import freenet.support.Fields;
 import freenet.support.HexUtil;
 import freenet.support.Logger;
-import freenet.support.io.Closer;
 import freenet.support.io.FileBucket;
 import freenet.support.io.FileUtil;
 import freenet.support.io.FileUtil.CPUArchitecture;
@@ -914,22 +913,14 @@ outer:	for(String propName : props.stringPropertyNames()) {
 	                    Logger.error(this, "Found "+toFind+" on path but less than "+SCRIPT_HEAD+" bytes long, so can't check whether it is a script - will the shell try the next match? We can't tell whether it is a script or not ...");
 	                    return false; // Weird!
 	                }
-	                try {
-                        FileInputStream fis = new FileInputStream(f);
-                        byte[] buf = new byte[SCRIPT_HEAD.length];
-                        DataInputStream dis = new DataInputStream(fis);
-                        try {
-                            dis.read(buf);
-                            return !Arrays.equals(buf, SCRIPT_HEAD);
-                        } catch (IOException e) {
-                            Logger.error(this, "Unable to read "+f+" to check whether it is a script: "+e+" - disk corruption problems???", e);
-                            return false;
-                        } finally {
-	                        Closer.close(fis);
-	                        Closer.close(dis);
-                        }
-                    } catch (FileNotFoundException e) {
-                        // Impossible.
+	                byte[] buf = new byte[SCRIPT_HEAD.length];
+                    try (FileInputStream fis = new FileInputStream(f);
+                         DataInputStream dis = new DataInputStream(fis)) {
+                        dis.read(buf);
+                        return !Arrays.equals(buf, SCRIPT_HEAD);
+                    } catch (IOException e) {
+                        Logger.error(this, "Unable to read "+f+" to check whether it is a script: "+e+" - disk corruption problems???", e);
+                        return false;
                     }
 	            }
 	        }
@@ -1368,7 +1359,7 @@ outer:	for(String propName : props.stringPropertyNames()) {
 
                 @Override
                 public int getPriority() {
-                    return NativeThread.MAX_PRIORITY;
+                    return NativeThread.PriorityLevel.MAX_PRIORITY.value;
                 }
                 
             });
@@ -1493,23 +1484,16 @@ outer:	for(String propName : props.stringPropertyNames()) {
             File restartFreenet = new File(RESTART_SCRIPT_NAME);
             restartFreenet.delete();
             FileBucket fb = new FileBucket(restartFreenet, false, true, false, false);
-            OutputStream os = null;
-            try {
-                os = new BufferedOutputStream(fb.getOutputStream());
-                OutputStreamWriter osw = new OutputStreamWriter(os, StandardCharsets.ISO_8859_1); // Right???
+            try (OutputStream os = new BufferedOutputStream(fb.getOutputStream());
+                 OutputStreamWriter osw = new OutputStreamWriter(os, StandardCharsets.ISO_8859_1)) { // Right???
                 osw.write("#!/bin/sh\n"); // FIXME exec >/dev/null 2>&1 ???? Believed to be portable.
                 //osw.write("trap true PIPE\n"); - should not be necessary
                 osw.write("while kill -0 "+WrapperManager.getWrapperPID()+" > /dev/null 2>&1; do sleep 1; done\n");
                 osw.write("./"+runshNoNice+" start > /dev/null 2>&1\n");
                 osw.write("rm "+RESTART_SCRIPT_NAME+"\n");
                 osw.write("rm "+runshNoNice+"\n");
-                osw.close();
-                osw = null; 
-                os = null;
-                return restartFreenet;
-            } finally {
-                Closer.close(os);
             }
+            return restartFreenet;
         }
 
         /** Evil hack: Rewrite run.sh so it has PRIORITY=0. 
@@ -1519,13 +1503,10 @@ outer:	for(String propName : props.stringPropertyNames()) {
          * just get rid of this - in which case maybe we want to improve on this.
          * @throws IOException */ 
         private boolean createRunShNoNice(File input, File output) throws IOException {
-            InputStream is = null;
-            OutputStream os = null;
             boolean failed = false;
-            try {
-                is = new FileInputStream(input);
+            try (FileInputStream is = new FileInputStream(input);
+                 FileOutputStream os = new FileOutputStream(output)) {
                 BufferedReader br = new BufferedReader(new InputStreamReader(new BufferedInputStream(is), StandardCharsets.UTF_8));
-                os = new FileOutputStream(output);
                 Writer w = new BufferedWriter(new OutputStreamWriter(new BufferedOutputStream(os), StandardCharsets.UTF_8));
                 boolean writtenPrio = false;
                 String line;
@@ -1538,9 +1519,7 @@ outer:	for(String propName : props.stringPropertyNames()) {
                 }
                 // We want to see exceptions on close() here.
                 br.close();
-                is = new FileInputStream(input);
                 w.close();
-                os = null;
                 if(!(output.setExecutable(true) || output.canExecute())) {
                     failed = true;
                     return false;
@@ -1550,8 +1529,6 @@ outer:	for(String propName : props.stringPropertyNames()) {
                 failed = true;
                 return false;
             } finally {
-                Closer.close(is);
-                Closer.close(os);
                 if(failed) output.delete();
             }
         }
@@ -1560,9 +1537,7 @@ outer:	for(String propName : props.stringPropertyNames()) {
 
     public static String getDependencyVersion(File currentFile) {
         // We can't use parseProperties because there are multiple sections.
-    	InputStream is = null;
-        try {
-        	is = new FileInputStream(currentFile);
+        try (InputStream is = new FileInputStream(currentFile)) {
         	ZipInputStream zis = new ZipInputStream(is);
         	ZipEntry ze;
         	while(true) {
@@ -1595,8 +1570,6 @@ outer:	for(String propName : props.stringPropertyNames()) {
         	return null;
         } catch (IOException e) {
         	return null;
-        } finally {
-        	Closer.close(is);
         }
 	}
 
@@ -1651,14 +1624,10 @@ outer:	for(String propName : props.stringPropertyNames()) {
 			Logger.normal(MainJarDependenciesChecker.class, "File exists while updating but length is wrong ("+filename.length()+" should be "+size+") for "+filename);
 			return false;
 		}
-		FileInputStream fis = null;
-		try {
-			fis = new FileInputStream(filename);
+		try (FileInputStream fis = new FileInputStream(filename)) {
 			MessageDigest md = SHA256.getMessageDigest();
 			SHA256.hash(fis, md);
 			byte[] hash = md.digest();
-			fis.close();
-			fis = null;
 			if(Arrays.equals(hash, expectedHash)) {
                 if(executable && !filename.canExecute()) {
                     filename.setExecutable(true);
@@ -1673,8 +1642,6 @@ outer:	for(String propName : props.stringPropertyNames()) {
 		} catch (IOException e) {
 			Logger.error(MainJarDependenciesChecker.class, "Unable to read "+filename+" for updater: "+e, e);
 			return false;
-		} finally {
-			Closer.close(fis);
 		}
 	}
 

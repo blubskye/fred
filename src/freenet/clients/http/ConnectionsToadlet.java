@@ -4,7 +4,6 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -49,7 +48,6 @@ import freenet.support.SimpleFieldSet;
 import freenet.support.SizeUtil;
 import freenet.support.TimeUtil;
 import freenet.support.api.HTTPRequest;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 
 /** Base class for DarknetConnectionsToadlet and OpennetConnectionsToadlet */
@@ -666,7 +664,6 @@ public abstract class ConnectionsToadlet extends Toadlet {
 			StringBuilder ref = null;
 			if (!urltext.isEmpty()) {
 				// fetch reference from a URL
-				BufferedReader in = null;
 				try {
 					try {
 						FreenetURI refUri = new FreenetURI(urltext);
@@ -679,8 +676,6 @@ public abstract class ConnectionsToadlet extends Toadlet {
 				} catch (IOException e) {
 					this.sendErrorPage(ctx, 200, l10n("failedToAddNodeTitle"), NodeL10n.getBase().getString("DarknetConnectionsToadlet.cantFetchNoderefURL", new String[] { "url" }, new String[] { urltext }), !isOpennet());
 					return;
-				} finally {
-					Closer.close(in);
 				}
 			} else if (!reftext.isEmpty()) {
 				// read from post data or file upload

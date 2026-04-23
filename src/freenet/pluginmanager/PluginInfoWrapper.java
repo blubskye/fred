@@ -13,7 +13,6 @@ import freenet.l10n.NodeL10n;
 import freenet.node.Node;
 import freenet.support.JarClassLoader;
 import freenet.support.Logger;
-import freenet.support.io.Closer;
 
 public class PluginInfoWrapper implements Comparable<PluginInfoWrapper> {
 
@@ -66,7 +65,9 @@ public class PluginInfoWrapper implements Comparable<PluginInfoWrapper> {
 		isIPDetectorPlugin = (plug instanceof FredPluginIPDetector);
 		isPortForwardPlugin = (plug instanceof FredPluginPortForward);
 		isMultiplePlugin = (plug instanceof FredPluginMultiple);
-        isFCPPlugin = (plug instanceof FredPluginFCP);
+        @SuppressWarnings("deprecation")
+        boolean _isFCPPlugin = (plug instanceof FredPluginFCP);
+        isFCPPlugin = _isFCPPlugin;
         isFCPServerPlugin
             = (plug instanceof FredPluginFCPMessageHandler.ServerSideFCPMessageHandler);
 		isVersionedPlugin = (plug instanceof FredPluginVersioned);
@@ -182,7 +183,7 @@ public class PluginInfoWrapper implements Comparable<PluginInfoWrapper> {
 		// Close the jar file, so we may delete / reload it
 		ClassLoader cl = plug.getClass().getClassLoader();
 		if (cl instanceof JarClassLoader) {
-			Closer.close((JarClassLoader) cl);
+			try { ((JarClassLoader) cl).close(); } catch (IOException e) { Logger.error(this, "Failed to close plugin class loader: " + e, e); }
 		}
 		return success;
 	}

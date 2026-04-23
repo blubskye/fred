@@ -26,7 +26,6 @@ import org.junit.Test;
 import freenet.crypt.CTRBlockCipherTest;
 import freenet.crypt.UnsupportedCipherException;
 import freenet.support.HexUtil;
-import freenet.support.io.Closer;
 
 /**
  * @author sdiz
@@ -1939,9 +1938,7 @@ public class RijndaelTest {
 	
 	private void checkGladmanTestVectors(String type) throws UnsupportedCipherException, IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 		for(int testNumber : GLADMAN_TEST_NUMBERS) {
-			InputStream is = null;
-			try {
-				is = getClass().getResourceAsStream("/freenet/crypt/ciphers/rijndael-gladman-test-data/ecbn"+type+testNumber+".txt");
+			try (InputStream is = getClass().getResourceAsStream("/freenet/crypt/ciphers/rijndael-gladman-test-data/ecbn"+type+testNumber+".txt")) {
 				InputStreamReader isr = new InputStreamReader(is, StandardCharsets.ISO_8859_1);
 				BufferedReader br = new BufferedReader(isr);
 				for(int i=0;i<7;i++) br.readLine(); // Skip header
@@ -2016,8 +2013,6 @@ public class RijndaelTest {
 						}
 					}
 				}
-			} finally {
-				Closer.close(is);
 			}
 		}
 	}

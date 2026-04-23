@@ -57,7 +57,6 @@ import freenet.support.Logger;
 import freenet.support.Logger.LogLevel;
 import freenet.support.Ticker;
 import freenet.support.WrapperKeepalive;
-import freenet.support.io.Closer;
 import freenet.support.io.Fallocate;
 import freenet.support.io.FileUtil;
 import freenet.support.io.NativeThread;
@@ -229,7 +228,7 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 		writeConfigFile();
 
 		callback.setStore(this);
-		shutdownHook.addEarlyJob(new NativeThread(new ShutdownDB(), "Shutdown salted hash store", NativeThread.HIGH_PRIORITY, true));
+		shutdownHook.addEarlyJob(new NativeThread(new ShutdownDB(), "Shutdown salted hash store", NativeThread.PriorityLevel.HIGH_PRIORITY.value, true));
 
 		cleanerThread = new Cleaner();
 		cleanerStatusUserAlert = new CleanerStatusUserAlert(cleanerThread);
@@ -1220,7 +1219,7 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 
 					return false;
 				} finally {
-					Closer.close(raf);
+					if (raf != null) try { raf.close(); } catch (IOException ignored) {}
 				}
 			} catch (IOException e) {
 				// HO-63: Back up rather than delete — prevents total data loss on transient I/O errors.
@@ -1313,8 +1312,8 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 		private volatile boolean isResizing;
 
 		public Cleaner() {
-			super("Store-" + name + "-Cleaner", NativeThread.LOW_PRIORITY, false);
-			setPriority(MIN_PRIORITY);
+			super("Store-" + name + "-Cleaner", NativeThread.PriorityLevel.LOW_PRIORITY.value, false);
+			setPriority(PriorityLevel.MIN_PRIORITY.value);
 			setDaemon(true);
 		}
 

@@ -15,7 +15,6 @@ import org.tanukisoftware.wrapper.WrapperManager;
 
 import freenet.node.NodeInitException;
 import freenet.support.Logger;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 
 /**
@@ -81,27 +80,19 @@ public class WrapperConfig {
 			newConfig = new File("wrapper.conf.new");
 			wrapperDir=".";
 		}
-		FileInputStream fis = null;
-		FileOutputStream fos = null;
-		
-		try {
-		
-			fis = new FileInputStream(oldConfig);
-			BufferedInputStream bis = new BufferedInputStream(fis);
-			InputStreamReader isr = new InputStreamReader(bis);
-			BufferedReader br = new BufferedReader(isr);
-			
-			fos = new FileOutputStream(newConfig);
-			OutputStreamWriter osw = new OutputStreamWriter(fos);
-			BufferedWriter bw = new BufferedWriter(osw);
-			
+		try (FileInputStream fis = new FileInputStream(oldConfig);
+		     BufferedInputStream bis = new BufferedInputStream(fis);
+		     InputStreamReader isr = new InputStreamReader(bis);
+		     BufferedReader br = new BufferedReader(isr);
+		     FileOutputStream fos = new FileOutputStream(newConfig);
+		     OutputStreamWriter osw = new OutputStreamWriter(fos);
+		     BufferedWriter bw = new BufferedWriter(osw)) {
+
 			String line;
-			
 			boolean written = false;
 			boolean writtenReload = false;
-			
+
 			while((line = br.readLine()) != null) {
-				
 				if(line.startsWith(name+"=")) {
 					bw.write(name+'='+value+'\n');
 					written = true;
@@ -111,27 +102,15 @@ public class WrapperConfig {
 				} else {
 					bw.write(line+'\n');
 				}
-			
 			}
-			br.close();
-			fis = null;
 			if(!written)
 				bw.write(name+'='+value+'\n');
 			if(!writtenReload)
 				bw.write("wrapper.restart.reload_configuration=TRUE\n");
-			bw.close();
-			fos = null;
 		} catch(IOException e) {
-			Closer.close(fis);
-			Closer.close(fos);
-			fis = null;
-			fos = null;
 			if(oldConfig.exists()) newConfig.delete();
 			Logger.error(WrapperConfig.class, "Cannot update wrapper property "+name+": "+e, e);
 			return false;
-		} finally {
-			Closer.close(fis);
-			Closer.close(fos);
 		}
 		
 		if(!newConfig.renameTo(oldConfig)) {

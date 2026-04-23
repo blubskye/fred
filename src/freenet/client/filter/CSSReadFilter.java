@@ -20,7 +20,7 @@ import freenet.support.HexUtil;
 import freenet.support.LogThresholdCallback;
 import freenet.support.Logger;
 import freenet.support.Logger.LogLevel;
-import freenet.support.io.Closer;
+
 import freenet.support.io.NullWriter;
 
 public class CSSReadFilter implements ContentDataFilter, CharsetExtractor {
@@ -93,9 +93,9 @@ public class CSSReadFilter implements ContentDataFilter, CharsetExtractor {
 			return parser.detectedCharset();
 		}
 		finally {
-			Closer.close(strm);
-			Closer.close(r);
-			Closer.close(w);
+			if (strm != null) try { strm.close(); } catch (IOException e) { Logger.error(this, "Failed to close: " + e, e); }
+			if (r != null) try { r.close(); } catch (IOException e) { Logger.error(this, "Failed to close: " + e, e); }
+			if (w != null) try { w.close(); } catch (IOException e) { Logger.error(this, "Failed to close: " + e, e); }
 		}
 	}
 

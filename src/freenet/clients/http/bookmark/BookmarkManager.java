@@ -30,7 +30,6 @@ import freenet.support.LogThresholdCallback;
 import freenet.support.Logger;
 import freenet.support.Logger.LogLevel;
 import freenet.support.SimpleFieldSet;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 
 public class BookmarkManager implements RequestClient {
@@ -377,19 +376,16 @@ public class BookmarkManager implements RequestClient {
 
 			sfs = toSimpleFieldSet();
 		}
-		FileOutputStream fos = null;
 		try {
-			fos = new FileOutputStream(backupBookmarksFile);
-			sfs.writeToBigBuffer(fos);
-			fos.getFD().sync(); // HO-55: ensure data reaches disk before rename
-			fos.close();
-			fos = null;
+			try (FileOutputStream fos = new FileOutputStream(backupBookmarksFile)) {
+				sfs.writeToBigBuffer(fos);
+				fos.getFD().sync(); // HO-55: ensure data reaches disk before rename
+			}
 			if(!FileUtil.moveTo(backupBookmarksFile, bookmarksFile))
 				Logger.error(this, "Unable to rename " + backupBookmarksFile.toString() + " to " + bookmarksFile.toString());
 		} catch(IOException ioe) {
 			Logger.error(this, "An error has occured saving the bookmark file :" + ioe.getMessage(), ioe);
 		} finally {
-			Closer.close(fos);
 			synchronized(bookmarks) {
 				isSavingBookmarks = false;
 			}

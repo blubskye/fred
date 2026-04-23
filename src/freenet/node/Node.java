@@ -145,7 +145,6 @@ import freenet.support.api.LongCallback;
 import freenet.support.api.ShortCallback;
 import freenet.support.api.StringCallback;
 import freenet.support.io.ArrayBucketFactory;
-import freenet.support.io.Closer;
 import freenet.support.io.DatastoreUtil;
 import freenet.support.io.FileUtil;
 import freenet.support.io.NativeThread;
@@ -1146,18 +1145,14 @@ public class Node implements TimeSkewDetectorCallback {
 
 		if(orig.exists()) backup.delete();
 
-		FileOutputStream fos = null;
 		try {
-			fos = new FileOutputStream(backup);
-			fs.writeTo(fos);
-			fos.close();
-			fos = null;
+			try (FileOutputStream fos = new FileOutputStream(backup)) {
+				fs.writeTo(fos);
+			}
 			FileUtil.moveTo(backup, orig);
 		} catch (IOException ioe) {
 			Logger.error(this, "IOE :"+ioe.getMessage(), ioe);
 			return;
-		} finally {
-			Closer.close(fos);
 		}
 	}
 
@@ -1331,7 +1326,7 @@ public class Node implements TimeSkewDetectorCallback {
 				tLastAdded = now;
 			}
 
-		}, "Entropy Gathering Thread", NativeThread.MIN_PRIORITY, true);
+		}, "Entropy Gathering Thread", NativeThread.PriorityLevel.MIN_PRIORITY.value, true);
 
 		// Setup RNG if needed : DO NOT USE IT BEFORE THAT POINT!
 		if (r == null) {
@@ -1464,9 +1459,7 @@ public class Node implements TimeSkewDetectorCallback {
 		File bootIDFile = runDir.file("bootID");
 		int BOOT_FILE_LENGTH = 64 / 4; // A long in padded hex bytes
 		long oldBootID = -1;
-		RandomAccessFile raf = null;
-		try {
-			raf = new RandomAccessFile(bootIDFile, "rw");
+		try (RandomAccessFile raf = new RandomAccessFile(bootIDFile, "rw")) {
 			if(raf.length() < BOOT_FILE_LENGTH) {
 				oldBootID = -1;
 			} else {
@@ -1488,8 +1481,6 @@ public class Node implements TimeSkewDetectorCallback {
 		} catch (IOException e) {
 			oldBootID = -1;
 			// If we have an error in reading, *or in writing*, we don't reliably know the last boot ID.
-		} finally {
-			Closer.close(raf);
 		}
 		lastBootID = oldBootID;
 
@@ -1794,7 +1785,9 @@ public class Node implements TimeSkewDetectorCallback {
 		// FIXME: make compatible with alternate transports.
 		bucketSize = Math.max(bucketSize, 2048);
 		try {
-		outputThrottle = new TokenBucket(bucketSize, SECONDS.toNanos(1) / obwLimit, obwLimit/2);
+		@SuppressWarnings("deprecation")
+		TokenBucket _outputThrottle = new TokenBucket(bucketSize, SECONDS.toNanos(1) / obwLimit, obwLimit/2);
+		outputThrottle = _outputThrottle;
 		} catch (IllegalArgumentException e) {
 			throw new NodeInitException(NodeInitException.EXIT_BAD_BWLIMIT, e.getMessage());
 		}
@@ -2822,7 +2815,7 @@ public class Node implements TimeSkewDetectorCallback {
 		Logger.normal(this, "Initializing Plugin Manager");
 		pluginManager = new PluginManager(this, lastVersion);
 
-		shutdownHook.addEarlyJob(new NativeThread("Shutdown plugins", NativeThread.HIGH_PRIORITY, true) {
+		shutdownHook.addEarlyJob(new NativeThread("Shutdown plugins", NativeThread.PriorityLevel.HIGH_PRIORITY.value, true) {
 			@Override
 			public void realRun() {
 				pluginManager.stop(SECONDS.toMillis(30)); // FIXME make it configurable??
@@ -5095,6 +5088,7 @@ public class Node implements TimeSkewDetectorCallback {
         return uptime;
     }
 
+    @SuppressWarnings("deprecation")
     public TokenBucket getOutputThrottle() {
         return outputThrottle;
     }

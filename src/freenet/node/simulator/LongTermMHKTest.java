@@ -31,7 +31,6 @@ import freenet.support.Logger;
 import freenet.support.Logger.LogLevel;
 import freenet.support.PooledExecutor;
 import freenet.support.api.RandomAccessBucket;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 
 /** Simulates MHKs. Creates 4 CHKs, inserts the first one 3 times, and inserts the
@@ -404,7 +403,7 @@ public class LongTermMHKTest extends LongTermTest {
 					node2.park();
 			} catch (Throwable tt) {
 			}
-			Closer.close(fis);
+			if (fis != null) try { fis.close(); } catch (IOException e2) { Logger.error(LongTermMHKTest.class, "Failed to close fis: " + e2, e2); }
 
 			if(!dumpOnly) {
 				writeToStatusLog(file, csvLine);

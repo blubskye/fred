@@ -24,7 +24,6 @@ import freenet.crypt.UnsupportedCipherException;
 import freenet.crypt.ciphers.Rijndael;
 import freenet.support.Fields;
 import freenet.support.Logger;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 
 /** Keys read from the master keys file */
@@ -79,7 +78,6 @@ public class MasterKeys {
 		Logger.normal(MasterKeys.class, "Trying to read master keys file...");
 		if(masterKeysFile != null && masterKeysFile.exists()) {
 			// Try to read the keys
-			FileInputStream fis = null;
 			long len = masterKeysFile.length();
             if(len > 1024) throw new MasterKeysFileSizeException(true);
             if(len < (32 + 32 + 8 + 32)) throw new MasterKeysFileSizeException(false);
@@ -90,9 +88,8 @@ public class MasterKeys {
 			byte[] dataAndHash = null;
 			byte[] data = null;
 			byte[] hash = null;
-			try {
-				fis = new FileInputStream(masterKeysFile);
-				DataInputStream dis = new DataInputStream(fis);
+			try (FileInputStream fis = new FileInputStream(masterKeysFile);
+			     DataInputStream dis = new DataInputStream(fis)) {
 				if(len == 140) {
 				    MasterKeys ret = readOldFormat(dis, length, hardRandom, password);
 				    Logger.normal(MasterKeys.class, "Read old-format master keys file. Writing new format master.keys ...");
@@ -145,18 +142,18 @@ public class MasterKeys {
 
 				// It matches. Now decode it.
 				ByteArrayInputStream bais = new ByteArrayInputStream(data);
-				dis = new DataInputStream(bais);
-				long flags = dis.readLong();
+				DataInputStream dataDis = new DataInputStream(bais);
+				long flags = dataDis.readLong();
 				// At the moment there are no interesting flags.
 				// In future the flags will tell us whether the database and the datastore are encrypted.
 				byte[] clientCacheKey = new byte[32];
-				dis.readFully(clientCacheKey);
+				dataDis.readFully(clientCacheKey);
 				byte[] databaseKey = new byte[32];
-				dis.readFully(databaseKey);
+				dataDis.readFully(databaseKey);
 				byte[] tempfilesMasterSecret = new byte[64];
 				boolean mustWrite = false;
 				if(data.length >= 8+32+32+64) {
-				    dis.readFully(tempfilesMasterSecret);
+				    dataDis.readFully(tempfilesMasterSecret);
 				} else {
                     Logger.normal(MasterKeys.class, "Created new master secret for encrypted tempfiles");
 				    hardRandom.nextBytes(tempfilesMasterSecret);
@@ -177,7 +174,6 @@ public class MasterKeys {
 			} catch (EOFException e) {
 				throw new MasterKeysFileSizeException(false);
 			} finally {
-				Closer.close(fis);
 				// Always clear sensitive data, including on exception paths.
 				if(pwd != null) Arrays.fill(pwd, (byte)0);
 				clear(outerKey);
@@ -346,7 +342,7 @@ public class MasterKeys {
 			fos.write(data);
 			fos.getFD().sync();
 		} finally {
-			if (!FileUtil.renameTo(temp, masterKeysFile)) {
+			if (!FileUtil.moveTo(temp, masterKeysFile)) {
 				temp.delete();
 				throw new IOException("Atomic rename failed: could not replace " + masterKeysFile);
 			}

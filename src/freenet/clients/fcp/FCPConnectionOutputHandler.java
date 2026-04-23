@@ -119,19 +119,11 @@ public class FCPConnectionOutputHandler implements Runnable {
 	}
 
     /**
-     * @deprecated
-     *     Use {@link FCPConnectionHandler#send(FCPMessage)} instead of using public access to the
-     *     member variable {@link FCPConnectionHandler#getOutputHandler()} to call this function here
-     *     upon the outputHandler. In other words: Replace
-     *     <code>fcpConnectionHandler.outputHandler.queue(...)</code>
-     *     with <code>fcpConnectionHandler.send(...)</code><br>
-     *     TODO: The deprecation is merely to enforce people to stop using the said member variable
-     *     in a public way. The function itself is fine to stay. Once the public usage has been
-     *     replaced by the suggested way of using send(), please make the member variable
-     *     {@link FCPConnectionHandler#getOutputHandler()} private and remove the deprecation at this
-     *     function here.
+     * Queue a message for sending to the FCP client.
+     * TODO: Refactor callers to use {@link FCPConnectionHandler#send(FCPMessage)} instead of
+     *     accessing the outputHandler member variable directly, then make
+     *     {@link FCPConnectionHandler#getOutputHandler()} private.
      */
-    @Deprecated
 	public void queue(FCPMessage msg) {
 		if(logDEBUG)
 			Logger.debug(this, "Queueing "+msg, new Exception("debug"));

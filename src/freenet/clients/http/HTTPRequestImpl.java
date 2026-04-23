@@ -37,7 +37,6 @@ import freenet.support.api.HTTPRequest;
 import freenet.support.api.HTTPUploadedFile;
 import freenet.support.api.RandomAccessBucket;
 import freenet.support.io.BucketTools;
-import freenet.support.io.Closer;
 import freenet.support.io.LineReadingInputStream;
 
 /**
@@ -615,10 +614,9 @@ public class HTTPRequestImpl implements HTTPRequest {
 			}
 		}
 		finally {
-			Closer.close(bucketos);
-			Closer.close(lis);
-			Closer.close(is);
-			Closer.close(is);
+			if (bucketos != null) try { bucketos.close(); } catch (IOException e2) { Logger.error(this, "Failed to close output stream: " + e2, e2); }
+			if (lis != null) try { lis.close(); } catch (IOException e2) { Logger.error(this, "Failed to close input stream: " + e2, e2); }
+			if (is != null) try { is.close(); } catch (IOException e2) { Logger.error(this, "Failed to close input stream: " + e2, e2); }
 		}
 	}
 	
@@ -694,21 +692,15 @@ public class HTTPRequestImpl implements HTTPRequest {
 		
 		if (part.size() > maxlength) return new byte[0];
 		
-		InputStream is = null;
-		DataInputStream dis = null;
-		try {
-			is = part.getInputStream();
-			dis = new DataInputStream(is);
+		try (InputStream is = part.getInputStream();
+		     DataInputStream dis = new DataInputStream(is)) {
 			byte[] buf = new byte[(int)Math.min(part.size(), maxlength)];
 			dis.readFully(buf);
 			return buf;
 		} catch (IOException ioe) {
 	         Logger.error(this, "Caught IOE:" + ioe.getMessage());
-		} finally {
-			Closer.close(dis);
-			if(dis == null) Closer.close(is); // DataInputStream.close() does this for us normally
 		}
-		
+
 		return new byte[0];
 	}
 	
@@ -734,20 +726,14 @@ public class HTTPRequestImpl implements HTTPRequest {
 	}
 	
 	private byte[] getPartAsLimitedBytes(Bucket part, int maxLength) {
-		InputStream is = null;
-		DataInputStream dis = null;
-		try {
-			is = part.getInputStream();
-			dis = new DataInputStream(is);
+		try (InputStream is = part.getInputStream();
+		     DataInputStream dis = new DataInputStream(is)) {
 			byte[] buf = new byte[(int)Math.min(part.size(), maxLength)];
 			dis.readFully(buf, 0, buf.length);
 			return buf;
 		} catch (IOException ioe) {
 	         Logger.error(this, "Caught IOE:" + ioe.getMessage());
 	         return new byte[0];
-		} finally {
-			Closer.close(dis);
-			if(dis == null) Closer.close(is); // DataInputStream.close() does this for us normally
 		}
 	}
 	

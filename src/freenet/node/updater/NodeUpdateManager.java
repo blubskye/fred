@@ -61,7 +61,6 @@ import freenet.support.api.BooleanCallback;
 import freenet.support.api.Bucket;
 import freenet.support.api.StringCallback;
 import freenet.support.io.BucketTools;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 
 /**
@@ -460,15 +459,12 @@ loadMaxDeployedBuild();
 
 		@Override
 		public void onSuccess(FetchResult result, ClientGetter state) {
-			File temp;
-			FileOutputStream fos = null;
 			try {
-				temp = FileUtil.createTempFile(filename, ".tmp", directory.dir());
+				File temp = FileUtil.createTempFile(filename, ".tmp", directory.dir());
 				temp.deleteOnExit();
-				fos = new FileOutputStream(temp);
-				BucketTools.copyTo(result.asBucket(), fos, -1);
-				fos.close();
-				fos = null;
+				try (FileOutputStream fos = new FileOutputStream(temp)) {
+					BucketTools.copyTo(result.asBucket(), fos, -1);
+				}
 				for (int i = 0; i < 10; i++) {
 					// FIXME add a callback in case it's being used on Windows.
 					if (FileUtil.moveTo(temp, directory.file(filename))) {
@@ -494,8 +490,7 @@ loadMaxDeployedBuild();
 								+ " and particularly the file " + filename
 								+ " - error: " + e, e);
 			} finally {
-				Closer.close(fos);
-				Closer.close(result.asBucket());
+				result.asBucket().free();
 			}
 		}
 
@@ -802,7 +797,7 @@ loadMaxDeployedBuild();
 		// @see https://emu.freenetproject.org/pipermail/devl/2015-November/038581.html
 		long minVer = (plugin.essential ? plugin.minimumVersion : plugin.recommendedVersion);
 		// But it might already be past that ...
-		PluginInfoWrapper info = node.getPluginManager().getPluginInfo(name);
+		PluginInfoWrapper info = node.getPluginManager().getPluginInfoByClassName(name);
 		if (info == null) {
 			if (!(node.getPluginManager().isPluginLoadedOrLoadingOrWantLoad(name))) {
 				if (logMINOR)
@@ -1379,10 +1374,7 @@ persistMaxDeployedBuild(deps.build);
 			Logger.error(NodeUpdateManager.class, "Can't delete " + fNew + "!");
 		}
 
-		FileOutputStream fos = null;
-		try {
-			fos = new FileOutputStream(fNew);
-
+		try (FileOutputStream fos = new FileOutputStream(fNew)) {
 			BucketTools.copyTo(this.fetchedMainJarData, fos, -1);
 
 			fos.flush();
@@ -1390,8 +1382,6 @@ persistMaxDeployedBuild(deps.build);
 			// the node restarts. Without this a power failure between flush() and close()
 			// can leave a zero-length or partial jar and corrupt the installation.
 			fos.getFD().sync();
-		} finally {
-			Closer.close(fos);
 		}
 
 		// HO-30: Verify the on-disk jar matches the in-memory bucket SHA-256.
@@ -1417,8 +1407,6 @@ persistMaxDeployedBuild(deps.build);
 			int n;
 			while ((n = fis.read(buf)) != -1)
 				md.update(buf, 0, n);
-		} finally {
-			SHA256.returnMessageDigest(md);
 		}
 		return md.digest();
 	}

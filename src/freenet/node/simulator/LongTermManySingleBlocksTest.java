@@ -36,7 +36,6 @@ import freenet.support.Logger;
 import freenet.support.Logger.LogLevel;
 import freenet.support.PooledExecutor;
 import freenet.support.api.RandomAccessBucket;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 
 /** 
@@ -431,7 +430,7 @@ loopOverLines:
 					node2.park();
 			} catch (Throwable tt) {
 			}
-			Closer.close(fis);
+			if (fis != null) try { fis.close(); } catch (IOException e2) { Logger.error(LongTermManySingleBlocksTest.class, "Failed to close fis: " + e2, e2); }
 			writeToStatusLog(file, csvLine);
 
 			System.out.println("Exiting with status "+exitCode);

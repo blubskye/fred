@@ -22,7 +22,7 @@ import freenet.support.compress.CompressionOutputSizeException;
 import freenet.support.compress.CompressionRatioException;
 import freenet.support.compress.Compressor.COMPRESSOR_TYPE;
 import freenet.support.compress.InvalidCompressionCodecException;
-import freenet.support.io.Closer;
+
 import freenet.support.io.NativeThread;
 
 /**
@@ -123,7 +123,7 @@ public class InsertCompressor implements CompressJob {
 								return false;
 							}
 
-						}, NativeThread.NORM_PRIORITY+1);
+						}, NativeThread.PriorityLevel.NORM_PRIORITY.value+1);
 					} else {
 						try {
 							inserter.onStartCompression(comp, context);
@@ -169,8 +169,8 @@ public class InsertCompressor implements CompressJob {
 							first = false;
 						}
 					} finally {
-						Closer.close(is);
-						Closer.close(os);
+						if (is != null) try { is.close(); } catch (IOException e) { Logger.error(this, "Failed to close: " + e, e); }
+						if (os != null) try { os.close(); } catch (IOException e) { Logger.error(this, "Failed to close: " + e, e); }
 					}
 					long resultSize = result.size();
 					long resultNumberOfBlocks = resultSize/CHKBlock.DATA_LENGTH;
@@ -227,14 +227,14 @@ public class InsertCompressor implements CompressJob {
 						return true;
 					}
 
-				}, NativeThread.NORM_PRIORITY+1);
+				}, NativeThread.PriorityLevel.NORM_PRIORITY.value+1);
 			} else {
 				// We do it off thread so that RealCompressor can release the semaphore
 				context.getMainExecutor().execute(new PrioRunnable() {
 
 					@Override
 					public int getPriority() {
-						return NativeThread.NORM_PRIORITY;
+						return NativeThread.PriorityLevel.NORM_PRIORITY.value;
 					}
 
 					@Override
@@ -270,7 +270,7 @@ public class InsertCompressor implements CompressJob {
 						return true;
 					}
 
-				}, NativeThread.NORM_PRIORITY+1);
+				}, NativeThread.PriorityLevel.NORM_PRIORITY.value+1);
 			} catch (PersistenceDisabledException e1) {
 				Logger.error(this, "Database disabled compressing data", new Exception("error"));
 				if(bestCompressedData != null && bestCompressedData != origData)
@@ -312,7 +312,7 @@ public class InsertCompressor implements CompressJob {
 						return true;
 					}
 
-				}, NativeThread.NORM_PRIORITY+1);
+				}, NativeThread.PriorityLevel.NORM_PRIORITY.value+1);
 			} catch (PersistenceDisabledException e1) {
 				// Can't do anything
 			}

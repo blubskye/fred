@@ -235,7 +235,7 @@ public class DatastoreChecker implements PrioRunnable {
 						return "DatastoreCheckerFinishRegister";
 					}
 
-				}, NativeThread.NORM_PRIORITY);
+				}, NativeThread.PriorityLevel.NORM_PRIORITY.value);
 			} catch (PersistenceDisabledException e) {
 				// Impossible
 			}
@@ -273,7 +273,7 @@ public class DatastoreChecker implements PrioRunnable {
 
         @Override
 	public int getPriority() {
-		return NativeThread.NORM_PRIORITY;
+		return NativeThread.PriorityLevel.NORM_PRIORITY.value;
 	}
 
 	public void removeRequest(SendableGet request, boolean persistent, ClientContext context, short prio) {

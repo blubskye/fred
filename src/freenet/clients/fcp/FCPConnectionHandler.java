@@ -31,7 +31,6 @@ import freenet.support.LogThresholdCallback;
 import freenet.support.Logger;
 import freenet.support.Logger.LogLevel;
 import freenet.support.api.BucketFactory;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 import freenet.support.io.NativeThread;
 
@@ -235,7 +234,7 @@ public class FCPConnectionHandler implements Closeable {
 		                return false;
 		            }
 		            
-		        }, NativeThread.NORM_PRIORITY);
+		        }, NativeThread.PriorityLevel.NORM_PRIORITY.value);
 		    } catch (PersistenceDisabledException e) {
 		        // Ignore
 		    }
@@ -374,7 +373,7 @@ public class FCPConnectionHandler implements Closeable {
 					                return true;
 					            }
 					            
-					        }, NativeThread.HIGH_PRIORITY-1);
+					        }, NativeThread.PriorityLevel.HIGH_PRIORITY.value-1);
 					    } catch (PersistenceDisabledException e) {
 					        outputHandler.queue(new ProtocolErrorMessage(ProtocolErrorMessage.PERSISTENCE_DISABLED, false, "Persistence is disabled", id, global));
 					        return;
@@ -477,7 +476,7 @@ public class FCPConnectionHandler implements Closeable {
 				                return true;
 				            }
 				        
-				        }, NativeThread.HIGH_PRIORITY-1);
+				        }, NativeThread.PriorityLevel.HIGH_PRIORITY.value-1);
 				    } catch (PersistenceDisabledException e) {
 				        outputHandler.queue(new ProtocolErrorMessage(ProtocolErrorMessage.PERSISTENCE_DISABLED, false, "Persistence is disabled", id, global));
 				    }
@@ -587,7 +586,7 @@ public class FCPConnectionHandler implements Closeable {
 			                return true;
 			            }
 			            
-			        }, NativeThread.HIGH_PRIORITY-1);
+			        }, NativeThread.PriorityLevel.HIGH_PRIORITY.value-1);
 			    } catch (PersistenceDisabledException e) {
 			        outputHandler.queue(new ProtocolErrorMessage(ProtocolErrorMessage.PERSISTENCE_DISABLED, false, "Persistence is disabled", id, global));
 			    }
@@ -827,8 +826,8 @@ public class FCPConnectionHandler implements Closeable {
 			} catch (IOException e) {
 				Logger.error(this, "Got a IOE while creating the file (" + readFile.toString() + " ! " + e.getMessage());
 			} finally {
-				Closer.close(bos);
-				Closer.close(fos);
+				if (bos != null) try { bos.close(); } catch (IOException ignored) {}
+				if (fos != null) try { fos.close(); } catch (IOException ignored) {}
 			}
 		}
 		

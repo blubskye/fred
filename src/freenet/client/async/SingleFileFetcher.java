@@ -48,7 +48,6 @@ import freenet.support.compress.Compressor;
 import freenet.support.compress.DecompressorThreadManager;
 import freenet.support.compress.Compressor.COMPRESSOR_TYPE;
 import freenet.support.io.BucketTools;
-import freenet.support.io.Closer;
 import freenet.support.io.InsufficientDiskSpaceException;
 
 /**
@@ -926,9 +925,9 @@ public class SingleFileFetcher extends SimpleSingleFileFetcher {
 				onFailure(new FetchException(FetchExceptionMode.INTERNAL_ERROR, t), state, context);
 				return;
 			} finally {
-				Closer.close(pipeOut);
-				Closer.close(pipeIn);
-				Closer.close(output);
+				if (pipeOut != null) try { pipeOut.close(); } catch (IOException e2) { Logger.error(this, "Failed to close pipeOut: " + e2, e2); }
+				if (pipeIn != null) try { pipeIn.close(); } catch (IOException e2) { Logger.error(this, "Failed to close pipeIn: " + e2, e2); }
+				if (output != null) try { output.close(); } catch (IOException e2) { Logger.error(this, "Failed to close output: " + e2, e2); }
 			}
 			if(key instanceof ClientSSK) {
 				// Fetching the container is essentially a full success, we should update the latest known good.
@@ -962,7 +961,7 @@ public class SingleFileFetcher extends SimpleSingleFileFetcher {
 						onFailure(new FetchException(FetchExceptionMode.BUCKET_ERROR, e), SingleFileFetcher.this, context);
 						return;
 					} finally {
-						Closer.close(is);
+						if (is != null) try { is.close(); } catch (IOException e2) { Logger.error(this, "Failed to close input stream: " + e2, e2); }
 					}
 				}
 				ah.extractToCache(data, actx, element, callback, context.archiveManager, context);
@@ -1077,9 +1076,9 @@ public class SingleFileFetcher extends SimpleSingleFileFetcher {
 				onFailure(new FetchException(FetchExceptionMode.INTERNAL_ERROR, t), state, context);
 				return;
 			} finally {
-				Closer.close(pipeOut);
-				Closer.close(pipeIn);
-				Closer.close(output);
+				if (pipeOut != null) try { pipeOut.close(); } catch (IOException e2) { Logger.error(this, "Failed to close pipeOut: " + e2, e2); }
+				if (pipeIn != null) try { pipeIn.close(); } catch (IOException e2) { Logger.error(this, "Failed to close pipeIn: " + e2, e2); }
+				if (output != null) try { output.close(); } catch (IOException e2) { Logger.error(this, "Failed to close output: " + e2, e2); }
 			}
 
 			try {

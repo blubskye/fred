@@ -20,7 +20,6 @@ import freenet.support.HTMLEncoder;
 import freenet.support.HTMLNode;
 import freenet.support.Logger;
 import freenet.support.SimpleFieldSet;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 
 /**
@@ -336,23 +335,17 @@ public class BaseL10n {
 	 */
 	private SimpleFieldSet loadTranslation(LANGUAGE lang) {
 		SimpleFieldSet result = null;
-		InputStream in = null;
-
-		try {
-			// Returns null on lookup failures:
-			in = this.cl.getResourceAsStream(this.getL10nFileName(lang));
-			if (in != null) {
-				result = SimpleFieldSet.readFrom(in, false, false);
-			} else {
-				Logger.error(this.getClass(), "Could not get resource : " + this.getL10nFileName(lang));
-			}
+		InputStream in = this.cl.getResourceAsStream(this.getL10nFileName(lang));
+		if (in == null) {
+			Logger.error(this.getClass(), "Could not get resource : " + this.getL10nFileName(lang));
+			return null;
+		}
+		try (InputStream res = in) {
+			result = SimpleFieldSet.readFrom(res, false, false);
 		} catch (Exception e) {
 			Logger.error(this.getClass(), "Error while loading the l10n file from " + this.getL10nFileName(lang) + " :" + e.getMessage(), e);
 			result = null;
-		} finally {
-			Closer.close(in);
 		}
-
 		return result;
 	}
 
@@ -420,7 +413,6 @@ public class BaseL10n {
 	 * Save the SimpleFieldSet of overridden keys in a file.
 	 */
 	private void saveTranslationFile() {
-		FileOutputStream fos = null;
 		File finalFile = new File(this.getL10nOverrideFileName(this.lang));
 
 		try {
@@ -428,17 +420,14 @@ public class BaseL10n {
 			File tempFile = File.createTempFile(finalFile.getName(), ".bak", finalFile.getParentFile());
 			Logger.minor(this.getClass(), "The temporary filename is : " + tempFile);
 
-			fos = new FileOutputStream(tempFile);
-			this.translationOverride.writeToBigBuffer(fos);
-			fos.close();
-			fos = null;
+			try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+				this.translationOverride.writeToBigBuffer(fos);
+			}
 
 			FileUtil.moveTo(tempFile, finalFile);
 			Logger.normal(this.getClass(), "Override file saved successfully!");
 		} catch (IOException e) {
 			Logger.error(this.getClass(), "Error while saving the translation override: " + e.getMessage(), e);
-		} finally {
-			Closer.close(fos);
 		}
 	}
 

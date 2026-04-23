@@ -34,7 +34,6 @@ import freenet.support.compress.CompressionOutputSizeException;
 import freenet.support.compress.Compressor;
 import freenet.support.compress.Compressor.COMPRESSOR_TYPE;
 import freenet.support.io.BucketTools;
-import freenet.support.io.Closer;
 import freenet.support.io.SkipShieldingInputStream;
 import net.contrapunctus.lzma.LzmaInputStream;
 
@@ -333,10 +332,10 @@ public class ArchiveManager {
 							} catch (IOException e) {
 								Logger.error(this, "Failed to close PipedOutputStream: "+e, e);
 							}
-							Closer.close(is);
+							if (is != null) try { is.close(); } catch (IOException ignored) {}
 						}
 					}
-					
+
 				});
 				is = pis;
 			} else if(ctype == COMPRESSOR_TYPE.LZMA) {
@@ -362,8 +361,8 @@ public class ArchiveManager {
 		} catch (IOException ioe) {
 			throw new ArchiveFailureException("An IOE occured: "+ioe.getMessage(), ioe);
 		} finally {
-			Closer.close(is);
-	}
+			if (is != null) try { is.close(); } catch (IOException ignored) {}
+		}
 	}
 
 	private void handleTARArchive(ArchiveStoreContext ctx, FreenetURI key, InputStream data, String element, ArchiveExtractCallback callback, MutableBoolean gotElement, boolean throwAtExit, ClientContext context) throws ArchiveFailureException, ArchiveRestartException {
@@ -447,7 +446,7 @@ outerTAR:		while(true) {
 		} catch (IOException e) {
 			throw new ArchiveFailureException("Error reading archive: "+e.getMessage(), e);
 		} finally {
-			Closer.close(tarIS);
+			if (tarIS != null) try { tarIS.close(); } catch (IOException ignored) {}
 		}
 	}
 

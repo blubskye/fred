@@ -11,6 +11,7 @@ import freenet.config.EnumerableOptionCallback;
 import freenet.config.InvalidConfigValueException;
 import freenet.config.NodeNeedRestartException;
 import freenet.config.OptionFormatException;
+import freenet.config.Dimension;
 import freenet.config.SubConfig;
 import freenet.support.Executor;
 import freenet.support.FileLoggerHook;
@@ -232,8 +233,8 @@ public class LoggingConfigHandler {
 						maxCachedLogLines = val;
 						throw new NodeNeedRestartException("logger.maxCachedLogLines");
 					}
-				}, false);
-    	
+				}, Dimension.NOT);
+
 		maxCachedLogLines = config.getInt("maxCachedLines");
 		
 		config.register("maxBacklogNotBusy", "60000", 8, true, false, "LogConfigHandler.maxBacklogNotBusy", 

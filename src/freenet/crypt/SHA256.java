@@ -37,8 +37,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
 
-import freenet.support.io.Closer;
-
 /**
  * @author  Jeroen C. van Gelderen (gelderen@cryptix.org)
  */
@@ -52,17 +50,13 @@ public class SHA256 {
 	 * @throws IOException
 	 */
 	public static void hash(InputStream is, MessageDigest md) throws IOException {
-		try {
-			byte[] buf = new byte[4096];
-			int readBytes = is.read(buf);
-			while(readBytes > -1) {
-				md.update(buf, 0, readBytes);
-				readBytes = is.read(buf);
-			}
-			is.close();
-		} finally {
-			Closer.close(is);
+		byte[] buf = new byte[4096];
+		int readBytes = is.read(buf);
+		while(readBytes > -1) {
+			md.update(buf, 0, readBytes);
+			readBytes = is.read(buf);
 		}
+		is.close();
 	}
 
 	/**

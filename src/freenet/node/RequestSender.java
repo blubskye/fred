@@ -533,7 +533,7 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
 
 		@Override
 		public int getPriority() {
-			return NativeThread.NORM_PRIORITY;
+			return NativeThread.PriorityLevel.NORM_PRIORITY.value;
 		}
 		
 		@Override
@@ -655,7 +655,7 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
 				
 				@Override
 				public int getPriority() {
-					return NativeThread.HIGH_PRIORITY;
+					return NativeThread.PriorityLevel.HIGH_PRIORITY.value;
 				}
 				
 			}, this);
@@ -720,7 +720,7 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
 				
 				@Override
 				public int getPriority() {
-					return NativeThread.HIGH_PRIORITY;
+					return NativeThread.PriorityLevel.HIGH_PRIORITY.value;
 				}
 				
 			}, this);
@@ -2053,7 +2053,7 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
 	
 	@Override
 	public int getPriority() {
-		return NativeThread.HIGH_PRIORITY;
+		return NativeThread.PriorityLevel.HIGH_PRIORITY.value;
 	}
 
 	public PeerNode transferringFrom() {
@@ -2200,7 +2200,7 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
 
 				@Override
 				public int getPriority() {
-					return NativeThread.NORM_PRIORITY;
+					return NativeThread.PriorityLevel.NORM_PRIORITY.value;
 				}
 				
 			}, this);

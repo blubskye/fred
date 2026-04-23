@@ -13,7 +13,6 @@ import freenet.support.LogThresholdCallback;
 import freenet.support.Logger;
 import freenet.support.SimpleFieldSet;
 import freenet.support.Logger.LogLevel;
-import freenet.support.io.Closer;
 import freenet.support.io.LineReadingInputStream;
 import freenet.support.io.TooLongException;
 
@@ -73,13 +72,13 @@ public class FCPConnectionInputHandler implements Runnable {
 			if(WrapperManager.hasShutdownHookBeenTriggered()) {
 				FCPMessage msg = new ProtocolErrorMessage(ProtocolErrorMessage.SHUTTING_DOWN,true,"The node is shutting down","Node",false);
 				handler.send(msg);
-				Closer.close(is);
+				if (is != null) try { is.close(); } catch (IOException ignored) {}
 				return;
 			}
 			// Read a message
 			String messageType = lis.readLine(128, 128, true);
 			if(messageType == null) {
-				Closer.close(is);
+				if (is != null) try { is.close(); } catch (IOException ignored) {}
 				return;
 			}
 			if(messageType.isEmpty())
@@ -115,7 +114,7 @@ public class FCPConnectionInputHandler implements Runnable {
 					FCPMessage err = new ProtocolErrorMessage(ProtocolErrorMessage.CLIENT_HELLO_MUST_BE_FIRST_MESSAGE, true, null, null, false);
 					handler.send(err);
 					handler.close();
-					Closer.close(is);
+					if (is != null) try { is.close(); } catch (IOException ignored) {}
 					return;
 				} else {
 					FCPMessage err = new ProtocolErrorMessage(e.protocolCode, false, e.getMessage(), e.ident, e.global);
@@ -127,7 +126,7 @@ public class FCPConnectionInputHandler implements Runnable {
 				FCPMessage err = new ProtocolErrorMessage(ProtocolErrorMessage.CLIENT_HELLO_MUST_BE_FIRST_MESSAGE, true, null, null, false);
 				handler.send(err);
 				handler.close();
-				Closer.close(is);
+				if (is != null) try { is.close(); } catch (IOException ignored) {}
 				return;
 			}
 			if(msg instanceof BaseDataCarryingMessage) {
@@ -156,7 +155,7 @@ public class FCPConnectionInputHandler implements Runnable {
 			}
 			firstMessage = false;
 			if(handler.isClosed()) {
-				Closer.close(is);
+				if (is != null) try { is.close(); } catch (IOException ignored) {}
 				return;
 			}
 		}

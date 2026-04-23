@@ -57,7 +57,7 @@ import freenet.support.api.Bucket;
 import freenet.support.compress.Compressor;
 import freenet.support.compress.DecompressorThreadManager;
 import freenet.support.io.BucketTools;
-import freenet.support.io.Closer;
+
 
 /**
  *
@@ -253,12 +253,12 @@ public class USKFetcher implements ClientGetState, USKCallback, HasKeyListener, 
 					if(logMINOR) Logger.minor(this, "Remaining DBR attempts: "+dbrAttempts);
 					dbrsFinished = dbrAttempts.isEmpty();
 				}
-				Closer.close(pipeOut);
-				Closer.close(pipeIn);
-				Closer.close(output);
+				if (pipeOut != null) try { pipeOut.close(); } catch (IOException e) { Logger.error(this, "Failed to close: " + e, e); }
+				if (pipeIn != null) try { pipeIn.close(); } catch (IOException e) { Logger.error(this, "Failed to close: " + e, e); }
+				if (output != null) try { output.close(); } catch (IOException e) { Logger.error(this, "Failed to close: " + e, e); }
 				if(dbrsFinished)
 					onDBRsFinished(context);
-				Closer.close(data);
+				if (data != null) data.free();
 			}
 		}
 		private void innerSuccess(Bucket bucket,

@@ -11,8 +11,6 @@ import java.util.Collections;
 import java.util.Hashtable;
 import java.util.Map;
 
-import freenet.support.io.Closer;
-
 /**
  * Provides the content of the ISO639-3 standard for language codes.
  * Description of what this standard is (taken from http://www.sil.org/iso639-3/default.asp):
@@ -185,20 +183,13 @@ public final class ISO639_3 {
 	private static Hashtable<String, LanguageCode> loadFromTabFile() {
 		final Hashtable<String, LanguageCode> codes = new Hashtable<String, LanguageCode>(7705 * 2);
 
-		InputStream in = null;
-		InputStreamReader isr = null;
-		BufferedReader br = null;
-		
-		try {
-			// Returns null on lookup failures:
-			in = ISO639_3.class.getClassLoader().getResourceAsStream("freenet/l10n/iso-639-3_20100707.tab");
-			
-			if (in == null)
-				throw new RuntimeException("Could not open the language codes resource");
-			
-			isr = new InputStreamReader(in, StandardCharsets.UTF_8);
-			br = new BufferedReader(isr);
-			
+		InputStream in = ISO639_3.class.getClassLoader().getResourceAsStream("freenet/l10n/iso-639-3_20100707.tab");
+		if (in == null)
+			throw new RuntimeException("Could not open the language codes resource");
+
+		try (InputStream res = in;
+		     InputStreamReader isr = new InputStreamReader(res, StandardCharsets.UTF_8);
+		     BufferedReader br = new BufferedReader(isr)) {
 			{
 				String[] headerTokens = br.readLine().split("[\t]");
 				if(
@@ -213,37 +204,33 @@ public final class ISO639_3 {
 				)
 					throw new RuntimeException("File header does not match the expected header.");
 			}
-		
+
 			for(String line = br.readLine(); line != null; line = br.readLine()) {
 				line = line.trim();
 				if(line.isEmpty())
 					continue;
-				
+
 				final String[] tokens = line.split("[\t]");
-				
+
 				if(tokens.length != 8 && tokens.length != 7)
 					throw new RuntimeException("Line with invalid token amount: " + line);
-				
+
 				final LanguageCode newCode = new LanguageCode(
 						tokens[0].toCharArray(),
 						tokens[1].toCharArray(),
-						tokens[2].toCharArray(), 
+						tokens[2].toCharArray(),
 						tokens[3].toCharArray(),
 						LanguageCode.Scope.fromTabFile(tokens[4]),
 						LanguageCode.Type.fromTabFile(tokens[5]),
 						tokens[6],
 						tokens.length==8 ? tokens[7] : null
 						);
-				
+
 				if(codes.put(newCode.id, newCode) != null)
 					throw new RuntimeException("Duplicate language code: " + newCode);
 			}
 		} catch(Exception e) {
 			throw new RuntimeException(e);
-		} finally {
-			Closer.close(br);
-			Closer.close(isr);
-			Closer.close(in);
 		}
 
 		return codes;

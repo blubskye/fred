@@ -19,7 +19,6 @@ import freenet.support.Logger;
 import freenet.support.SimpleFieldSet;
 import freenet.support.api.Bucket;
 import freenet.support.api.BucketFactory;
-import freenet.support.io.Closer;
 import freenet.support.io.FileBucket;
 
 /**
@@ -183,11 +182,8 @@ public class FilterMessage extends DataCarryingMessage {
 		String resultCharset = null;
 		String resultMimeType = null;
 		boolean unsafe = false;
-		InputStream input = null;
-		OutputStream output = null;
-		try {
-			input = bucket.getInputStream();
-			output = resultBucket.getOutputStream();
+		try (InputStream input = bucket.getInputStream();
+		     OutputStream output = resultBucket.getOutputStream()) {
 			FilterStatus status = applyFilter(input, output, handler.getServer().getCore().getClientContext());
 			resultCharset = status.charset;
 			resultMimeType = status.mimeType;
@@ -196,9 +192,6 @@ public class FilterMessage extends DataCarryingMessage {
 		} catch (IOException e) {
 			Logger.error(this, "IO error running content filter", e);
 			throw new MessageInvalidException(ProtocolErrorMessage.INTERNAL_ERROR, e.toString(), identifier, false);
-		} finally {
-			Closer.close(input);
-			Closer.close(output);
 		}
 		FilterResultMessage response = new FilterResultMessage(identifier, resultCharset, resultMimeType, unsafe, resultBucket);
 		handler.send(response);

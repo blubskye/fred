@@ -67,8 +67,8 @@ final public class FileUtil {
 	            lis.readLine(100000, 200, true);
 	        }
 	    } catch (IOException e) {
-	        Closer.close(lis);
-	        Closer.close(fis);
+	        if (lis != null) try { lis.close(); } catch (IOException e2) { Logger.error(FileUtil.class, "Failed to close stream: " + e2, e2); }
+	        else if (fis != null) try { fis.close(); } catch (IOException e2) { Logger.error(FileUtil.class, "Failed to close stream: " + e2, e2); }
 	        throw e;
 	    }
 	    return lis;

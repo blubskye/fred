@@ -446,7 +446,7 @@ public class NodeDispatcher implements Dispatcher, Runnable {
 		@Override
 		public int getPriority() {
 			// Slightly less than the actual requests themselves because accepting requests increases load.
-			return NativeThread.HIGH_PRIORITY-1;
+			return NativeThread.PriorityLevel.HIGH_PRIORITY.value-1;
 		}
 		
 	};
@@ -510,7 +510,7 @@ public class NodeDispatcher implements Dispatcher, Runnable {
 		if(rejectReason != null) {
 			// can accept 1 CHK request every so often, but not with SSKs because they aren't throttled so won't sort out bwlimitDelayTime, which was the whole reason for accepting them when overloaded...
 			Logger.normal(this, "Rejecting "+(isSSK ? "SSK" : "CHK")+" request from "+source.getPeer()+" preemptively because "+rejectReason);
-			Message rejected = DMT.createFNPRejectedOverload(id, true, true, realTimeFlag);
+			Message rejected = DMT.createFNPRejectedOverload(id, true);
 			if(rejectReason.soft)
 				rejected.addSubMessage(DMT.createFNPRejectIsSoft());
 			try {
@@ -575,7 +575,7 @@ public class NodeDispatcher implements Dispatcher, Runnable {
 		RejectReason rejectReason = nodeStats.shouldRejectRequest(!isSSK, true, isSSK, false, false, source, false, preferInsert, realTimeFlag, tag);
 		if(rejectReason != null) {
 			Logger.normal(this, "Rejecting insert from "+source.getPeer()+" preemptively because "+rejectReason);
-			Message rejected = DMT.createFNPRejectedOverload(id, true, true, realTimeFlag);
+			Message rejected = DMT.createFNPRejectedOverload(id, true);
 			if(rejectReason.soft)
 				rejected.addSubMessage(DMT.createFNPRejectIsSoft());
 			try {

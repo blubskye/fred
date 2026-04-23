@@ -39,7 +39,6 @@ import freenet.support.api.Bucket;
 import freenet.support.api.BucketFactory;
 import freenet.support.api.RandomAccessBucket;
 import freenet.support.compress.Compressor.COMPRESSOR_TYPE;
-import freenet.support.io.Closer;
 import freenet.support.io.CountedOutputStream;
 import freenet.support.io.NullOutputStream;
 
@@ -1242,8 +1241,8 @@ public class Metadata implements Cloneable, Serializable {
         } catch (IOException e) {
             throw new Error("Could not write to CountedOutputStream: "+e, e);
         } finally {
-            Closer.close(dos);
-            Closer.close(cos);
+            if (dos != null) try { dos.close(); } catch (IOException ignored) {}
+            if (cos != null) try { cos.close(); } catch (IOException ignored) {}
         }
         return cos.written();
     }
@@ -1704,7 +1703,7 @@ public class Metadata implements Cloneable, Serializable {
 	        success = true;
 	        return b;
 	    } finally {
-	        Closer.close(dos);
+	        if (dos != null) try { dos.close(); } catch (IOException ignored) {}
 	        if(!success) b.free();
 	    }
 	}

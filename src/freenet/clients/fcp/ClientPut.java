@@ -34,7 +34,6 @@ import freenet.support.Logger;
 import freenet.support.Logger.LogLevel;
 import freenet.support.api.Bucket;
 import freenet.support.api.RandomAccessBucket;
-import freenet.support.io.Closer;
 import freenet.support.io.ResumeFailedException;
 
 public class ClientPut extends ClientPutBase {
@@ -167,7 +166,9 @@ public class ClientPut extends ClientPutBase {
 
 			if(message.fileHash != null) {
 				try {
-					salt = handler.connectionIdentifier + '-' + message.identifier + '-';
+					@SuppressWarnings("deprecation")
+					String _connId = handler.connectionIdentifier;
+					salt = _connId + '-' + message.identifier + '-';
 					saltedHash = Base64.decodeStandard(message.fileHash);
 				} catch (IllegalBase64Exception e) {
 					try {
@@ -231,16 +232,12 @@ public class ClientPut extends ClientPutBase {
 			MessageDigest md = SHA256.getMessageDigest();
 			byte[] foundHash;
 			md.update(salt.getBytes(StandardCharsets.UTF_8));
-			InputStream is = null;
-			try {
-				is = data.getInputStream();
+			try (InputStream is = data.getInputStream()) {
 				SHA256.hash(is, md);
 			} catch (IOException e) {
 				Logger.error(this, "Got IOE: " + e.getMessage(), e);
 				throw new MessageInvalidException(ProtocolErrorMessage.COULD_NOT_READ_FILE,
 						"Unable to access file: " + e, identifier, global);
-			} finally {
-				Closer.close(is);
 			}
 			foundHash = md.digest();
 

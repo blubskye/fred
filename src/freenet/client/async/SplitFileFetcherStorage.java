@@ -986,7 +986,7 @@ public class SplitFileFetcherStorage {
                         return false;
                     }
                     
-                }, NativeThread.LOW_PRIORITY+1);
+                }, NativeThread.PriorityLevel.LOW_PRIORITY.value+1);
             } catch (PersistenceDisabledException e) {
                 // Ignore.
             }

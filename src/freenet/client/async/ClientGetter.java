@@ -47,7 +47,6 @@ import freenet.support.api.Bucket;
 import freenet.support.compress.CompressionOutputSizeException;
 import freenet.support.compress.Compressor;
 import freenet.support.compress.DecompressorThreadManager;
-import freenet.support.io.Closer;
 import freenet.support.io.FileBucket;
 import freenet.support.io.FileUtil;
 import freenet.support.io.InsufficientDiskSpaceException;
@@ -388,9 +387,9 @@ implements WantsCooldownCallback, FileGetCompletionCallback, Serializable {
 			Logger.error(this, "Caught "+t, t);
 			ex = new FetchException(FetchExceptionMode.INTERNAL_ERROR, t);
 		} finally {
-			Closer.close(dataInput);
-			Closer.close(dataOutput);
-			Closer.close(output);
+			try { dataInput.close(); } catch (IOException e2) { Logger.error(this, "Failed to close dataInput: " + e2, e2); }
+			try { dataOutput.close(); } catch (IOException e2) { Logger.error(this, "Failed to close dataOutput: " + e2, e2); }
+			if (output != null) try { output.close(); } catch (IOException e2) { Logger.error(this, "Failed to close output: " + e2, e2); }
 		}
 		if(ex != null) {
 			onFailure(ex, state, context, true);

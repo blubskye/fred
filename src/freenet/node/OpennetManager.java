@@ -52,7 +52,6 @@ import freenet.support.Logger.LogLevel;
 import freenet.support.SimpleFieldSet;
 import freenet.support.TimeSortedHashtable;
 import freenet.support.io.ByteArrayRandomAccessBuffer;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 import freenet.support.io.NativeThread;
 import freenet.support.transport.ip.HostnameSyntaxException;
@@ -340,9 +339,9 @@ public class OpennetManager {
 			bw.close();
 			FileUtil.moveTo(backup, orig);
 		} catch (IOException e) {
-			Closer.close(bw);
-			Closer.close(osr);
-			Closer.close(fos);
+			if (bw != null) try { bw.close(); } catch (IOException ignored) {}
+			if (osr != null) try { osr.close(); } catch (IOException ignored) {}
+			if (fos != null) try { fos.close(); } catch (IOException ignored) {}
 		}
 	}
 
@@ -1286,7 +1285,7 @@ public class OpennetManager {
 
 				@Override
 				public int getPriority() {
-					return NativeThread.NORM_PRIORITY;
+					return NativeThread.PriorityLevel.NORM_PRIORITY.value;
 				}
 				
 				private void complete(byte[] buf) {

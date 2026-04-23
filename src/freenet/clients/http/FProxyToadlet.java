@@ -73,7 +73,6 @@ import freenet.support.api.Bucket;
 import freenet.support.api.BucketFactory;
 import freenet.support.api.HTTPRequest;
 import freenet.support.io.BucketTools;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 import freenet.support.io.NoFreeBucket;
 
@@ -269,21 +268,14 @@ public final class FProxyToadlet extends Toadlet implements RequestClient {
 				if (range[1] == -1 || range[1] >= size) {
 					range[1] = size - 1;
 				}
-				InputStream is = null;
-				OutputStream os = null;
 				Bucket tmpRange = bucketFactory.makeBucket(range[1] - range[0]);
-				try {
-					is = data.getInputStream();
-					os = tmpRange.getOutputStream();
+				try (InputStream is = data.getInputStream();
+				     OutputStream os = tmpRange.getOutputStream()) {
 					if (range[0] > 0)
 						FileUtil.skipFully(is, range[0]);
 					FileUtil.copy(is, os, range[1] - range[0] + 1);
 					// FIXME catch IOException here and tell the user there is a problem instead of just closing the connection.
 					// Currently there is no way to tell the difference between an IOE caused by the connection to the client and an internal one, we just close the connection in both cases.
-					os.close(); os = null; // If we can't write, we need to throw, so we don't send too little data.
-				} finally {
-					Closer.close(is);
-					Closer.close(os);
 				}
 				retHdr.put("Content-Range", "bytes " + range[0] + "-" + range[1] + "/" + size);
                 retHdr.put("X-Content-Type-Options", "nosniff");
@@ -430,19 +422,14 @@ public final class FProxyToadlet extends Toadlet implements RequestClient {
 	 * REDFLAG Expect future security issues!
 	 * @throws IOException */
 	private static boolean isSniffedAsFeed(Bucket data) throws IOException {
-		DataInputStream is = null;
-		try {
-			int sz = (int) Math.min(data.size(), 512);
-			if(sz == 0)
-				return false;
-			is = new DataInputStream(data.getInputStream());
+		int sz = (int) Math.min(data.size(), 512);
+		if(sz == 0)
+			return false;
+		try (DataInputStream is = new DataInputStream(data.getInputStream())) {
 			byte[] buf = new byte[sz];
 			// FIXME Fortunately firefox doesn't detect RSS in UTF16 etc ... yet
 			is.readFully(buf);
 			return RssSniffer.isSniffedAsFeed(buf);
-		}
-		finally {
-			Closer.close(is);
 		}
 	}
 
@@ -912,7 +899,7 @@ public final class FProxyToadlet extends Toadlet implements RequestClient {
 				PluginInfoWrapper keyUtil;
 				if((e.mode == FetchExceptionMode.NOT_IN_ARCHIVE || e.mode == FetchExceptionMode.NOT_ENOUGH_PATH_COMPONENTS)) {
 					// first look for the newest version
-					if ((keyUtil = core.getNode().getPluginManager().getPluginInfo("plugins.KeyUtils.KeyUtilsPlugin")) != null) {
+					if ((keyUtil = core.getNode().getPluginManager().getPluginInfoByClassName("plugins.KeyUtils.KeyUtilsPlugin")) != null) {
 						option = optionList.addChild("li");
 						if (keyUtil.getPluginLongVersion() < 5010)
 							NodeL10n.getBase().addL10nSubstitution(option, "FProxyToadlet.openWithKeyExplorer", new String[] { "link" }, new HTMLNode[] { HTMLNode.link("/KeyUtils/?automf=true&key=" + key.toString()) });
@@ -921,7 +908,7 @@ public final class FProxyToadlet extends Toadlet implements RequestClient {
 							option = optionList.addChild("li");
 							NodeL10n.getBase().addL10nSubstitution(option, "FProxyToadlet.openWithSiteExplorer", new String[] { "link" }, new HTMLNode[] { HTMLNode.link("/KeyUtils/Site?key=" + key.toString()) });
 						}
-					} else if ((keyUtil = core.getNode().getPluginManager().getPluginInfo("plugins.KeyExplorer.KeyExplorer")) != null) {
+					} else if ((keyUtil = core.getNode().getPluginManager().getPluginInfoByClassName("plugins.KeyExplorer.KeyExplorer")) != null) {
 						option = optionList.addChild("li");
 						if (keyUtil.getPluginLongVersion() > 4999)
 							NodeL10n.getBase().addL10nSubstitution(option, "FProxyToadlet.openWithKeyExplorer", new String[] { "link" }, new HTMLNode[] { HTMLNode.link("/KeyExplorer/?automf=true&key=" + key.toString())});

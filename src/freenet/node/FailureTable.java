@@ -97,7 +97,7 @@ public class FailureTable {
 		this.node = node;
 		offerAuthenticatorKey = new byte[32];
 		node.getRandom().nextBytes(offerAuthenticatorKey);
-		offerExecutor = new SerialExecutor(NativeThread.HIGH_PRIORITY);
+		offerExecutor = new SerialExecutor(NativeThread.PriorityLevel.HIGH_PRIORITY.value);
 		node.getTicker().queueTimedJob(new FailureTableCleaner(), CLEANUP_PERIOD);
 	}
 	
@@ -515,7 +515,7 @@ public class FailureTable {
 
 				@Override
 				public int getPriority() {
-					return NativeThread.HIGH_PRIORITY;
+					return NativeThread.PriorityLevel.HIGH_PRIORITY.value;
 				}
 
 				@Override
@@ -564,7 +564,7 @@ public class FailureTable {
 
 				@Override
 				public int getPriority() {
-					return NativeThread.HIGH_PRIORITY;
+					return NativeThread.PriorityLevel.HIGH_PRIORITY.value;
 				}
 
 				@Override

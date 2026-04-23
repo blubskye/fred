@@ -34,7 +34,6 @@ import freenet.support.api.Bucket;
 import freenet.support.api.ManifestElement;
 import freenet.support.api.RandomAccessBucket;
 import freenet.support.io.BucketTools;
-import freenet.support.io.Closer;
 import freenet.support.io.ResumeFailedException;
 
 /**
@@ -194,7 +193,7 @@ public class ContainerInserter implements ClientPutState, Serializable {
 			fail(new InsertException(InsertExceptionMode.BUCKET_ERROR, e, null), context);
 			return;
 		} finally {
-			Closer.close(os);
+			if (os != null) try { os.close(); } catch (IOException e2) { Logger.error(this, "Failed to close output: " + e2, e2); }
 		}
 		
 		boolean dc = dontCompress;

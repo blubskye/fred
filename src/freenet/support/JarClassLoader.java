@@ -283,7 +283,7 @@ public class JarClassLoader extends ClassLoader implements Closeable {
 		int i = name.lastIndexOf('.');
 		if (i != -1) {
 			String pkgname = name.substring(0, i);
-			pkg = getPackage(pkgname);
+			pkg = getDefinedPackage(pkgname);
 			if (pkg == null) {
 				try {
 					Manifest man = tempJarFile.getManifest();

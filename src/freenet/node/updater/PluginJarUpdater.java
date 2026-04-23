@@ -126,7 +126,7 @@ public class PluginJarUpdater extends NodeUpdater {
 		}
 		if(oldResult != null) oldResult.free();
 		
-		PluginInfoWrapper loaded = pluginManager.getPluginInfo(pluginName);
+		PluginInfoWrapper loaded = pluginManager.getPluginInfoByClassName(pluginName);
 		
 		if(loaded == null) {
 			if(!node.getPluginManager().isPluginLoadedOrLoadingOrWantLoad(pluginName)) {

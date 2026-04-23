@@ -63,7 +63,6 @@ import freenet.support.Ticker;
 import freenet.support.api.BooleanCallback;
 import freenet.support.api.HTTPRequest;
 import freenet.support.api.StringArrCallback;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 import freenet.support.io.NativeThread.PriorityLevel;
 import org.tanukisoftware.wrapper.WrapperManager;
@@ -1153,18 +1152,12 @@ public class PluginManager {
 	private void downloadPluginFile(PluginDownLoader<?> pluginDownLoader, File pluginDirectory, File pluginFile, PluginProgress pluginProgress) throws IOException, PluginNotFoundException {
 		File tempPluginFile = File.createTempFile("plugin-", ".jar", pluginDirectory);
 		tempPluginFile.deleteOnExit();
-		OutputStream pluginOutputStream = null;
-		InputStream pluginInputStream = null;
-		try {
-			pluginOutputStream = new FileOutputStream(tempPluginFile);
-			pluginInputStream = pluginDownLoader.getInputStream(pluginProgress);
+		try (OutputStream pluginOutputStream = new FileOutputStream(tempPluginFile);
+		     InputStream pluginInputStream = pluginDownLoader.getInputStream(pluginProgress)) {
 			FileUtil.copy(pluginInputStream, pluginOutputStream, -1);
 		} catch (IOException ioe1) {
 			tempPluginFile.delete();
 			throw ioe1;
-		} finally {
-			Closer.close(pluginInputStream);
-			Closer.close(pluginOutputStream);
 		}
 		if (tempPluginFile.length() == 0) {
 			throw new PluginNotFoundException("downloaded zero length file");
@@ -1195,9 +1188,7 @@ public class PluginManager {
 	}
 
 	private String verifyJarFileAndGetPluginMainClass(File pluginFile) throws PluginNotFoundException, PluginAlreadyLoaded {
-		JarFile pluginJarFile = null;
-		try {
-			pluginJarFile = new JarFile(pluginFile);
+		try (JarFile pluginJarFile = new JarFile(pluginFile)) {
 			Manifest manifest = pluginJarFile.getManifest();
 			if (manifest == null) {
 				throw new PluginNotFoundException("could not load manifest from plugin file");
@@ -1215,11 +1206,8 @@ public class PluginManager {
 				throw new PluginAlreadyLoaded();
 			}
 			return pluginMainClassName;
-
 		} catch (IOException ioe1) {
 			throw new PluginNotFoundException("error procesesing jar file", ioe1);
-		} finally {
-			Closer.close(pluginJarFile);
 		}
 	}
 
@@ -1257,7 +1245,7 @@ public class PluginManager {
 				}
 			}
 			Class<?> pluginMainClass = jarClassLoader.loadClass(pluginMainClassName);
-			Object object = pluginMainClass.newInstance();
+			Object object = pluginMainClass.getDeclaredConstructor().newInstance();
 			if (!(object instanceof FredPlugin)) {
 				throw new PluginNotFoundException("plugin main class is not a plugin");
 			}
@@ -1282,6 +1270,10 @@ public class PluginManager {
 			throw new PluginNotFoundException("could not instantiate plugin", ie1);
 		} catch (IllegalAccessException iae1) {
 			throw new PluginNotFoundException("could not access plugin main class", iae1);
+		} catch (NoSuchMethodException nsme) {
+			throw new PluginNotFoundException("plugin main class has no no-arg constructor", nsme);
+		} catch (java.lang.reflect.InvocationTargetException ite) {
+			throw new PluginNotFoundException("plugin constructor threw an exception", ite);
 		} catch (NoClassDefFoundError ncdfe1) {
 			throw new PluginNotFoundException("could not find class def, may a missing lib?", ncdfe1);
 		} catch (Throwable t) {
@@ -1371,28 +1363,20 @@ public class PluginManager {
 	private String getFileDigest(File file) throws PluginNotFoundException {
 		final int BUFFERSIZE = 4096;
 		MessageDigest hash = HashType.SHA1.get();
-		FileInputStream fis = null;
-		BufferedInputStream bis = null;
-		String result;
 
-		try {
+		try (FileInputStream fis = new FileInputStream(file);
+		     BufferedInputStream bis = new BufferedInputStream(fis)) {
 			// We compute the hash
 			// http://java.sun.com/developer/TechTips/1998/tt0915.html#tip2
-			fis = new FileInputStream(file);
-			bis = new BufferedInputStream(fis);
 			int len = 0;
 			byte[] buffer = new byte[BUFFERSIZE];
 			while((len = bis.read(buffer)) > -1) {
 				hash.update(buffer, 0, len);
 			}
-			result = HexUtil.bytesToHex(hash.digest());
+			return HexUtil.bytesToHex(hash.digest());
 		} catch(Exception e) {
 			throw new PluginNotFoundException("Error while computing hash of the downloaded plugin: " + e, e);
-		} finally {
-			Closer.close(bis);
-			Closer.close(fis);
 		}
-		return result;
 	}
 
 	Ticker getTicker() {

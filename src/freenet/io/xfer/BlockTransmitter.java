@@ -235,7 +235,7 @@ public class BlockTransmitter {
 
 		@Override
 		public int getPriority() {
-			return NativeThread.HIGH_PRIORITY;
+			return NativeThread.PriorityLevel.HIGH_PRIORITY.value;
 		}
 		
 	}
@@ -307,7 +307,7 @@ public class BlockTransmitter {
 				
 				@Override
 				public int getPriority() {
-					return NativeThread.NORM_PRIORITY;
+					return NativeThread.PriorityLevel.NORM_PRIORITY.value;
 				}
 				
 			};
@@ -543,7 +543,7 @@ public class BlockTransmitter {
 
 		@Override
 		public int getPriority() {
-			return NativeThread.NORM_PRIORITY;
+			return NativeThread.PriorityLevel.NORM_PRIORITY.value;
 		}
 		
 	};
@@ -593,7 +593,7 @@ public class BlockTransmitter {
 
 		@Override
 		public int getPriority() {
-			return NativeThread.NORM_PRIORITY;
+			return NativeThread.PriorityLevel.NORM_PRIORITY.value;
 		}
 		
 	};

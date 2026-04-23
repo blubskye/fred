@@ -26,7 +26,6 @@ import freenet.crypt.MultiHashInputStream;
 import freenet.keys.FreenetURI;
 import freenet.support.Logger;
 import freenet.support.compress.CompressionOutputSizeException;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 
 /**A thread which does postprocessing of decompressed data, in particular,
@@ -171,8 +170,8 @@ public class ClientGetWorkerThread extends Thread {
 				Logger.minor(this, "Exception caught while processing fetch: "+t,t);
 			setError(t);
 		} finally {
-			Closer.close(input);
-			Closer.close(output);
+			if (input != null) try { input.close(); } catch (IOException e2) { Logger.error(this, "Failed to close input: " + e2, e2); }
+			if (output != null) try { output.close(); } catch (IOException e2) { Logger.error(this, "Failed to close output: " + e2, e2); }
 		}
 	}
 

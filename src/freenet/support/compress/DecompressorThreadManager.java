@@ -21,7 +21,6 @@ import java.util.Queue;
 
 import freenet.support.Logger;
 import freenet.support.Logger.LogLevel;
-import freenet.support.io.Closer;
 
 /** Creates and manages decompressor threads. This class is 
  * given all decompressors which should be applied to an
@@ -98,7 +97,7 @@ public class DecompressorThreadManager {
 			onFailure(t);
 			throw t;
 		} finally {
-			Closer.close(output);
+			try { output.close(); } catch (IOException e2) { Logger.error(this, "Failed to close output: " + e2, e2); }
 		}
 		return input;
 		
@@ -192,8 +191,8 @@ public class DecompressorThreadManager {
 			} catch (Exception e) {
 				manager.onFailure(e);
 			} finally {
-				Closer.close(input);
-				Closer.close(output);
+				if (input != null) try { input.close(); } catch (IOException e2) { Logger.error(this, "Failed to close input: " + e2, e2); }
+				if (output != null) try { output.close(); } catch (IOException e2) { Logger.error(this, "Failed to close output: " + e2, e2); }
 			}
 		}
 

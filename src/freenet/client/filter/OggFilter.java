@@ -18,7 +18,7 @@ import java.util.LinkedList;
 import java.util.Map;
 
 import freenet.l10n.NodeL10n;
-import freenet.support.io.Closer;
+import freenet.support.Logger;
 import freenet.support.io.CountedOutputStream;
 
 /** Filters Ogg container files. These containers contain one or more
@@ -105,25 +105,23 @@ public class OggFilter implements ContentDataFilter{
 			//We've ran out of data to read. Break.
 			in.close();
 		} finally {
-			Closer.close(data);
-			Closer.close(in);
+			if (data != null) try { data.close(); } catch (IOException e) { Logger.error(this, "Failed to close: " + e, e); }
+			if (in != null) try { in.close(); } catch (IOException e) { Logger.error(this, "Failed to close: " + e, e); }
 		}
 		return (pageCount > 2 || hasValidSubpage(page));
 	}
 
 	private boolean hasValidSubpage(OggPage page) throws IOException {
-		DataInputStream in = new DataInputStream(new ByteArrayInputStream(page.toArray()));
-		in.skip(1); //Break alignment with the first page
-		try {
-			while(true) {
-				OggPage subpage = OggPage.readPage(in);
-				if(subpage.headerValid()) return true;
+		try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(page.toArray()))) {
+			in.skip(1); //Break alignment with the first page
+			try {
+				while(true) {
+					OggPage subpage = OggPage.readPage(in);
+					if(subpage.headerValid()) return true;
+				}
+			} catch(EOFException e) {
+				//We've ran out of data to read. Break.
 			}
-		} catch(EOFException e) {
-			//We've ran out of data to read. Break.
-			in.close();
-		} finally {
-			Closer.close(in);
 		}
 		return false;
 	}

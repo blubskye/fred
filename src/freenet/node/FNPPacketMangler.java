@@ -608,7 +608,7 @@ public class FNPPacketMangler implements OutgoingPacketMangler {
 		
 	}
 	
-	private final SerialExecutor authHandlingThread = new SerialExecutor(NativeThread.HIGH_PRIORITY, 1000);
+	private final SerialExecutor authHandlingThread = new SerialExecutor(NativeThread.PriorityLevel.HIGH_PRIORITY.value, 1000);
 
 	/**
 	 * Process a decrypted, authenticated auth packet.
@@ -2109,7 +2109,7 @@ public class FNPPacketMangler implements OutgoingPacketMangler {
             }
             @Override
             public int getPriority() {
-                return NativeThread.MIN_PRIORITY;
+                return NativeThread.PriorityLevel.MIN_PRIORITY.value;
             }
         }, "ECDH exponential signing");
     }

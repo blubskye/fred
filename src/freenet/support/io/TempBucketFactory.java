@@ -146,7 +146,7 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 							is._maybeResetInputStream();
 						} catch(IOException e) {
 							i.remove();
-							Closer.close(is);
+							try { is.close(); } catch (IOException e2) { Logger.error(this, "Failed to close stream: " + e2, e2); }
 						}
 					}
 			}
@@ -351,7 +351,7 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 				if(idx != osIndex)
 					close();
 				else {
-					Closer.close(currentIS);
+					currentIS.close();
 					currentIS = currentBucket.getInputStreamUnbuffered();
 					long toSkip = index;
 					while(toSkip > 0) {
@@ -416,7 +416,7 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 			@Override
 			public final void close() throws IOException {
 				synchronized(TempBucket.this) {
-					Closer.close(currentIS);
+					currentIS.close();
 					tbis.remove(this);
 				}
 			}
@@ -449,7 +449,7 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 		        if(hasBeenFreed) return;
 		        hasBeenFreed = true;
 		        
-		        Closer.close(os);
+		        if (os != null) try { os.close(); } catch (IOException e) { Logger.error(this, "Failed to close output stream: " + e, e); }
 		        closeInputStreams(true);
 		        if(isRAMBucket()) {
 		            // If it's in memory we must free before removing from the queue.
@@ -484,7 +484,7 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 		}
 		
 		@Override
-		@SuppressWarnings("removal")
+		@SuppressWarnings({"removal","deprecation"})
 		protected void finalize() throws Throwable {
 		    // If it's been converted to a TempRandomAccessBuffer, finalize() will only be called
 		    // if *neither* object is reachable.
@@ -899,7 +899,7 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
         }
         
         @Override
-        @SuppressWarnings("removal")
+        @SuppressWarnings({"removal","deprecation"})
         protected void finalize() throws Throwable {
             if(original != null) return; // TempBucket's responsibility if there was one.
             // If it's been converted to a TempRandomAccessBuffer, finalize() will only be called

@@ -33,6 +33,7 @@ import freenet.clients.http.FProxyToadlet;
 import freenet.clients.http.SimpleToadletServer;
 import freenet.clients.http.bookmark.BookmarkManager;
 import freenet.config.Config;
+import freenet.config.Dimension;
 import freenet.config.InvalidConfigValueException;
 import freenet.config.NodeNeedRestartException;
 import freenet.config.SubConfig;
@@ -537,7 +538,7 @@ public class NodeClientCore implements Persistable {
 		SemiOrderedShutdownHook shutdownHook = SemiOrderedShutdownHook.get();
 
 		shutdownHook.addEarlyJob(new NativeThread("Shutdown RealCompressor",
-							  NativeThread.HIGH_PRIORITY, true) {
+							  NativeThread.PriorityLevel.HIGH_PRIORITY.value, true) {
 			@Override
 			public void realRun() {
 				compressor.shutdown();
@@ -545,7 +546,7 @@ public class NodeClientCore implements Persistable {
 		});
 
 		shutdownHook.addEarlyJob(
-				new NativeThread("Shutdown database", NativeThread.HIGH_PRIORITY,
+				new NativeThread("Shutdown database", NativeThread.PriorityLevel.HIGH_PRIORITY.value,
 						 true) {
 
 					@Override
@@ -557,7 +558,7 @@ public class NodeClientCore implements Persistable {
 				});
 
 		shutdownHook.addLateJob(
-				new NativeThread("Close database", NativeThread.HIGH_PRIORITY,
+				new NativeThread("Close database", NativeThread.PriorityLevel.HIGH_PRIORITY.value,
 						 true) {
 
 					@Override
@@ -674,7 +675,7 @@ public class NodeClientCore implements Persistable {
 						node.getExecutor(),
 						RequestStarter.NUMBER_OF_PRIORITY_CLASSES);
 		shutdownHook.addEarlyJob(
-				new NativeThread("Shutdown FEC", NativeThread.HIGH_PRIORITY, true) {
+				new NativeThread("Shutdown FEC", NativeThread.PriorityLevel.HIGH_PRIORITY.value, true) {
 
 					public void realRun() {
 						Logger.normal(this, "Stopping FEC decode threads...");
@@ -683,7 +684,7 @@ public class NodeClientCore implements Persistable {
 
 				});
 		shutdownHook.addLateJob(
-				new NativeThread("Shutdown FEC", NativeThread.HIGH_PRIORITY, true) {
+				new NativeThread("Shutdown FEC", NativeThread.PriorityLevel.HIGH_PRIORITY.value, true) {
 
 					public void realRun() {
 						memoryLimitedJobRunner.waitForShutdown();
@@ -876,7 +877,7 @@ public class NodeClientCore implements Persistable {
 									l10n("maxUSKFetchersMustBeGreaterThanZero"));
 						maxBackgroundUSKFetchers = uskFetch;
 					}
-				}, false);
+				}, Dimension.NOT);
 
 		maxBackgroundUSKFetchers = nodeConfig.getInt("maxBackgroundUSKFetchers");
 
@@ -1161,7 +1162,7 @@ public class NodeClientCore implements Persistable {
 
 			@Override
 			public int getPriority() {
-				return NativeThread.LOW_PRIORITY;
+				return NativeThread.PriorityLevel.LOW_PRIORITY.value;
 			}
 		}, "Startup completion thread");
 

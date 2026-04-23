@@ -15,7 +15,6 @@ import freenet.support.api.BucketFactory;
 import freenet.support.api.RandomAccessBucket;
 import freenet.support.api.RandomAccessBuffer;
 import freenet.support.io.ArrayBucket;
-import freenet.support.io.Closer;
 import freenet.support.io.CountedOutputStream;
 
 public class GzipCompressor extends AbstractCompressor {
@@ -24,20 +23,11 @@ public class GzipCompressor extends AbstractCompressor {
 	public Bucket compress(Bucket data, BucketFactory bf, long maxReadLength, long maxWriteLength)
 			throws IOException, CompressionOutputSizeException {
 		RandomAccessBucket output = bf.makeBucket(maxWriteLength);
-		InputStream is = null;
-		OutputStream os = null;
-		try {
-			is = data.getInputStream();
-			os = output.getOutputStream();
+		try (InputStream is = data.getInputStream();
+		     OutputStream os = output.getOutputStream()) {
 			// force OS byte to 0 regardless of Java version (java 16 changed to setting 255 which would break hashes)
 			SingleOffsetReplacingOutputStream osByteFixingOs = new SingleOffsetReplacingOutputStream(os, 9, 0);
 			compress(is, osByteFixingOs, maxReadLength, maxWriteLength);
-			// It is essential that the close()'s throw if there is any problem.
-			is.close(); is = null;
-			os.close(); os = null;
-		} finally {
-			Closer.close(is);
-			Closer.close(os);
 		}
 		return output;
 	}

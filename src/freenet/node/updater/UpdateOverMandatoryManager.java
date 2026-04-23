@@ -70,7 +70,6 @@ import freenet.support.api.RandomAccessBucket;
 import freenet.support.api.RandomAccessBuffer;
 import freenet.support.io.ArrayBucket;
 import freenet.support.io.ByteArrayRandomAccessBuffer;
-import freenet.support.io.Closer;
 import freenet.support.io.FileBucket;
 import freenet.support.io.FileUtil;
 import freenet.support.io.FileRandomAccessBuffer;
@@ -1954,7 +1953,7 @@ public class UpdateOverMandatoryManager implements RequestClient {
 								peersFailed.add(fetchFrom);
 							peersFetching.remove(fetchFrom);
 						}
-						Closer.close(raf);
+						if(raf != null) raf.close();
 						if(tmp != null) 
 							tmp.delete();
 						if(failed) {

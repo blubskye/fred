@@ -15,7 +15,6 @@ import java.io.IOException;
 import freenet.support.Logger;
 import freenet.support.SimpleFieldSet;
 import freenet.support.Logger.LogLevel;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 import freenet.support.io.LineReadingInputStream;
 
@@ -111,19 +110,11 @@ public class FilePersistentConfig extends PersistentConfig {
 	 * @throws IOException */
 	private static SimpleFieldSet initialLoad(File toRead) throws IOException {
 		if(toRead == null) return null;
-		FileInputStream fis = null;
-		BufferedInputStream bis = null;
-		LineReadingInputStream lis = null;
-		try {
-			fis = new FileInputStream(toRead);
-			bis = new BufferedInputStream(fis);
-			lis = new LineReadingInputStream(bis);
+		try (FileInputStream fis = new FileInputStream(toRead);
+		     BufferedInputStream bis = new BufferedInputStream(fis);
+		     LineReadingInputStream lis = new LineReadingInputStream(bis)) {
 			// Config file is UTF-8 too!
 			return new SimpleFieldSet(lis, 1024*1024, 128, true, true, true); // FIXME? advanced users may edit the config file, hence true?
-		} finally {
-			Closer.close(lis);
-			Closer.close(bis);
-			Closer.close(fis);
 		}
 	}
 
@@ -155,20 +146,13 @@ public class FilePersistentConfig extends PersistentConfig {
 		SimpleFieldSet fs = exportFieldSet();
 		if(logMINOR)
 			Logger.minor(this, "fs = " + fs);
-		FileOutputStream fos = null;
-		try {
-			fos = new FileOutputStream(tempFilename);
+		try (FileOutputStream fos = new FileOutputStream(tempFilename)) {
 			synchronized(this) {
 				fs.setHeader(header);
 				fs.writeToBigBuffer(fos);
 			}
-			fos.close();
-			fos = null;
-			FileUtil.moveTo(tempFilename, filename);
 		}
-		finally {
-			Closer.close(fos);
-		}
+		FileUtil.moveTo(tempFilename, filename);
 	}
 	
 	public void finishedInit() {

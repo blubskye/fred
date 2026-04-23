@@ -39,7 +39,6 @@ import freenet.support.Logger;
 import freenet.support.ShortBuffer;
 import freenet.support.SimpleFieldSet;
 import freenet.support.TimeUtil;
-import freenet.support.io.Closer;
 import freenet.support.io.FileUtil;
 import freenet.support.io.NativeThread;
 
@@ -1394,7 +1393,7 @@ public class PeerManager {
 
 			@Override
 			public int getPriority() {
-				return NativeThread.HIGH_PRIORITY;
+				return NativeThread.PriorityLevel.HIGH_PRIORITY.value;
 			}
 			
 		});
@@ -1410,7 +1409,7 @@ public class PeerManager {
 
 			@Override
 			public int getPriority() {
-				return NativeThread.HIGH_PRIORITY;
+				return NativeThread.PriorityLevel.HIGH_PRIORITY.value;
 			}
 			
 		});
@@ -1507,14 +1506,14 @@ public class PeerManager {
 				f = File.createTempFile(full.getName()+".", ".tmp", full.getParentFile());
 			} catch (IOException e2) {
 				Logger.error(this, "Cannot write peers to disk: Cannot create temp file - " + e2, e2);
-				Closer.close(fos);
+				if (fos != null) try { fos.close(); } catch (IOException ignored) {}
 				return;
 			}
 			try {
 				fos = new FileOutputStream(f);
 			} catch(FileNotFoundException e2) {
 				Logger.error(this, "Cannot write peers to disk: Cannot create " + f + " - " + e2, e2);
-				Closer.close(fos);
+				if (fos != null) try { fos.close(); } catch (IOException ignored) {}
 				f.delete();
 				return;
 			}
@@ -1553,8 +1552,8 @@ public class PeerManager {
 				f.delete();
 				return; // don't overwrite old file!
 			} finally {
-				Closer.close(w);
-				Closer.close(fos);
+				if (w != null) try { w.close(); } catch (IOException ignored) {}
+				if (fos != null) try { fos.close(); } catch (IOException ignored) {}
 				f.delete();
 			}
 		}

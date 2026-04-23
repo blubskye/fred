@@ -27,7 +27,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import freenet.node.FSParseException;
-import freenet.support.io.Closer;
 import freenet.support.io.LineReader;
 import freenet.support.io.Readers;
 
@@ -955,9 +954,9 @@ public class SimpleFieldSet {
 
 			return fs;
 		} finally {
-                        Closer.close(br);
-                        Closer.close(isr);
-                        Closer.close(bis);
+                        if (br != null) try { br.close(); } catch (IOException ignored) {}
+                        if (isr != null) try { isr.close(); } catch (IOException ignored) {}
+                        if (bis != null) try { bis.close(); } catch (IOException ignored) {}
                 }
 	}
 
