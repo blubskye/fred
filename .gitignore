@@ -35,3 +35,5 @@ gradle
 debian/seednodes.fref
 docs/
 chat*.txt
+# Compiled class files should not appear in src/
+src/**/*.class
