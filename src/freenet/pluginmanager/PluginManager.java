@@ -53,6 +53,9 @@ import freenet.node.useralerts.AbstractUserAlert;
 import freenet.node.useralerts.UserAlert;
 import freenet.pluginmanager.OfficialPlugins.OfficialPluginDescription;
 import freenet.pluginmanager.PluginManager.PluginProgress.ProgressState;
+import freenet.pluginmanager.sandbox.PluginSandbox;
+import freenet.pluginmanager.sandbox.PluginSandboxLevel;
+import freenet.pluginmanager.sandbox.PluginThreadGroup;
 import freenet.support.HTMLNode;
 import freenet.support.HexUtil;
 import freenet.support.JarClassLoader;
@@ -175,6 +178,10 @@ public class PluginManager {
 
 		fproxyTheme = THEME.themeFromName(node.getConfig().get("fproxy").getString("css"));
 		selfinstance = this;
+
+		if (enabled) {
+			PluginSandbox.install();
+		}
 	}
 
 	private boolean contains(String[] array, String string) {
@@ -384,7 +391,19 @@ public class PluginManager {
 		try {
 			plug = loadPlugin(pdl, filename, pluginProgress, alwaysDownload);
 			pluginProgress.setProgress(ProgressState.STARTING);
-			pi = new PluginInfoWrapper(node, plug, filename, pdl.isOfficialPluginLoader());
+			// Create a per-plugin data directory and sandbox ThreadGroup.
+			File pluginDataDir = new File(node.getPluginDir(),
+			    plug.getClass().getName().replace('.', '_') + "-data");
+			pluginDataDir.mkdirs();
+			PluginSandboxLevel sandboxLevel = pdl.isOfficialPluginLoader()
+			    ? PluginSandboxLevel.STANDARD : PluginSandboxLevel.STRICT;
+			PluginThreadGroup threadGroup = new PluginThreadGroup(
+			    Thread.currentThread().getThreadGroup(),
+			    plug.getClass().getName(),
+			    pluginDataDir.getAbsolutePath(),
+			    sandboxLevel);
+			PluginSandbox.registerPlugin(plug.getClass().getClassLoader(), threadGroup);
+			pi = new PluginInfoWrapper(node, plug, filename, pdl.isOfficialPluginLoader(), threadGroup);
 			PluginHandler.startPlugin(PluginManager.this, pi);
 			loadedPlugins.addLoadedPlugin(pi);
 			loadedPlugins.removeFailedPlugin(filename);
@@ -693,6 +712,7 @@ public class PluginManager {
 			}
 		}
 		loadedPlugins.removeLoadedPlugin(pi);
+		PluginSandbox.unregisterPlugin(pi.getPlugin().getClass().getClassLoader());
 		core.storeConfig();
 	}
 
@@ -921,9 +941,13 @@ public class PluginManager {
 		ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
 		ClassLoader pluginClassLoader = handler.getClass().getClassLoader();
 		Thread.currentThread().setContextClassLoader(pluginClassLoader);
+		PluginInfoWrapper piw = getPluginInfoByClassName(plugin);
+		PluginThreadGroup ptg = (piw != null) ? piw.getThreadGroup() : null;
+		if (ptg != null) PluginSandbox.enterPluginContext(ptg);
 		try {
 			return ((FredPluginHTTP) handler).handleHTTPGet(request);
 		} finally {
+			if (ptg != null) PluginSandbox.exitPluginContext();
 			Thread.currentThread().setContextClassLoader(oldClassLoader);
 		}
 	}
@@ -939,10 +963,14 @@ public class PluginManager {
 		ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
 		ClassLoader pluginClassLoader = handler.getClass().getClassLoader();
 		Thread.currentThread().setContextClassLoader(pluginClassLoader);
+		PluginInfoWrapper piw = getPluginInfoByClassName(plugin);
+		PluginThreadGroup ptg = (piw != null) ? piw.getThreadGroup() : null;
+		if (ptg != null) PluginSandbox.enterPluginContext(ptg);
 		try {
 		if(handler instanceof FredPluginHTTP)
 			return ((FredPluginHTTP) handler).handleHTTPPost(request);
 		} finally {
+			if (ptg != null) PluginSandbox.exitPluginContext();
 			Thread.currentThread().setContextClassLoader(oldClassLoader);
 		}
 		throw new NotFoundPluginHTTPException("Plugin '"+plugin+"' not found!", "/plugins");

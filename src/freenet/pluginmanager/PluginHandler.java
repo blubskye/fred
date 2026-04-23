@@ -29,7 +29,9 @@ public class PluginHandler {
 		// We must start the plugin *after startup has finished*
 		Runnable job;
 		if(!pi.isThreadlessPlugin()) {
-			final Thread t = new Thread(ps);
+			final Thread t = (pi.getThreadGroup() != null)
+			    ? new Thread(pi.getThreadGroup(), ps)
+			    : new Thread(ps);
 			// HO-42: Install an uncaught-exception handler so that plugin crashes are
 			// logged rather than silently swallowed. Without this, a RuntimeException or
 			// Error thrown from runPlugin() terminates the daemon thread with no record

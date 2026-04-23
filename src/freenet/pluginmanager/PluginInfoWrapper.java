@@ -11,6 +11,7 @@ import freenet.config.FilePersistentConfig;
 import freenet.config.SubConfig;
 import freenet.l10n.NodeL10n;
 import freenet.node.Node;
+import freenet.pluginmanager.sandbox.PluginThreadGroup;
 import freenet.support.JarClassLoader;
 import freenet.support.Logger;
 
@@ -43,14 +44,17 @@ public class PluginInfoWrapper implements Comparable<PluginInfoWrapper> {
 	private final boolean isConfigurablePlugin;
 	private final boolean isOfficialPlugin;
 	private final String filename;
+	private final PluginThreadGroup threadGroup;
 	private HashSet<String> toadletLinks = new HashSet<String>();
 	private volatile boolean stopping = false;
 	private volatile boolean unregistered = false;
-	
-	public PluginInfoWrapper(Node node, FredPlugin plug, String filename, boolean isOfficial) throws IOException {
+
+	public PluginInfoWrapper(Node node, FredPlugin plug, String filename, boolean isOfficial,
+	                         PluginThreadGroup threadGroup) throws IOException {
 		this.plug = plug;
 		className = plug.getClass().toString();
 		this.filename = filename;
+		this.threadGroup = threadGroup;
 		this.pr = new PluginRespirator(node, this);
 		threadName = 'p' + className.replaceAll("^class ", "") + '_' + hashCode();
 		start = System.currentTimeMillis();
@@ -306,6 +310,10 @@ public class PluginInfoWrapper implements Comparable<PluginInfoWrapper> {
 
 	public FredPlugin getPlugin() {
 		return this.plug;
+	}
+
+	public PluginThreadGroup getThreadGroup() {
+		return threadGroup;
 	}
 
 	public PluginRespirator getPluginRespirator() {
