@@ -15,9 +15,9 @@ import freenet.support.Logger.LogLevel;
 
 /**
  * @author amphibian
- * * Thread that does DNS queries for unconnected peers
+ * * Scheduled task that does DNS queries for unconnected peers
  */
-public class DNSRequester implements Runnable {
+public class DNSRequester {
 
     final Node node;
     private long lastLogTime;
@@ -42,26 +42,28 @@ public class DNSRequester implements Runnable {
 
     void start() {
         Logger.normal(this, "Starting DNSRequester");
-        node.getExecutor().execute(this, "DNSRequester thread for "+node.getDarknetPortNumber());
+        scheduleRun(0);
     }
 
-    @Override
-    public void run() {
-        // After: Check interrupted status to allow the thread to exit cleanly
-        while(!Thread.currentThread().isInterrupted()) {
-            try {
-                realRun();
-            } catch (Throwable t) {
-                Logger.error(this, "Caught in DNSRequester: "+t, t);
-                // Prevent tight-looping on persistent errors
-                try { Thread.sleep(5000); } catch (InterruptedException e) { break; }
+    private void scheduleRun(long delayMs) {
+        node.getTicker().queueTimedJob(new Runnable() {
+            @Override
+            public void run() {
+                long nextDelay;
+                try {
+                    nextDelay = realRun();
+                } catch (Throwable t) {
+                    Logger.error(this, "Caught in DNSRequester: " + t, t);
+                    nextDelay = 5000;
+                }
+                scheduleRun(nextDelay);
             }
-        }
-        Logger.normal(this, "DNSRequester thread exiting.");
+        }, delayMs);
     }
 
-    private void realRun() {
-        if (DISABLE) return;
+    /** Performs one DNS-check cycle. Returns the delay in ms before the next run. */
+    private long realRun() {
+        if (DISABLE) return 60000;
 
         // 1. Identify candidates
         PeerNode[] nodesToCheck = Arrays.stream(node.getPeers().myPeers())
@@ -72,7 +74,7 @@ public class DNSRequester implements Runnable {
         // 2. Rate-limited Logging
         if(logMINOR) {
             long now = System.currentTimeMillis();
-            if((now - lastLogTime) > 5000) { 
+            if((now - lastLogTime) > 5000) {
                 Logger.minor(this, "DNS Requester processing " + nodesToCheck.length + " candidates.");
                 lastLogTime = now;
             }
@@ -81,7 +83,7 @@ public class DNSRequester implements Runnable {
         int unconnectedNodesLength = nodesToCheck.length;
         if (unconnectedNodesLength > 0) {
             PeerNode pn = nodesToCheck[node.getFastWeakRandom().nextInt(unconnectedNodesLength)];
-            
+
             if (unconnectedNodesLength < 5) {
                 recentNodeIdentitySet.clear();
                 recentNodeIdentityQueue.clear();
@@ -89,7 +91,7 @@ public class DNSRequester implements Runnable {
                 Double loc = pn.getLocation();
                 recentNodeIdentitySet.add(loc);
                 recentNodeIdentityQueue.offerFirst(loc);
-                
+
                 while (recentNodeIdentityQueue.size() > (0.81 * unconnectedNodesLength)) {
                     Double removed = recentNodeIdentityQueue.removeLast();
                     if (removed != null) {
@@ -100,21 +102,11 @@ public class DNSRequester implements Runnable {
             pn.maybeUpdateHandshakeIPs(false);
         }
 
-        // 3. Random wait (1-61s)
-        int nextMaxWaitTime = 1000 + node.getFastWeakRandom().nextInt(60000);
-        try {
-            synchronized(this) {
-                wait(nextMaxWaitTime);
-            }
-        } catch (InterruptedException e) {
-            // After: Restore flag so the while() loop can see it and exit
-            Thread.currentThread().interrupt();
-        }
+        // 3. Random wait (1-61s) — return the delay; caller will schedule next run
+        return 1000 + node.getFastWeakRandom().nextInt(60000);
     }
 
     public void forceRun() {
-        synchronized(this) {
-            notifyAll();
-        }
+        scheduleRun(0);
     }
 }
