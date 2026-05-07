@@ -133,16 +133,12 @@ public class RequestStarter implements Runnable, RandomGrabArrayItemExclusionLis
 					long now;
 					do {
 						now = System.currentTimeMillis();
-						if(now < sleepUntil)
-							try {
-								Thread.sleep(sleepUntil - now);
-								if(logMINOR) Logger.minor(this, "Slept: "+(sleepUntil-now)+"ms");
-							} catch (InterruptedException e) {
-								// Restore glag and exit loop
-								Thread.currentThread().interrupt();
-								return;
-							}
-					} while(now < sleepUntil);
+						if(now < sleepUntil) {
+							LockSupport.parkNanos(this, TimeUnit.MILLISECONDS.toNanos(sleepUntil - now));
+							if(logMINOR) Logger.minor(this, "Throttle park remaining: "+(sleepUntil - System.currentTimeMillis())+"ms");
+							if(Thread.currentThread().isInterrupted()) return;
+						}
+					} while(System.currentTimeMillis() < sleepUntil);
 				}
 //				if(!doAIMD) {
 //					// Arbitrary limit on number of local requests waiting for slots.

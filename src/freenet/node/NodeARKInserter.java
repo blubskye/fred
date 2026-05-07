@@ -217,13 +217,9 @@ public class NodeARKInserter implements ClientPutCallback, RequestClient {
 		}
 		// :(
 		// Better try again
-		try {
-			Thread.sleep(5000);
-		} catch (InterruptedException e1) {
-			Thread.currentThread().interrupt();
-		}
-		
-		startInserter();
+		node.getTicker().queueTimedJob(new Runnable() {
+			public void run() { startInserter(); }
+		}, 5000);
 	}
 
 	@Override
