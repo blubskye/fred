@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import freenet.io.AddressIdentifier;
 import freenet.node.NodeIPDetector;
@@ -33,6 +35,7 @@ public class IPAddressDetector implements Runnable {
 	//private String preferedAddressString = null;
 	private final long interval;
 	private final NodeIPDetector detector;
+	private volatile Thread runThread;
         /**
          * 
          * @param interval
@@ -279,21 +282,30 @@ public class IPAddressDetector implements Runnable {
 
 	@Override
 	public void run() {
-		while(true) {
-			try {
-				Thread.sleep(interval);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				break;
-			}
-			try {
-				if(checkpoint()) {
-					detector.redetectAddress();
+		runThread = Thread.currentThread();
+		try {
+			while(true) {
+				LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(interval));
+				if (Thread.interrupted()) {
+					Thread.currentThread().interrupt();
+					break;
 				}
-			} catch (Throwable t) {
-				Logger.error(this, "Caught "+t, t);
+				try {
+					if(checkpoint()) {
+						detector.redetectAddress();
+					}
+				} catch (Throwable t) {
+					Logger.error(this, "Caught "+t, t);
+				}
 			}
+		} finally {
+			runThread = null;
 		}
+	}
+
+	public void wake() {
+		Thread t = runThread;
+		if (t != null) LockSupport.unpark(t);
 	}
 
         /**

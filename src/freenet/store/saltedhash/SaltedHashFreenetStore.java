@@ -1321,14 +1321,14 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 		public void realRun() {
 
 			if(!NO_CLEANER_SLEEP) {
-				try {
-					Thread.sleep((int)(CLEANER_PERIOD / 2 + CLEANER_PERIOD * random.nextDouble()));
-				} catch (InterruptedException e){
-				//Restore flag
-				Thread.currentThread().interrupt();
-				//Exit immedeitatly. No point in starting a clean if we are being told to stop
-				return;
-			   	}		
+				java.util.concurrent.locks.LockSupport.parkNanos(java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
+						(long)(CLEANER_PERIOD / 2 + CLEANER_PERIOD * random.nextDouble())));
+				if (Thread.interrupted()) {
+					//Restore flag
+					Thread.currentThread().interrupt();
+					//Exit immedeitatly. No point in starting a clean if we are being told to stop
+					return;
+				}
 			}
 
 			if (shutdown)
@@ -1628,14 +1628,14 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 						return;
 					}
 
-					try {
-						if (sleep)
-							Thread.sleep(100);
-					} catch (InterruptedException e) {
-						processor.abort();
-						//Restore interrupt flag for the Cleaner thread
-						Thread.currentThread().interrupt();
-						return;
+					if (sleep) {
+						java.util.concurrent.locks.LockSupport.parkNanos(10_000_000L);
+						if (Thread.interrupted()) {
+							processor.abort();
+							//Restore interrupt flag for the Cleaner thread
+							Thread.currentThread().interrupt();
+							return;
+						}
 					}
 				}
 				processor.finish();

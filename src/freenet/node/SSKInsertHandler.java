@@ -220,13 +220,11 @@ public class SSKInsertHandler implements PrioRunnable, ByteCounter {
         boolean receivedRejectedOverload = false;
         
         while(true) {
-            synchronized(sender) {
-                try {
-                	if(sender.getStatus() == SSKInsertSender.NOT_FINISHED)
-                		sender.wait(5000);
-                } catch (InterruptedException e) {
-                	Thread.currentThread().interrupt();
-                }
+            try {
+                if(sender.getStatus() == SSKInsertSender.NOT_FINISHED)
+                    sender.awaitStatusChange(5000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
 
             if((!receivedRejectedOverload) && sender.receivedRejectedOverload()) {

@@ -474,9 +474,8 @@ loadMaxDeployedBuild();
 					} else {
 						Logger.error(this, "Failed to rename " + temp + " to "
 								+ filename + " after fetching it from Freenet.");
-						try {
-							Thread.sleep(SECONDS.toMillis(1) + node.getFastWeakRandom().nextInt((int) SECONDS.toMillis((long) Math.min(Math.pow(2, i), MINUTES.toSeconds(15)))));
-						} catch (InterruptedException e) {
+						java.util.concurrent.locks.LockSupport.parkNanos(SECONDS.toNanos(1) + node.getFastWeakRandom().nextInt((int) SECONDS.toMillis((long) Math.min(Math.pow(2, i), MINUTES.toSeconds(15)))) * 1_000_000L);
+						if (Thread.interrupted()) {
 							Thread.currentThread().interrupt();
 						}
 					}
@@ -1169,11 +1168,10 @@ loadMaxDeployedBuild();
 	static void waitForever() {
 	    while(true) {
 	        Logger.normal(NodeUpdateManager.class, "Waiting for shutdown after deployed update...");
-	        try {
-                Thread.sleep(60*1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+	        java.util.concurrent.locks.LockSupport.parkNanos(java.util.concurrent.TimeUnit.SECONDS.toNanos(60));
+	        if (Thread.interrupted()) {
+	            Thread.currentThread().interrupt();
+	        }
 	    }
 	}
 
@@ -1425,9 +1423,8 @@ persistMaxDeployedBuild(deps.build);
 		if (logMINOR)
 			Logger.minor(this, "Restarting...");
 		node.getNodeStarter().restart();
-		try {
-			Thread.sleep(MINUTES.toMillis(5));
-		} catch (InterruptedException e) {
+		java.util.concurrent.locks.LockSupport.parkNanos(MINUTES.toNanos(5));
+		if (Thread.interrupted()) {
 			Thread.currentThread().interrupt();
 		} // in case it's still restarting
 		Logger.error(NodeUpdateManager.class, "Failed to restart. Exiting, please restart the node.");

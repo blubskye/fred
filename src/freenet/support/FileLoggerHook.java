@@ -483,9 +483,8 @@ public class FileLoggerHook extends LoggerHook implements Closeable {
 					thrown = true;
 				}
 				if (thrown) {
-					try {
-						Thread.sleep(sleepTime);
-					} catch (InterruptedException e) {
+					java.util.concurrent.locks.LockSupport.parkNanos(java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(sleepTime));
+					if (Thread.interrupted()) {
 						Thread.currentThread().interrupt();
 					}
 					sleepTime += sleepTime;
@@ -518,9 +517,8 @@ public class FileLoggerHook extends LoggerHook implements Closeable {
 						"Could not create FOS " + filename + ": " + e);
 					System.err.println(
 						"Sleeping " + sleepTime / 1000 + " seconds");
-					try {
-						Thread.sleep(sleepTime);
-					} catch (InterruptedException ex) {
+					java.util.concurrent.locks.LockSupport.parkNanos(java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(sleepTime));
+					if (Thread.interrupted()) {
 						Thread.currentThread().interrupt();
 					}
 					sleepTime += sleepTime;

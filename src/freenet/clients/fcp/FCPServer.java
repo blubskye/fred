@@ -200,9 +200,8 @@ public class FCPServer implements Runnable, DownloadCache {
 			}
 			if (WrapperManager.hasShutdownHookBeenTriggered())
 				return;
-			try{
-				Thread.sleep(2000);
-			}catch (InterruptedException e) {
+			java.util.concurrent.locks.LockSupport.parkNanos(java.util.concurrent.TimeUnit.SECONDS.toNanos(2));
+			if (Thread.interrupted()) {
 				Thread.currentThread().interrupt();
 				return;
 			}

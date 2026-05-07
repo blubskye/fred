@@ -118,7 +118,7 @@ public abstract class Logger {
 	/**
 	 * Single global LoggerHook.
 	 */
-	static Logger logger = new VoidLogger();
+	static volatile Logger logger = new VoidLogger();
 
 	/** Log to standard output. */
 	public synchronized static FileLoggerHook setupStdoutLogging(LogLevel level, String detail) throws InvalidThresholdException {
@@ -150,96 +150,96 @@ public abstract class Logger {
 
 	// These methods log messages at various priorities using the global logger.
 	
-	public synchronized static void debug(Class<?> c, String s) {
+	public static void debug(Class<?> c, String s) {
 		logger.log(c, s, LogLevel.DEBUG);
 	}
 
-	public synchronized static void debug(Class<?> c, String s, Throwable t) {
+	public static void debug(Class<?> c, String s, Throwable t) {
 		logger.log(c, s, t, LogLevel.DEBUG);
 	}
-	
-	public synchronized static void debug(Object o, String s) {
+
+	public static void debug(Object o, String s) {
 		logger.log(o, s, LogLevel.DEBUG);
 	}
 
-	public synchronized static void debug(Object o, String s, Throwable t) {
+	public static void debug(Object o, String s, Throwable t) {
 		logger.log(o, s, t, LogLevel.DEBUG);
 	}
 
-	public synchronized static void error(Class<?> c, String s) {
+	public static void error(Class<?> c, String s) {
 		logger.log(c, s, LogLevel.ERROR);
 	}
 
-	public synchronized static void error(Class<?> c, String s, Throwable t) {
+	public static void error(Class<?> c, String s, Throwable t) {
 		logger.log(c, s, t, LogLevel.ERROR);
 	}
 
-	public synchronized static void error(Object o, String s) {
+	public static void error(Object o, String s) {
 		logger.log(o, s, LogLevel.ERROR);
 	}
 
-	public synchronized static void error(Object o, String s, Throwable e) {
+	public static void error(Object o, String s, Throwable e) {
 		logger.log(o, s, e, LogLevel.ERROR);
 	}
 
-	public synchronized static void minor(Class<?> c, String s) {
+	public static void minor(Class<?> c, String s) {
 		logger.log(c, s, LogLevel.MINOR);
 	}
 
-	public synchronized static void minor(Object o, String s) {
+	public static void minor(Object o, String s) {
 		logger.log(o, s, LogLevel.MINOR);
 	}
 
-	public synchronized static void minor(Object o, String s, Throwable t) {
+	public static void minor(Object o, String s, Throwable t) {
 		logger.log(o, s, t, LogLevel.MINOR);
 	}
 
-	public synchronized static void minor(Class<?> class1, String string, Throwable t) {
+	public static void minor(Class<?> class1, String string, Throwable t) {
 		logger.log(class1, string, t, LogLevel.MINOR);
 	}
 
-	public synchronized static void normal(Object o, String s) {
+	public static void normal(Object o, String s) {
 		logger.log(o, s, LogLevel.NORMAL);
 	}
 
-	public synchronized static void normal(Object o, String s, Throwable t) {
+	public static void normal(Object o, String s, Throwable t) {
 		logger.log(o, s, t, LogLevel.NORMAL);
 	}
 
-	public synchronized static void normal(Class<?> c, String s) {
+	public static void normal(Class<?> c, String s) {
 		logger.log(c, s, LogLevel.NORMAL);
 	}
 
-	public synchronized static void normal(Class<?> c, String s, Throwable t) {
+	public static void normal(Class<?> c, String s, Throwable t) {
 		logger.log(c, s, t, LogLevel.NORMAL);
 	}
 
-	public synchronized static void warning(Class<?> c, String s) {
+	public static void warning(Class<?> c, String s) {
 		logger.log(c, s, LogLevel.WARNING);
 	}
 
-	public synchronized static void warning(Class<?> c, String s, Throwable t) {
+	public static void warning(Class<?> c, String s, Throwable t) {
 		logger.log(c, s, t, LogLevel.WARNING);
 	}
 
-	public synchronized static void warning(Object o, String s) {
+	public static void warning(Object o, String s) {
 		logger.log(o, s, LogLevel.WARNING);
 	}
 
-	public synchronized static void warning(Object o, String s, Throwable e) {
+	public static void warning(Object o, String s, Throwable e) {
 		logger.log(o, s, e, LogLevel.WARNING);
 	}
 
-	public synchronized static void logStatic(Object o, String s, LogLevel prio) {
+	public static void logStatic(Object o, String s, LogLevel prio) {
 		logger.log(o, s, prio);
 	}
-	
-	public synchronized static void logStatic(Object o, String s, Throwable e, LogLevel prio) {
+
+	public static void logStatic(Object o, String s, Throwable e, LogLevel prio) {
 		logger.log(o, s, e, prio);
 	}
-	
+
 	@Deprecated
-	public synchronized static void logStatic(Object o, String s, int prio) {
+	public static void logStatic(Object o, String s, int prio) {
 		logStatic(o, s, LogLevel.fromOrdinal(prio));
 	}
 

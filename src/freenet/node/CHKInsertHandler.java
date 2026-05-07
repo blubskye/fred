@@ -186,14 +186,12 @@ public class CHKInsertHandler implements PrioRunnable, ByteCounter {
         boolean receivedRejectedOverload = false;
         
         while(true) {
-            synchronized(sender) {
-                try {
-                	if(sender.getStatus() == CHKInsertSender.NOT_FINISHED)
-                		sender.wait(5000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    // Cool, probably this is because the receive failed...
-                }
+            try {
+                if(sender.getStatus() == CHKInsertSender.NOT_FINISHED)
+                    sender.awaitStatusChange(5000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                // Cool, probably this is because the receive failed...
             }
             if(receiveFailed()) {
                 // Nothing else we can do
