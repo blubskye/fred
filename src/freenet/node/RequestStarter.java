@@ -5,6 +5,8 @@ package freenet.node;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
+import java.util.concurrent.locks.LockSupport;
+
 import freenet.client.async.ChosenBlock;
 import freenet.client.async.ClientContext;
 import freenet.client.async.ChosenBlockImpl;
@@ -72,6 +74,9 @@ public class RequestStarter implements Runnable, RandomGrabArrayItemExclusionLis
 	final boolean realTime;
 	
 	static final int MAX_WAITING_FOR_SLOTS = 50;
+
+	/** The thread running realRun(), used by LockSupport.unpark() in wakeUp(). */
+	private volatile Thread runnerThread;
 	
 	public RequestStarter(NodeClientCore node, BaseRequestThrottle throttle, String name, 
 			RunningAverage averageOutputBytesPerRequest, RunningAverage averageInputBytesPerRequest, boolean isInsert, boolean isSSK, boolean realTime) {
@@ -102,6 +107,7 @@ public class RequestStarter implements Runnable, RandomGrabArrayItemExclusionLis
 	}
 	
 	void realRun() {
+		runnerThread = Thread.currentThread();
 		ChosenBlock req = null;
 		// The last time at which we sent a request or decided not to
 		long cycleTime = System.currentTimeMillis();
@@ -110,15 +116,8 @@ public class RequestStarter implements Runnable, RandomGrabArrayItemExclusionLis
 			OpennetManager om;
 			if(core.getNode().getPeers().countConnectedPeers() < 3 && (om = core.getNode().getOpennet()) != null &&
 					System.currentTimeMillis() - om.getCreationTime() < MINUTES.toMillis(5)) {
-				try {
-					synchronized(this) {
-						wait(1000);
-					}
-				} catch (InterruptedException e) {
-					// Restore flag and exit
-					Thread.currentThread().interrupt();
-					return;
-				}
+				LockSupport.parkNanos(1_000_000_000L); // park for 1 second
+				if(Thread.currentThread().isInterrupted()) return;
 				continue;
 			}
 			if(req == null) {
@@ -180,20 +179,11 @@ public class RequestStarter implements Runnable, RandomGrabArrayItemExclusionLis
 					stats.waitUntilNotOverloaded(isInsert);
 				}
 			} else {
-				if(logMINOR) Logger.minor(this, "Waiting...");				
-				// Always take the lock on RequestStarter first. AFAICS we don't synchronize on RequestStarter anywhere else.
-				// Nested locks here prevent extra latency when there is a race, and therefore allow us to sleep indefinitely
-				synchronized(this) {
-					req = sched.grabRequest();
-					if(req == null) {
-						try {
-							wait();
-						} catch (InterruptedException e) {
-							// Exit cleanly when interrupted while waiting for work
-							Thread.currentThread().interrupt();
-							return;
-						}
-					}
+				if(logMINOR) Logger.minor(this, "Waiting...");
+				req = sched.grabRequest();
+				if(req == null) {
+					LockSupport.park(this); // wait until wakeUp() calls unpark
+					if(Thread.currentThread().isInterrupted()) return;
 				}
 			}
 			// Final check before starting a potentially heavy request
@@ -228,7 +218,7 @@ public class RequestStarter implements Runnable, RandomGrabArrayItemExclusionLis
 			}
 		}
 		if(logMINOR) Logger.minor(this, "Running request "+req+" priority "+req.getPriority());
-		core.getExecutor().execute(new SenderThread(req, req.key), "RequestStarter$SenderThread for "+req);
+		Thread.ofVirtual().name("RequestStarter$VirtualSender-" + req).start(new SenderThread(req, req.key));
 		return true;
 	}
 
@@ -270,12 +260,10 @@ public class RequestStarter implements Runnable, RandomGrabArrayItemExclusionLis
 		
 	}
 
-	/** LOCKING: Caller must avoid locking while calling this function. In particular,
-	 * if the RequestStarter lock is held we will get a deadlock. */
+	/** Wake up the runner thread (if parked) so it can check for new work. */
 	public void wakeUp() {
-		synchronized(this) {
-			notifyAll();
-		}
+		Thread t = runnerThread;
+		if (t != null) LockSupport.unpark(t);
 	}
 
 	/** Can this item be excluded, based on e.g. already running requests?

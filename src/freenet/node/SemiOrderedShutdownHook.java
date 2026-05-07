@@ -2,46 +2,46 @@ package freenet.node;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import freenet.support.Logger;
 
 public class SemiOrderedShutdownHook extends Thread {
 
 	private static final long TIMEOUT = SECONDS.toMillis(100);
-	private final ArrayList<Thread> earlyJobs;
-	private final ArrayList<Thread> lateJobs;
-	
+	private final CopyOnWriteArrayList<Thread> earlyJobs;
+	private final CopyOnWriteArrayList<Thread> lateJobs;
+
 	public static final SemiOrderedShutdownHook singleton = new SemiOrderedShutdownHook();
-	
+
 	static {
 		Runtime.getRuntime().addShutdownHook(singleton);
 	}
-	
+
 	public static SemiOrderedShutdownHook get() {
 		return singleton;
 	}
-	
+
 	private SemiOrderedShutdownHook() {
-		earlyJobs = new ArrayList<Thread>();
-		lateJobs = new ArrayList<Thread>();
+		earlyJobs = new CopyOnWriteArrayList<Thread>();
+		lateJobs = new CopyOnWriteArrayList<Thread>();
 	}
-	
-	public synchronized void addEarlyJob(Thread r) {
+
+	public void addEarlyJob(Thread r) {
 		earlyJobs.add(r);
 	}
-	
-	public synchronized void addLateJob(Thread r) {
+
+	public void addLateJob(Thread r) {
 		lateJobs.add(r);
 	}
-	
+
 	@Override
 	public void run() {
 		Logger.normal(this, "Shutting down...");
 		// First run early jobs, all at once, and wait for them to all complete.
-		
+
 		Thread[] early = getEarlyJobs();
-		
+
 		for(Thread r : early) {
 			r.start();
 		}
@@ -49,12 +49,12 @@ public class SemiOrderedShutdownHook extends Thread {
 			try {
 				r.join(TIMEOUT);
 			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt(); // Restore the signal				
+				Thread.currentThread().interrupt(); // Restore the signal
 				// :(
 				// May as well move on
 			}
 		}
-		
+
 		Thread[] late = getLateJobs();
 
 		// Then run late jobs, all at once, and wait for them to all complete (JVM will exit when we return).
@@ -73,11 +73,11 @@ public class SemiOrderedShutdownHook extends Thread {
 
 	}
 
-	private synchronized Thread[] getEarlyJobs() {
-		return earlyJobs.toArray(new Thread[earlyJobs.size()]);
+	private Thread[] getEarlyJobs() {
+		return earlyJobs.toArray(new Thread[0]);
 	}
-	
-	private synchronized Thread[] getLateJobs() {
-		return lateJobs.toArray(new Thread[lateJobs.size()]);
+
+	private Thread[] getLateJobs() {
+		return lateJobs.toArray(new Thread[0]);
 	}
 }

@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.ConcurrentHashMap;
 import freenet.config.InvalidConfigValueException;
 import freenet.config.NodeNeedRestartException;
@@ -2088,59 +2089,59 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 	}
 
 	/* Total bytes sent by requests and inserts, excluding payload */
-	private long chkRequestSentBytes;
-	private long chkRequestRcvdBytes;
-	private long sskRequestSentBytes;
-	private long sskRequestRcvdBytes;
-	private long chkInsertSentBytes;
-	private long chkInsertRcvdBytes;
-	private long sskInsertSentBytes;
-	private long sskInsertRcvdBytes;
+	private final AtomicLong chkRequestSentBytes = new AtomicLong();
+	private final AtomicLong chkRequestRcvdBytes = new AtomicLong();
+	private final AtomicLong sskRequestSentBytes = new AtomicLong();
+	private final AtomicLong sskRequestRcvdBytes = new AtomicLong();
+	private final AtomicLong chkInsertSentBytes = new AtomicLong();
+	private final AtomicLong chkInsertRcvdBytes = new AtomicLong();
+	private final AtomicLong sskInsertSentBytes = new AtomicLong();
+	private final AtomicLong sskInsertRcvdBytes = new AtomicLong();
 
-	public synchronized void requestSentBytes(boolean ssk, int x) {
+	public void requestSentBytes(boolean ssk, int x) {
 		if(ssk)
-			sskRequestSentBytes += x;
+			sskRequestSentBytes.addAndGet(x);
 		else
-			chkRequestSentBytes += x;
+			chkRequestSentBytes.addAndGet(x);
 	}
 
-	public synchronized void requestReceivedBytes(boolean ssk, int x) {
+	public void requestReceivedBytes(boolean ssk, int x) {
 		if(ssk)
-			sskRequestRcvdBytes += x;
+			sskRequestRcvdBytes.addAndGet(x);
 		else
-			chkRequestRcvdBytes += x;
+			chkRequestRcvdBytes.addAndGet(x);
 	}
 
-	public synchronized void insertSentBytes(boolean ssk, int x) {
+	public void insertSentBytes(boolean ssk, int x) {
 		if(logDEBUG)
 			Logger.debug(this, "insertSentBytes("+ssk+", "+x+")");
 		if(ssk)
-			sskInsertSentBytes += x;
+			sskInsertSentBytes.addAndGet(x);
 		else
-			chkInsertSentBytes += x;
+			chkInsertSentBytes.addAndGet(x);
 	}
 
-	public synchronized void insertReceivedBytes(boolean ssk, int x) {
+	public void insertReceivedBytes(boolean ssk, int x) {
 		if(ssk)
-			sskInsertRcvdBytes += x;
+			sskInsertRcvdBytes.addAndGet(x);
 		else
-			chkInsertRcvdBytes += x;
+			chkInsertRcvdBytes.addAndGet(x);
 	}
 
-	public synchronized long getCHKRequestTotalBytesSent() {
-		return chkRequestSentBytes;
+	public long getCHKRequestTotalBytesSent() {
+		return chkRequestSentBytes.get();
 	}
 
-	public synchronized long getSSKRequestTotalBytesSent() {
-		return sskRequestSentBytes;
+	public long getSSKRequestTotalBytesSent() {
+		return sskRequestSentBytes.get();
 	}
 
-	public synchronized long getCHKInsertTotalBytesSent() {
-		return chkInsertSentBytes;
+	public long getCHKInsertTotalBytesSent() {
+		return chkInsertSentBytes.get();
 	}
 
-	public synchronized long getSSKInsertTotalBytesSent() {
-		return sskInsertSentBytes;
+	public long getSSKInsertTotalBytesSent() {
+		return sskInsertSentBytes.get();
 	}
 
 	private long offeredKeysSenderRcvdBytes;
@@ -2360,16 +2361,12 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 		@Override
 		public void receivedBytes(int x) {
-			synchronized(NodeStats.this) {
-				sskRequestRcvdBytes += x;
-			}
+			sskRequestRcvdBytes.addAndGet(x);
 		}
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				sskRequestSentBytes += x;
-			}
+			sskRequestSentBytes.addAndGet(x);
 		}
 
 		@Override
@@ -2383,16 +2380,12 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 		@Override
 		public void receivedBytes(int x) {
-			synchronized(NodeStats.this) {
-				chkRequestRcvdBytes += x;
-			}
+			chkRequestRcvdBytes.addAndGet(x);
 		}
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				chkRequestSentBytes += x;
-			}
+			chkRequestSentBytes.addAndGet(x);
 		}
 
 		@Override
@@ -2406,16 +2399,12 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 		@Override
 		public void receivedBytes(int x) {
-			synchronized(NodeStats.this) {
-				sskInsertRcvdBytes += x;
-			}
+			sskInsertRcvdBytes.addAndGet(x);
 		}
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				sskInsertSentBytes += x;
-			}
+			sskInsertSentBytes.addAndGet(x);
 		}
 
 		@Override
@@ -2429,16 +2418,12 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 		@Override
 		public void receivedBytes(int x) {
-			synchronized(NodeStats.this) {
-				chkInsertRcvdBytes += x;
-			}
+			chkInsertRcvdBytes.addAndGet(x);
 		}
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				chkInsertSentBytes += x;
-			}
+			chkInsertSentBytes.addAndGet(x);
 		}
 
 		@Override

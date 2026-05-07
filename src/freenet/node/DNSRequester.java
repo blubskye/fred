@@ -15,7 +15,7 @@ import freenet.support.Logger.LogLevel;
 
 /**
  * @author amphibian
- * * Thread that does DNS queries for unconnected peers
+ * * Scheduled DNS queries for unconnected peers using the node ticker (no polling thread).
  */
 public class DNSRequester implements Runnable {
 
@@ -23,7 +23,7 @@ public class DNSRequester implements Runnable {
     private long lastLogTime;
     private final Set<Double> recentNodeIdentitySet = new HashSet<>();
     private final Deque<Double> recentNodeIdentityQueue = new ArrayDeque<>();
-    
+
     static boolean DISABLE = false;
 
     private static volatile boolean logMINOR;
@@ -42,27 +42,26 @@ public class DNSRequester implements Runnable {
 
     void start() {
         Logger.normal(this, "Starting DNSRequester");
-        node.getExecutor().execute(this, "DNSRequester thread for "+node.getDarknetPortNumber());
+        // Schedule the first run immediately via the ticker.
+        node.getTicker().queueTimedJob(this, 0);
     }
 
+    /**
+     * Called by the ticker. Performs one DNS-check cycle and re-schedules itself.
+     */
     @Override
     public void run() {
-        // After: Check interrupted status to allow the thread to exit cleanly
-        while(!Thread.currentThread().isInterrupted()) {
-            try {
-                realRun();
-            } catch (Throwable t) {
-                Logger.error(this, "Caught in DNSRequester: "+t, t);
-                // Prevent tight-looping on persistent errors
-                try { Thread.sleep(5000); } catch (InterruptedException e) { break; }
-            }
+        if (DISABLE) return;
+        try {
+            realRun();
+        } catch (Throwable t) {
+            Logger.error(this, "Caught in DNSRequester: " + t, t);
+            // Back off 5 s on persistent error to avoid tight rescheduling
+            node.getTicker().queueTimedJob(this, 5000);
         }
-        Logger.normal(this, "DNSRequester thread exiting.");
     }
 
     private void realRun() {
-        if (DISABLE) return;
-
         // 1. Identify candidates
         PeerNode[] nodesToCheck = Arrays.stream(node.getPeers().myPeers())
             .filter(peerNode -> !peerNode.isConnected())
@@ -70,9 +69,9 @@ public class DNSRequester implements Runnable {
             .toArray(PeerNode[]::new);
 
         // 2. Rate-limited Logging
-        if(logMINOR) {
+        if (logMINOR) {
             long now = System.currentTimeMillis();
-            if((now - lastLogTime) > 5000) { 
+            if ((now - lastLogTime) > 5000) {
                 Logger.minor(this, "DNS Requester processing " + nodesToCheck.length + " candidates.");
                 lastLogTime = now;
             }
@@ -81,7 +80,7 @@ public class DNSRequester implements Runnable {
         int unconnectedNodesLength = nodesToCheck.length;
         if (unconnectedNodesLength > 0) {
             PeerNode pn = nodesToCheck[node.getFastWeakRandom().nextInt(unconnectedNodesLength)];
-            
+
             if (unconnectedNodesLength < 5) {
                 recentNodeIdentitySet.clear();
                 recentNodeIdentityQueue.clear();
@@ -89,7 +88,7 @@ public class DNSRequester implements Runnable {
                 Double loc = pn.getLocation();
                 recentNodeIdentitySet.add(loc);
                 recentNodeIdentityQueue.offerFirst(loc);
-                
+
                 while (recentNodeIdentityQueue.size() > (0.81 * unconnectedNodesLength)) {
                     Double removed = recentNodeIdentityQueue.removeLast();
                     if (removed != null) {
@@ -100,21 +99,15 @@ public class DNSRequester implements Runnable {
             pn.maybeUpdateHandshakeIPs(false);
         }
 
-        // 3. Random wait (1-61s)
+        // 3. Schedule next run (random 1-61 s)
         int nextMaxWaitTime = 1000 + node.getFastWeakRandom().nextInt(60000);
-        try {
-            synchronized(this) {
-                wait(nextMaxWaitTime);
-            }
-        } catch (InterruptedException e) {
-            // After: Restore flag so the while() loop can see it and exit
-            Thread.currentThread().interrupt();
-        }
+        node.getTicker().queueTimedJob(this, nextMaxWaitTime);
     }
 
+    /**
+     * Force an immediate DNS check cycle.
+     */
     public void forceRun() {
-        synchronized(this) {
-            notifyAll();
-        }
+        node.getTicker().queueTimedJob(this, 0);
     }
 }

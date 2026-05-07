@@ -41,7 +41,10 @@ public class FCPConnectionOutputHandler implements Runnable {
 	void start() {
 		if (handler.getSocket() == null)
 			return;
-		handler.getServer().getNode().getExecutor().execute(this, "FCP output handler for "+handler.getSocket().getRemoteSocketAddress()+ ':' +handler.getSocket().getPort());
+		Thread.ofVirtual()
+			.name("FCP output handler for " + handler.getSocket().getRemoteSocketAddress()
+				+ ':' + handler.getSocket().getPort())
+			.start(this);
 	}
 	
 	@Override

@@ -52,8 +52,8 @@ task buildInfo {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.withType(JavaCompile) {
@@ -77,8 +77,8 @@ task generateVersionSource(type: Copy) {
 
 task compileVersion (type: JavaCompile) {
     dependsOn generateVersionSource, compileJava
-    sourceCompatibility = 17
-    targetCompatibility = 17
+    sourceCompatibility = 21
+    targetCompatibility = 21
     source = version_buildir
     include version_src
     classpath = files(sourceSets.main.compileClasspath, sourceSets.main.output.classesDirs)
