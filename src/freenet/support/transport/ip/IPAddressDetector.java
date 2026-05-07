@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import freenet.io.AddressIdentifier;
 import freenet.node.NodeIPDetector;
@@ -59,6 +61,8 @@ public class IPAddressDetector implements Runnable {
 
 	InetAddress[] lastAddressList = null;
 	long lastDetectedTime = -1;
+
+	private volatile Thread runThread;
 	
 	/** Fetch the currently detected IP address. If not detected yet, run the
 	 * detection. DO NOT callback to detector.redetectAddresses().
@@ -279,13 +283,10 @@ public class IPAddressDetector implements Runnable {
 
 	@Override
 	public void run() {
+		runThread = Thread.currentThread();
 		while(true) {
-			try {
-				Thread.sleep(interval);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				break;
-			}
+			LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(interval));
+			if(Thread.currentThread().isInterrupted()) break;
 			try {
 				if(checkpoint()) {
 					detector.redetectAddress();
@@ -294,6 +295,13 @@ public class IPAddressDetector implements Runnable {
 				Logger.error(this, "Caught "+t, t);
 			}
 		}
+		runThread = null;
+	}
+
+	/** Force an immediate IP re-check instead of waiting for the next scheduled interval. */
+	public void wake() {
+		Thread t = runThread;
+		if(t != null) LockSupport.unpark(t);
 	}
 
         /**

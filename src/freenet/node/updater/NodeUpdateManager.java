@@ -4,6 +4,9 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
+
 import java.io.FileInputStream;
 import java.security.MessageDigest;
 import java.io.BufferedReader;
@@ -478,11 +481,9 @@ loadMaxDeployedBuild();
 					} else {
 						Logger.error(this, "Failed to rename " + temp + " to "
 								+ filename + " after fetching it from Freenet.");
-						try {
-							Thread.sleep(SECONDS.toMillis(1) + node.getFastWeakRandom().nextInt((int) SECONDS.toMillis((long) Math.min(Math.pow(2, i), MINUTES.toSeconds(15)))));
-						} catch (InterruptedException e) {
-							Thread.currentThread().interrupt();
-						}
+						LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(
+							SECONDS.toMillis(1) + node.getFastWeakRandom().nextInt((int) SECONDS.toMillis((long) Math.min(Math.pow(2, i), MINUTES.toSeconds(15))))));
+						if(Thread.currentThread().isInterrupted()) { Thread.currentThread().interrupt(); break; }
 					}
 				}
 				temp.delete();
@@ -1174,11 +1175,8 @@ loadMaxDeployedBuild();
 	static void waitForever() {
 	    while(true) {
 	        Logger.normal(NodeUpdateManager.class, "Waiting for shutdown after deployed update...");
-	        try {
-                Thread.sleep(60*1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+	        LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(60));
+	        // No interrupt check — this method intentionally loops forever post-deploy
 	    }
 	}
 
@@ -1437,11 +1435,7 @@ persistMaxDeployedBuild(deps.build);
 		if (logMINOR)
 			Logger.minor(this, "Restarting...");
 		node.getNodeStarter().restart();
-		try {
-			Thread.sleep(MINUTES.toMillis(5));
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		} // in case it's still restarting
+		LockSupport.parkNanos(TimeUnit.MINUTES.toNanos(5)); // in case it's still restarting
 		Logger.error(NodeUpdateManager.class, "Failed to restart. Exiting, please restart the node.");
 		System.exit(NodeInitException.EXIT_RESTART_FAILED);
 	}

@@ -2,6 +2,9 @@ package freenet.support;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
+
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
@@ -483,11 +486,8 @@ public class FileLoggerHook extends LoggerHook implements Closeable {
 					thrown = true;
 				}
 				if (thrown) {
-					try {
-						Thread.sleep(sleepTime);
-					} catch (InterruptedException e) {
-						Thread.currentThread().interrupt();
-					}
+					LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(sleepTime));
+					if(Thread.currentThread().isInterrupted()) return;
 					sleepTime += sleepTime;
 					if (sleepTime > maxSleepTime)
 						sleepTime = maxSleepTime;
@@ -518,11 +518,8 @@ public class FileLoggerHook extends LoggerHook implements Closeable {
 						"Could not create FOS " + filename + ": " + e);
 					System.err.println(
 						"Sleeping " + sleepTime / 1000 + " seconds");
-					try {
-						Thread.sleep(sleepTime);
-					} catch (InterruptedException ex) {
-						Thread.currentThread().interrupt();
-					}
+					LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(sleepTime));
+					if(Thread.currentThread().isInterrupted()) return null;
 					sleepTime += sleepTime;
 				}
 			}

@@ -12,7 +12,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 
 import org.tanukisoftware.wrapper.WrapperManager;
 
@@ -200,12 +202,8 @@ public class FCPServer implements Runnable, DownloadCache {
 			}
 			if (WrapperManager.hasShutdownHookBeenTriggered())
 				return;
-			try{
-				Thread.sleep(2000);
-			}catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				return;
-			}
+			LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(2));
+			if(Thread.currentThread().isInterrupted()) return;
 		}
 	}
 

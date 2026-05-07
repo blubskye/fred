@@ -1,154 +1,112 @@
 package freenet.support;
 
-import java.util.Hashtable;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import freenet.node.FastRunnable;
 
 /**
- * Ticker implemented using Timer's.
- * 
+ * Ticker implemented using ScheduledThreadPoolExecutor.
+ *
  * If deploying this to replace PacketSender, be careful to handle priority changes properly.
  * Hopefully that can be achieved simply by creating at max priority during startup.
- * 
+ *
  * @author Matthew Toseland <toad@amphibian.dyndns.org> (0xE43DA450)
  *
  */
 public class TrivialTicker implements Ticker {
 
-	private final Timer timer = new Timer(true);
-	
+	private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+		Thread t = new Thread(r, "TrivialTicker-scheduler");
+		t.setDaemon(true);
+		return t;
+	});
+
 	private final Executor executor;
-	
-	private final Hashtable<Runnable, TimerTask> jobs = new Hashtable<Runnable, TimerTask>();
-	
+
+	private final java.util.concurrent.ConcurrentHashMap<Runnable, ScheduledFuture<?>> jobs
+		= new java.util.concurrent.ConcurrentHashMap<>();
+
 	private boolean running = true;
-	
+
 	public TrivialTicker(Executor executor) {
 		this.executor = executor;
 	}
-	
+
 	@Override
 	public void queueTimedJob(final Runnable job, long offset) {
-		TimerTask t = new TimerTask() {
-			@Override
-			public void run() {
-				synchronized(TrivialTicker.this) {
-					jobs.remove(job); // We must do this before job.run() in case the job re-schedules itself.
-				}
-				
-				if(job instanceof FastRunnable) {
-					job.run();
-				} else {
-					executor.execute(job, "Delayed task: "+job);
-				}
-			}
-		};
-		
 		synchronized(this) {
 			if(!running)
 				return;
-		
-			timer.schedule(t, offset);
-			jobs.put(job, t);
 		}
+		ScheduledFuture<?> future = scheduler.schedule(() -> {
+			jobs.remove(job);
+			if(job instanceof FastRunnable) {
+				job.run();
+			} else {
+				executor.execute(job, "Delayed task: "+job);
+			}
+		}, offset, TimeUnit.MILLISECONDS);
+		jobs.put(job, future);
 	}
 
 	@Override
 	public void queueTimedJob(final Runnable job, final String name, long offset,
 			boolean runOnTickerAnyway, boolean noDupes) {
-		TimerTask t = new TimerTask() {
-
-			@Override
-			public void run() {
-				synchronized(TrivialTicker.this) {
-					jobs.remove(job); // We must do this before job.run() in case the job re-schedules itself.
-				}
-				
-				if(job instanceof FastRunnable) {
-					job.run();
-				} else {
-					executor.execute(job, name);
-				}
-			}
-			
-		};
-		
 		synchronized(this) {
 			if(!running)
 				return;
-			
+
 			if(noDupes && jobs.containsKey(job))
 				return;
-			
-			timer.schedule(t, offset);
-			jobs.put(job, t);
 		}
+		ScheduledFuture<?> future = scheduler.schedule(() -> {
+			jobs.remove(job);
+			if(job instanceof FastRunnable) {
+				job.run();
+			} else {
+				executor.execute(job, name);
+			}
+		}, offset, TimeUnit.MILLISECONDS);
+		jobs.put(job, future);
 	}
-	
+
 	public void cancelTimedJob(final Runnable job) {
 		removeQueuedJob(job);
 	}
-	
+
 	@Override
 	public void removeQueuedJob(final Runnable job) {
 		synchronized(this) {
 			if(!running)
 				return;
-			
-			TimerTask t = jobs.remove(job);
-			if(t != null) {
-				t.cancel();
-			}
+		}
+		ScheduledFuture<?> future = jobs.remove(job);
+		if(future != null) {
+			future.cancel(false);
 		}
 	}
-	
+
 	/**
 	 * Changes the offset of a already-queued job.
 	 * If the given job was not queued yet it will be queued nevertheless.
 	 */
 	public void rescheduleTimedJob(final Runnable job, final String name, long newOffset) {
-		synchronized(this) {
-			removeQueuedJob(job);
-			queueTimedJob(job, name, newOffset, false, false); // Don't dupe-check, we are synchronized
-		}
+		ScheduledFuture<?> old = jobs.remove(job);
+		if(old != null) old.cancel(false);
+		queueTimedJob(job, name, newOffset, false, false);
 	}
-	
-	private Thread shutdownThread = null;
-	
-	public void shutdown() {
-		synchronized(this) {
-			running = false;
-			
-			timer.schedule(new TimerTask() {
 
-				@Override
-				public void run() {
-					// According to the JavaDoc of cancel(), calling it inside a TimerTask guarantees that the task is the last one which is run.
-					timer.cancel();
-					synchronized(TrivialTicker.this) {
-						shutdownThread = Thread.currentThread();
-						TrivialTicker.this.notifyAll();
-					}
-				}
-				
-			}, 0);
-			
-			while(shutdownThread == null) {
-				try {
-					wait();
-				} catch (InterruptedException e) { } // Valid to happen due to spurious wakeups
-			}
-			
-			while(shutdownThread.isAlive()) { // Ignore InterruptedExceptions
-				try {
-					shutdownThread.join();
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					Logger.error(this, "Got an unexpected InterruptedException", e);
-				}
-			}
+	public void shutdown() {
+		synchronized(this) { running = false; }
+		scheduler.shutdown();
+		try {
+			scheduler.awaitTermination(5, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 		}
 	}
 
@@ -160,7 +118,7 @@ public class TrivialTicker implements Ticker {
     @Override
     public void queueTimedJobAbsolute(Runnable runner, String name, long time,
             boolean runOnTickerAnyway, boolean noDupes) {
-        queueTimedJobAbsolute(runner, name, time - System.currentTimeMillis(), 
+        queueTimedJob(runner, name, time - System.currentTimeMillis(),
                 runOnTickerAnyway, noDupes);
     }
 

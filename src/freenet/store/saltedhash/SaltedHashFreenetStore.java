@@ -23,6 +23,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -1322,14 +1323,9 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 		public void realRun() {
 
 			if(!NO_CLEANER_SLEEP) {
-				try {
-					Thread.sleep((int)(CLEANER_PERIOD / 2 + CLEANER_PERIOD * random.nextDouble()));
-				} catch (InterruptedException e){
-				//Restore flag
-				Thread.currentThread().interrupt();
-				//Exit immedeitatly. No point in starting a clean if we are being told to stop
-				return;
-			   	}		
+				LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(
+					(long)(CLEANER_PERIOD / 2 + CLEANER_PERIOD * random.nextDouble())));
+				if(Thread.currentThread().isInterrupted()) { Thread.currentThread().interrupt(); return; }
 			}
 
 			if (shutdown)
@@ -1629,14 +1625,13 @@ public class SaltedHashFreenetStore<T extends StorableBlock> implements FreenetS
 						return;
 					}
 
-					try {
-						if (sleep)
-							Thread.sleep(100);
-					} catch (InterruptedException e) {
-						processor.abort();
-						//Restore interrupt flag for the Cleaner thread
-						Thread.currentThread().interrupt();
-						return;
+					if (sleep) {
+						LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+						if(Thread.currentThread().isInterrupted()) {
+							processor.abort();
+							Thread.currentThread().interrupt();
+							return;
+						}
 					}
 				}
 				processor.finish();

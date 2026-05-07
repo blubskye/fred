@@ -6,6 +6,10 @@ package freenet.support.io;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 import java.io.BufferedInputStream;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -63,7 +67,7 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 	private final PooledFileRandomAccessBufferFactory underlyingDiskRAFFactory;
 	private final DiskSpaceCheckingRandomAccessBufferFactory diskRAFFactory;
 	private volatile long minDiskSpace;
-	private long bytesInUse = 0;
+	private final AtomicLong bytesInUse = new AtomicLong(0L);
 	private final Executor executor;
 	private volatile boolean reallyEncrypt;
 	private final MasterSecret secret;
@@ -245,7 +249,7 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 					if(futureSize >= Math.min(Integer.MAX_VALUE, maxRAMBucketSize * RAMBUCKET_CONVERSION_FACTOR)) {
 						isOversized = true;
 						shouldMigrate = true;
-					} else if ((futureSize - currentSize) + bytesInUse >= maxRamUsed)
+					} else if ((futureSize - currentSize) + bytesInUse.get() >= maxRamUsed)
 						shouldMigrate = true;
 					
 					if(shouldMigrate) {
@@ -563,16 +567,16 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 		return makeBucket(size, factor, defaultIncrement);
 	}
 	
-	private synchronized void _hasTaken(long size) {
-		bytesInUse += size;
+	private void _hasTaken(long size) {
+		bytesInUse.addAndGet(size);
 	}
-	
-	private synchronized void _hasFreed(long size) {
-		bytesInUse -= size;
+
+	private void _hasFreed(long size) {
+		bytesInUse.addAndGet(-size);
 	}
-	
-	public synchronized long getRamUsed() {
-		return bytesInUse;
+
+	public long getRamUsed() {
+		return bytesInUse.get();
 	}
 	
 	public synchronized void setMaxRamUsed(long size) {
@@ -628,11 +632,11 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 		long now = System.currentTimeMillis();
 		
 		synchronized(this) {
-			if((size > 0) && (size <= maxRAMBucketSize) && (bytesInUse < maxRamUsed) && (bytesInUse + size <= maxRamUsed)) {
+			long inUse = bytesInUse.get();
+			if((size > 0) && (size <= maxRAMBucketSize) && (inUse < maxRamUsed) && (inUse + size <= maxRamUsed)) {
 				useRAMBucket = true;
 			}
-			if(bytesInUse >= maxRamUsed * MAX_USAGE_HIGH && !runningCleaner) {
-				runningCleaner = true;
+			if(inUse >= maxRamUsed * MAX_USAGE_HIGH && runningCleaner.compareAndSet(false, true)) {
 				executor.execute(cleaner);
 			}
 		}
@@ -655,7 +659,7 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 		return toReturn;
 }
 	
-	boolean runningCleaner = false;
+	final AtomicBoolean runningCleaner = new AtomicBoolean(false);
 	
 	private final Runnable cleaner = new Runnable() {
 
@@ -673,11 +677,8 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
                             Logger.error(this, "Insufficient disk space to migrate in-RAM buckets to disk!");
                             saidSo = true;
                         }
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException e1) {
-                            Thread.currentThread().interrupt();
-                        }
+                        LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+                        if(Thread.currentThread().isInterrupted()) { Thread.currentThread().interrupt(); return; }
                         continue;
                     }
 				    break;
@@ -685,9 +686,7 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 				saidSo = false;
 				while(true) {
 					// Now migrate buckets until usage is below the lower threshold.
-					synchronized(TempBucketFactory.this) {
-						if(bytesInUse <= maxRamUsed * MAX_USAGE_LOW) return;
-					}
+					if(bytesInUse.get() <= maxRamUsed * MAX_USAGE_LOW) return;
 					try {
                         if(!cleanBucketQueue(System.currentTimeMillis(), true)) return;
                     } catch (InsufficientDiskSpaceException e) {
@@ -695,17 +694,12 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
                             Logger.error(this, "Insufficient disk space to migrate in-RAM buckets to disk!");
                             saidSo = true;
                         }
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException e1) {
-                            Thread.currentThread().interrupt();
-                        }
+                        LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+                        if(Thread.currentThread().isInterrupted()) { Thread.currentThread().interrupt(); return; }
                     }
 				}
 			} finally {
-				synchronized(TempBucketFactory.this) {
-					runningCleaner = false;
-				}
+				runningCleaner.set(false);
 			}
 		}
 		
@@ -925,12 +919,12 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
 	    TempRandomAccessBuffer raf = null;
 	    
 	    synchronized(this) {
-	        if((size > 0) && (size <= maxRAMBucketSize) && (bytesInUse < maxRamUsed) && (bytesInUse + size <= maxRamUsed)) {
+	        long inUse = bytesInUse.get();
+	        if((size > 0) && (size <= maxRAMBucketSize) && (inUse < maxRamUsed) && (inUse + size <= maxRamUsed)) {
 	            raf = new TempRandomAccessBuffer((int)size, now);
-	            bytesInUse += size;
+	            bytesInUse.addAndGet(size);
 	        }
-	        if(bytesInUse >= maxRamUsed * MAX_USAGE_HIGH && !runningCleaner) {
-	            runningCleaner = true;
+	        if(bytesInUse.get() >= maxRamUsed * MAX_USAGE_HIGH && runningCleaner.compareAndSet(false, true)) {
 	            executor.execute(cleaner);
 	        }
 	    }
@@ -973,12 +967,12 @@ public class TempBucketFactory implements BucketFactory, LockableRandomAccessBuf
         TempRandomAccessBuffer raf = null;
         
         synchronized(this) {
-            if((size > 0) && (size <= maxRAMBucketSize) && (bytesInUse < maxRamUsed) && (bytesInUse + size <= maxRamUsed)) {
+            long inUse = bytesInUse.get();
+            if((size > 0) && (size <= maxRAMBucketSize) && (inUse < maxRamUsed) && (inUse + size <= maxRamUsed)) {
                 raf = new TempRandomAccessBuffer(initialContents, offset, size, now, readOnly);
-                bytesInUse += size;
+                bytesInUse.addAndGet(size);
             }
-            if(bytesInUse >= maxRamUsed * MAX_USAGE_HIGH && !runningCleaner) {
-                runningCleaner = true;
+            if(bytesInUse.get() >= maxRamUsed * MAX_USAGE_HIGH && runningCleaner.compareAndSet(false, true)) {
                 executor.execute(cleaner);
             }
         }

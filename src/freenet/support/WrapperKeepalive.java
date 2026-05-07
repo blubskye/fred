@@ -2,30 +2,25 @@ package freenet.support;
 
 import org.tanukisoftware.wrapper.WrapperManager;
 
-import java.io.IOException;
-
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 public class WrapperKeepalive extends Thread implements AutoCloseable {
   private volatile boolean shutdown = false;
-  private static final int INTERVAL = (int) MINUTES.toMillis(2);
+  private static final long INTERVAL_MS = TimeUnit.MINUTES.toMillis(2);
 
   @Override
   public void run() {
     while (!shutdown) {
-      try {
-        WrapperManager.signalStarting(INTERVAL + (int)SECONDS.toMillis(5));
-        Thread.sleep(INTERVAL);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        break;
-      }
+      WrapperManager.signalStarting((int)(INTERVAL_MS + TimeUnit.SECONDS.toMillis(5)));
+      LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(INTERVAL_MS));
+      if(Thread.currentThread().isInterrupted()) break;
     }
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     shutdown = true;
+    LockSupport.unpark(this); // wake immediately instead of waiting up to 2 min
   }
 }
