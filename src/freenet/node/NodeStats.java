@@ -1661,15 +1661,11 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 	}
 
 	public void waitUntilNotOverloaded(boolean isInsert) {
-		while(threadLimit < getActiveThreadCount()){
-			try{
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-			// Restore the interrupt flag so RequestStarter knows we are shutting down
-			Thread.currentThread().interrupt();
-    		        // 2. Break the loop immediately
-			return;
-			}
+		while(threadLimit < getActiveThreadCount()) {
+			int excess = getActiveThreadCount() - threadLimit;
+			long waitNs = Math.min(100L * excess, 2000L) * 1_000_000L;
+			java.util.concurrent.locks.LockSupport.parkNanos(waitNs);
+			if(Thread.currentThread().isInterrupted()) return;
 		}
 	}
 

@@ -3,6 +3,9 @@ package freenet.support;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 import java.util.ArrayDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import freenet.node.NodeStats;
 import freenet.node.PrioRunnable;
@@ -36,8 +39,11 @@ public class PrioritizedSerialExecutor implements Executor {
 	private final long jobTimeout;
 
 	private final Runner runner = new Runner();
-	
+
 	private final NodeStats statistics;
+
+	private final ReentrantLock jobLock = new ReentrantLock();
+	private final Condition jobAvailable = jobLock.newCondition();
 
 	class Runner implements PrioRunnable {
 
@@ -50,7 +56,8 @@ public class PrioritizedSerialExecutor implements Executor {
 
 		@Override
 		public void run() {
-			synchronized(jobs) {
+			jobLock.lock();
+			try {
 				if(current != null) {
 					if(current.isAlive()) {
 						Logger.error(this, "Already running a thread for "+this+" !!", new Exception("error"));
@@ -58,18 +65,21 @@ public class PrioritizedSerialExecutor implements Executor {
 					}
 				}
 				current = Thread.currentThread();
+			} finally {
+				jobLock.unlock();
 			}
 			try {
 			boolean calledIdleCallback = false;
 			while(true) {
 				Runnable job = null;
-				synchronized(jobs) {
+				jobLock.lock();
+				try {
 					job = checkQueue();
 					if(job == null) {
 						waiting = true;
 						try {
 							//NB: notify only on adding work or this quits early.
-							jobs.wait(jobTimeout);
+							jobAvailable.await(jobTimeout, TimeUnit.MILLISECONDS);
 						} catch (InterruptedException e) {
 							Thread.currentThread().interrupt();
 						}
@@ -83,6 +93,8 @@ public class PrioritizedSerialExecutor implements Executor {
 							}
 						}
 					}
+				} finally {
+					jobLock.unlock();
 				}
 				if(job == null) {
 					try {
@@ -103,7 +115,7 @@ public class PrioritizedSerialExecutor implements Executor {
 					if(logMINOR) {
 						Logger.minor(this, "Job "+job+" took "+(end-start)+"ms");
 					}
-				
+
 					if(statistics != null) {
 						statistics.reportDatabaseJob(job.toString(), end-start);
 					}
@@ -113,9 +125,12 @@ public class PrioritizedSerialExecutor implements Executor {
 				}
 			}
 			} finally {
-				synchronized(jobs) {
+				jobLock.lock();
+				try {
 					current = null;
 					running = false;
+				} finally {
+					jobLock.unlock();
 				}
 			}
 		}
@@ -173,7 +188,8 @@ public class PrioritizedSerialExecutor implements Executor {
 	public void start(Executor realExecutor, String name) {
 		this.realExecutor=realExecutor;
 		this.name=name;
-		synchronized (jobs) {
+		jobLock.lock();
+		try {
 			boolean empty = true;
 			for(ArrayDeque<Runnable> l: jobs) {
 				if(!l.isEmpty()) {
@@ -183,11 +199,14 @@ public class PrioritizedSerialExecutor implements Executor {
 			}
 			if(!empty)
 				reallyStart();
+		} finally {
+			jobLock.unlock();
 		}
 	}
 
 	private void reallyStart() {
-		synchronized(jobs) {
+		jobLock.lock();
+		try {
 			if(running) {
 				Logger.error(this, "Not reallyStart()ing: ALREADY RUNNING", new Exception("error"));
 				return;
@@ -195,6 +214,8 @@ public class PrioritizedSerialExecutor implements Executor {
 			running=true;
 			if(logMINOR) Logger.minor(this, "Starting thread... "+name+" : "+runner, new Exception("debug"));
 			realExecutor.execute(runner, name);
+		} finally {
+			jobLock.unlock();
 		}
 	}
 
@@ -212,19 +233,23 @@ public class PrioritizedSerialExecutor implements Executor {
 	}
 
 	public void execute(Runnable job, int prio, String jobName) {
-		synchronized(jobs) {
+		jobLock.lock();
+		try {
 			if(logMINOR)
 				Logger.minor(this, "Queueing "+jobName+" : "+job+" priority "+prio+", executor state: running="+running+" waiting="+waiting);
 			jobs[prio].addLast(job);
-			jobs.notifyAll();
+			jobAvailable.signalAll();
 			if(!running && realExecutor != null) {
 				reallyStart();
 			}
+		} finally {
+			jobLock.unlock();
 		}
 	}
 
 	public void executeNoDupes(Runnable job, int prio, String jobName) {
-		synchronized(jobs) {
+		jobLock.lock();
+		try {
 			if(jobs[prio].contains(job)) {
 				if(logMINOR)
 					Logger.minor(this, "Not queueing job: Job already queued: "+job);
@@ -235,10 +260,12 @@ public class PrioritizedSerialExecutor implements Executor {
 				Logger.minor(this, "Queueing "+jobName+" : "+job+" priority "+prio+", executor state: running="+running+" waiting="+waiting);
 
 			jobs[prio].addLast(job);
-			jobs.notifyAll();
+			jobAvailable.signalAll();
 			if(!running && realExecutor != null) {
 				reallyStart();
 			}
+		} finally {
+			jobLock.unlock();
 		}
 	}
 
@@ -258,59 +285,80 @@ public class PrioritizedSerialExecutor implements Executor {
 	@Override
 	public int[] waitingThreads() {
 		int[] retval = new int[NativeThread.JAVA_PRIORITY_RANGE+1];
-		synchronized(jobs) {
+		jobLock.lock();
+		try {
 			if(waiting)
 				retval[priority] = 1;
+		} finally {
+			jobLock.unlock();
 		}
 		return retval;
 	}
 
 	public boolean onThread() {
 		Thread running = Thread.currentThread();
-		synchronized(jobs) {
+		jobLock.lock();
+		try {
 			if(runner == null) return false;
 			return runner.current == running;
+		} finally {
+			jobLock.unlock();
 		}
 	}
 
 	public int[] getQueuedJobsCountByPriority() {
 		int[] retval = new int[jobs.length];
-		synchronized(jobs) {
+		jobLock.lock();
+		try {
 			for(int i=0;i<retval.length;i++)
 				retval[i] = jobs[i].size();
+		} finally {
+			jobLock.unlock();
 		}
 		return retval;
 	}
-	
+
 	public Runnable[][] getQueuedJobsByPriority() {
 		final Runnable[][] ret = new Runnable[jobs.length][];
-		
-		synchronized(jobs) {
+
+		jobLock.lock();
+		try {
 			for(int i=0; i < jobs.length; ++i) {
 				ret[i] = jobs[i].toArray(new Runnable[jobs[i].size()]);
 			}
+		} finally {
+			jobLock.unlock();
 		}
-		
+
 		return ret;
 	}
 
 	public int getQueueSize(int priority) {
-		synchronized(jobs) {
+		jobLock.lock();
+		try {
 			return jobs[priority].size();
+		} finally {
+			jobLock.unlock();
 		}
 	}
 
 	@Override
 	public int getWaitingThreadsCount() {
-		synchronized(jobs) {
+		jobLock.lock();
+		try {
 			return (waiting ? 1 : 0);
+		} finally {
+			jobLock.unlock();
 		}
 	}
 
 	public boolean anyQueued() {
-		synchronized(jobs) {
+		jobLock.lock();
+		try {
 			for(int i=0;i<jobs.length;i++)
 				if(!jobs[i].isEmpty()) return true;
+		} finally {
+			jobLock.unlock();
 		}
 		return false;
 	}
