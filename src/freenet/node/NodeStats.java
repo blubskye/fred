@@ -159,7 +159,7 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 	public final BootstrappingDecayingRunningAverage pInstantRejectIncomingSSKRequestBulk;
 	public final BootstrappingDecayingRunningAverage pInstantRejectIncomingCHKInsertBulk;
 	public final BootstrappingDecayingRunningAverage pInstantRejectIncomingSSKInsertBulk;
-	private boolean ignoreLocalVsRemoteBandwidthLiability;
+	private volatile boolean ignoreLocalVsRemoteBandwidthLiability;
 
 	/** Average delay caused by throttling for sending a packet */
 	private final RunningAverage throttledPacketSendAverage;
@@ -406,16 +406,12 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 			@Override
 			public Boolean get() {
-				synchronized(NodeStats.this) {
-					return ignoreLocalVsRemoteBandwidthLiability;
-				}
+				return ignoreLocalVsRemoteBandwidthLiability;
 			}
 
 			@Override
 			public void set(Boolean val) throws InvalidConfigValueException {
-				synchronized(NodeStats.this) {
-					ignoreLocalVsRemoteBandwidthLiability = val;
-				}
+				ignoreLocalVsRemoteBandwidthLiability = val;
 			}
 		});
 		ignoreLocalVsRemoteBandwidthLiability = statsConfig.getBoolean("ignoreLocalVsRemoteBandwidthLiability");
@@ -2140,45 +2136,41 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 		return sskInsertSentBytes.get();
 	}
 
-	private long offeredKeysSenderRcvdBytes;
-	private long offeredKeysSenderSentBytes;
+	private final AtomicLong offeredKeysSenderRcvdBytes = new AtomicLong();
+	private final AtomicLong offeredKeysSenderSentBytes = new AtomicLong();
 
-	public synchronized void offeredKeysSenderReceivedBytes(int x) {
-		offeredKeysSenderRcvdBytes += x;
+	public void offeredKeysSenderReceivedBytes(int x) {
+		offeredKeysSenderRcvdBytes.addAndGet(x);
 	}
 
 	/**
 	 * @return The number of bytes sent in replying to FNPGetOfferedKey's.
 	 */
-	public synchronized void offeredKeysSenderSentBytes(int x) {
-		offeredKeysSenderSentBytes += x;
+	public void offeredKeysSenderSentBytes(int x) {
+		offeredKeysSenderSentBytes.addAndGet(x);
 	}
 
 	public long getOfferedKeysTotalBytesReceived() {
-		return offeredKeysSenderRcvdBytes;
+		return offeredKeysSenderRcvdBytes.get();
 	}
 
 	public long getOfferedKeysTotalBytesSent() {
-		return offeredKeysSenderSentBytes;
+		return offeredKeysSenderSentBytes.get();
 	}
 
-	private long offerKeysRcvdBytes;
-	private long offerKeysSentBytes;
+	private final AtomicLong offerKeysRcvdBytes = new AtomicLong();
+	private final AtomicLong offerKeysSentBytes = new AtomicLong();
 
 	ByteCounter sendOffersCtr = new ByteCounter() {
 
 		@Override
 		public void receivedBytes(int x) {
-			synchronized(NodeStats.this) {
-				offerKeysRcvdBytes += x;
-			}
+			offerKeysRcvdBytes.addAndGet(x);
 		}
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				offerKeysSentBytes += x;
-			}
+			offerKeysSentBytes.addAndGet(x);
 		}
 
 		@Override
@@ -2188,40 +2180,40 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 	};
 
-	public synchronized long getOffersSentBytesSent() {
-		return offerKeysSentBytes;
+	public long getOffersSentBytesSent() {
+		return offerKeysSentBytes.get();
 	}
 
-	private long swappingRcvdBytes;
-	private long swappingSentBytes;
+	private final AtomicLong swappingRcvdBytes = new AtomicLong();
+	private final AtomicLong swappingSentBytes = new AtomicLong();
 
-	public synchronized void swappingReceivedBytes(int x) {
-		swappingRcvdBytes += x;
+	public void swappingReceivedBytes(int x) {
+		swappingRcvdBytes.addAndGet(x);
 	}
 
-	public synchronized void swappingSentBytes(int x) {
-		swappingSentBytes += x;
+	public void swappingSentBytes(int x) {
+		swappingSentBytes.addAndGet(x);
 	}
 
-	public synchronized long getSwappingTotalBytesReceived() {
-		return swappingRcvdBytes;
+	public long getSwappingTotalBytesReceived() {
+		return swappingRcvdBytes.get();
 	}
 
-	public synchronized long getSwappingTotalBytesSent() {
-		return swappingSentBytes;
+	public long getSwappingTotalBytesSent() {
+		return swappingSentBytes.get();
 	}
 
-	private long totalAuthBytesSent;
+	private final AtomicLong totalAuthBytesSent = new AtomicLong();
 
-	public synchronized void reportAuthBytes(int x) {
-		totalAuthBytesSent += x;
+	public void reportAuthBytes(int x) {
+		totalAuthBytesSent.addAndGet(x);
 	}
 
-	public synchronized long getTotalAuthBytesSent() {
-		return totalAuthBytesSent;
+	public long getTotalAuthBytesSent() {
+		return totalAuthBytesSent.get();
 	}
 
-	private long resendBytesSent;
+	private final AtomicLong resendBytesSent = new AtomicLong();
 
 	public final ByteCounter resendByteCounter = new ByteCounter() {
 
@@ -2232,9 +2224,7 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				resendBytesSent += x;
-			}
+			resendBytesSent.addAndGet(x);
 		}
 
 		@Override
@@ -2244,25 +2234,25 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 	};
 
-	public synchronized long getResendBytesSent() {
-		return resendBytesSent;
+	public long getResendBytesSent() {
+		return resendBytesSent.get();
 	}
 
-	private long uomBytesSent;
+	private final AtomicLong uomBytesSent = new AtomicLong();
 
-	public synchronized void reportUOMBytesSent(int x) {
-		uomBytesSent += x;
+	public void reportUOMBytesSent(int x) {
+		uomBytesSent.addAndGet(x);
 	}
 
-	public synchronized long getUOMBytesSent() {
-		return uomBytesSent;
+	public long getUOMBytesSent() {
+		return uomBytesSent.get();
 	}
 
 	// Opennet-related bytes - *not* including bytes sent on requests, those are accounted towards
 	// the requests' totals.
 
-	private long announceBytesSent;
-	private long announceBytesPayload;
+	private final AtomicLong announceBytesSent = new AtomicLong();
+	private final AtomicLong announceBytesPayload = new AtomicLong();
 
 	public final ByteCounter announceByteCounter = new ByteCounter() {
 
@@ -2273,29 +2263,25 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				announceBytesSent += x;
-			}
+			announceBytesSent.addAndGet(x);
 		}
 
 		@Override
 		public void sentPayload(int x) {
-			synchronized(NodeStats.this) {
-				announceBytesPayload += x;
-			}
+			announceBytesPayload.addAndGet(x);
 		}
 
 	};
 
-	public synchronized long getAnnounceBytesSent() {
-		return announceBytesSent;
+	public long getAnnounceBytesSent() {
+		return announceBytesSent.get();
 	}
 
-	public synchronized long getAnnounceBytesPayloadSent() {
-		return announceBytesPayload;
+	public long getAnnounceBytesPayloadSent() {
+		return announceBytesPayload.get();
 	}
 
-	private long routingStatusBytesSent;
+	private final AtomicLong routingStatusBytesSent = new AtomicLong();
 
 	ByteCounter setRoutingStatusCtr = new ByteCounter() {
 
@@ -2307,9 +2293,7 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				routingStatusBytesSent += x;
-			}
+			routingStatusBytesSent.addAndGet(x);
 		}
 
 		@Override
@@ -2319,38 +2303,38 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 	};
 
-	public synchronized long getRoutingStatusBytes() {
-		return routingStatusBytesSent;
+	public long getRoutingStatusBytes() {
+		return routingStatusBytesSent.get();
 	}
 
-	private long networkColoringReceivedBytesCounter;
-	private long networkColoringSentBytesCounter;
+	private final AtomicLong networkColoringReceivedBytesCounter = new AtomicLong();
+	private final AtomicLong networkColoringSentBytesCounter = new AtomicLong();
 
-	public synchronized void networkColoringReceivedBytes(int x) {
-		networkColoringReceivedBytesCounter += x;
+	public void networkColoringReceivedBytes(int x) {
+		networkColoringReceivedBytesCounter.addAndGet(x);
 	}
 
-	public synchronized void networkColoringSentBytes(int x) {
-		networkColoringSentBytesCounter += x;
+	public void networkColoringSentBytes(int x) {
+		networkColoringSentBytesCounter.addAndGet(x);
 	}
 
-	public synchronized long getNetworkColoringSentBytes() {
-		return networkColoringSentBytesCounter;
+	public long getNetworkColoringSentBytes() {
+		return networkColoringSentBytesCounter.get();
 	}
 
-	private long pingBytesReceived;
-	private long pingBytesSent;
+	private final AtomicLong pingBytesReceived = new AtomicLong();
+	private final AtomicLong pingBytesSent = new AtomicLong();
 
-	public synchronized void pingCounterReceived(int x) {
-		pingBytesReceived += x;
+	public void pingCounterReceived(int x) {
+		pingBytesReceived.addAndGet(x);
 	}
 
-	public synchronized void pingCounterSent(int x) {
-		pingBytesSent += x;
+	public void pingCounterSent(int x) {
+		pingBytesSent.addAndGet(x);
 	}
 
-	public synchronized long getPingSentBytes() {
-		return pingBytesSent;
+	public long getPingSentBytes() {
+		return pingBytesSent.get();
 	}
 
 	public ByteCounter sskRequestCtr = new ByteCounter() {
@@ -2429,23 +2413,19 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 	};
 
-	private long probeRequestSentBytes;
-	private long probeRequestRcvdBytes;
+	private final AtomicLong probeRequestSentBytes = new AtomicLong();
+	private final AtomicLong probeRequestRcvdBytes = new AtomicLong();
 
 	public ByteCounter probeRequestCtr = new ByteCounter() {
 
 		@Override
 		public void receivedBytes(int x) {
-			synchronized(NodeStats.this) {
-				probeRequestRcvdBytes += x;
-			}
+			probeRequestRcvdBytes.addAndGet(x);
 		}
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				probeRequestSentBytes += x;
-			}
+			probeRequestSentBytes.addAndGet(x);
 		}
 
 		@Override
@@ -2455,27 +2435,23 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 	};
 
-	public synchronized long getProbeRequestSentBytes() {
-		return probeRequestSentBytes;
+	public long getProbeRequestSentBytes() {
+		return probeRequestSentBytes.get();
 	}
 
-	private long routedMessageBytesRcvd;
-	private long routedMessageBytesSent;
+	private final AtomicLong routedMessageBytesRcvd = new AtomicLong();
+	private final AtomicLong routedMessageBytesSent = new AtomicLong();
 
 	public ByteCounter routedMessageCtr = new ByteCounter() {
 
 		@Override
 		public void receivedBytes(int x) {
-			synchronized(NodeStats.this) {
-				routedMessageBytesRcvd += x;
-			}
+			routedMessageBytesRcvd.addAndGet(x);
 		}
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				routedMessageBytesSent += x;
-			}
+			routedMessageBytesSent.addAndGet(x);
 		}
 
 		@Override
@@ -2485,42 +2461,38 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 	};
 
-	public synchronized long getRoutedMessageSentBytes() {
-		return routedMessageBytesSent;
+	public long getRoutedMessageSentBytes() {
+		return routedMessageBytesSent.get();
 	}
 
-	private long disconnBytesReceived;
-	private long disconnBytesSent;
+	private final AtomicLong disconnBytesReceived = new AtomicLong();
+	private final AtomicLong disconnBytesSent = new AtomicLong();
 
 	void disconnBytesReceived(int x) {
-		this.disconnBytesReceived += x;
+		this.disconnBytesReceived.addAndGet(x);
 	}
 
 	void disconnBytesSent(int x) {
-		this.disconnBytesSent += x;
+		this.disconnBytesSent.addAndGet(x);
 	}
 
 	public long getDisconnBytesSent() {
-		return disconnBytesSent;
+		return disconnBytesSent.get();
 	}
 
-	private long initialMessagesBytesReceived;
-	private long initialMessagesBytesSent;
+	private final AtomicLong initialMessagesBytesReceived = new AtomicLong();
+	private final AtomicLong initialMessagesBytesSent = new AtomicLong();
 
 	ByteCounter initialMessagesCtr = new ByteCounter() {
 
 		@Override
 		public void receivedBytes(int x) {
-			synchronized(NodeStats.this) {
-				initialMessagesBytesReceived += x;
-			}
+			initialMessagesBytesReceived.addAndGet(x);
 		}
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				initialMessagesBytesSent += x;
-			}
+			initialMessagesBytesSent.addAndGet(x);
 		}
 
 		@Override
@@ -2530,27 +2502,23 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 
 	};
 
-	public synchronized long getInitialMessagesBytesSent() {
-		return initialMessagesBytesSent;
+	public long getInitialMessagesBytesSent() {
+		return initialMessagesBytesSent.get();
 	}
 
-	private long changedIPBytesReceived;
-	private long changedIPBytesSent;
+	private final AtomicLong changedIPBytesReceived = new AtomicLong();
+	private final AtomicLong changedIPBytesSent = new AtomicLong();
 
 	ByteCounter changedIPCtr = new ByteCounter() {
 
 		@Override
 		public void receivedBytes(int x) {
-			synchronized(NodeStats.this) {
-				changedIPBytesReceived += x;
-			}
+			changedIPBytesReceived.addAndGet(x);
 		}
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				changedIPBytesSent += x;
-			}
+			changedIPBytesSent.addAndGet(x);
 		}
 
 		@Override
@@ -2561,26 +2529,22 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 	};
 
 	public long getChangedIPBytesSent() {
-		return changedIPBytesSent;
+		return changedIPBytesSent.get();
 	}
 
-	private long nodeToNodeRcvdBytes;
-	private long nodeToNodeSentBytes;
+	private final AtomicLong nodeToNodeRcvdBytes = new AtomicLong();
+	private final AtomicLong nodeToNodeSentBytes = new AtomicLong();
 
 	final ByteCounter nodeToNodeCounter = new ByteCounter() {
 
 		@Override
 		public void receivedBytes(int x) {
-			synchronized(NodeStats.this) {
-				nodeToNodeRcvdBytes += x;
-			}
+			nodeToNodeRcvdBytes.addAndGet(x);
 		}
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				nodeToNodeSentBytes += x;
-			}
+			nodeToNodeSentBytes.addAndGet(x);
 		}
 
 		@Override
@@ -2591,99 +2555,91 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 	};
 
 	public long getNodeToNodeBytesSent() {
-		return nodeToNodeSentBytes;
+		return nodeToNodeSentBytes.get();
 	}
 	
-	private long allocationNoticesCounterBytesReceived;
-	private long allocationNoticesCounterBytesSent;
-	
+	private final AtomicLong allocationNoticesCounterBytesReceived = new AtomicLong();
+	private final AtomicLong allocationNoticesCounterBytesSent = new AtomicLong();
+
 	final ByteCounter allocationNoticesCounter = new ByteCounter() {
-		
+
 		@Override
 		public void receivedBytes(int x) {
-			synchronized(NodeStats.this) {
-				allocationNoticesCounterBytesReceived += x;
-			}
+			allocationNoticesCounterBytesReceived.addAndGet(x);
 		}
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				allocationNoticesCounterBytesSent += x;
-			}
+			allocationNoticesCounterBytesSent.addAndGet(x);
 		}
 
 		@Override
 		public void sentPayload(int x) {
 			// Ignore
 		}
-		
+
 	};
-	
+
 	public long getAllocationNoticesBytesSent() {
-		return allocationNoticesCounterBytesSent;
+		return allocationNoticesCounterBytesSent.get();
 	}
 
-	private long foafCounterBytesReceived;
-	private long foafCounterBytesSent;
-	
+	private final AtomicLong foafCounterBytesReceived = new AtomicLong();
+	private final AtomicLong foafCounterBytesSent = new AtomicLong();
+
 	final ByteCounter foafCounter = new ByteCounter() {
-		
+
 		@Override
 		public void receivedBytes(int x) {
-			synchronized(NodeStats.this) {
-				foafCounterBytesReceived += x;
-			}
+			foafCounterBytesReceived.addAndGet(x);
 		}
 
 		@Override
 		public void sentBytes(int x) {
-			synchronized(NodeStats.this) {
-				foafCounterBytesSent += x;
-			}
+			foafCounterBytesSent.addAndGet(x);
 		}
 
 		@Override
 		public void sentPayload(int x) {
 			// Ignore
 		}
-		
+
 	};
-	
+
 	public long getFOAFBytesSent() {
-		return foafCounterBytesSent;
+		return foafCounterBytesSent.get();
 	}
 
 	
 	
 
-	private long notificationOnlySentBytes;
+	private final AtomicLong notificationOnlySentBytes = new AtomicLong();
 
-	synchronized void reportNotificationOnlyPacketSent(int packetSize) {
-		notificationOnlySentBytes += packetSize;
+	void reportNotificationOnlyPacketSent(int packetSize) {
+		notificationOnlySentBytes.addAndGet(packetSize);
 	}
 
 	public long getNotificationOnlyPacketsSentBytes() {
-		return notificationOnlySentBytes;
+		return notificationOnlySentBytes.get();
 	}
 
-	public synchronized long getSentOverhead() {
-		return offerKeysSentBytes // offers we have sent
-		+ swappingSentBytes // swapping
-		+ totalAuthBytesSent // connection setup
-		+ resendBytesSent // resends - FIXME might be dependant on requests?
-		+ uomBytesSent // update over mandatory
-		+ announceBytesSent // announcements, including payload
-		+ routingStatusBytesSent // routing status
-		+ networkColoringSentBytesCounter // network coloring
-		+ pingBytesSent // ping bytes
-		+ probeRequestSentBytes // probe requests
-		+ routedMessageBytesSent // routed test messages
-		+ disconnBytesSent // disconnection related bytes
-		+ initialMessagesBytesSent // initial messages
-		+ changedIPBytesSent // changed IP
-		+ nodeToNodeSentBytes // n2n messages
-		+ notificationOnlySentBytes; // ack-only packets
+	public long getSentOverhead() {
+		return offerKeysSentBytes.get() // offers we have sent
+		+ swappingSentBytes.get() // swapping
+		+ totalAuthBytesSent.get() // connection setup
+		+ resendBytesSent.get() // resends - FIXME might be dependant on requests?
+		+ uomBytesSent.get() // update over mandatory
+		+ announceBytesSent.get() // announcements, including payload
+		+ routingStatusBytesSent.get() // routing status
+		+ networkColoringSentBytesCounter.get() // network coloring
+		+ pingBytesSent.get() // ping bytes
+		+ probeRequestSentBytes.get() // probe requests
+		+ routedMessageBytesSent.get() // routed test messages
+		+ disconnBytesSent.get() // disconnection related bytes
+		+ initialMessagesBytesSent.get() // initial messages
+		+ changedIPBytesSent.get() // changed IP
+		+ nodeToNodeSentBytes.get() // n2n messages
+		+ notificationOnlySentBytes.get(); // ack-only packets
 	}
 
 	/**
@@ -3250,7 +3206,7 @@ public class NodeStats implements Persistable, BlockTimeCallback {
 	}
 	
 	/** If a peer is over this threshold it is considered to be backed off. */
-	public synchronized long maxPeerPingTime() {
+	public long maxPeerPingTime() {
 		return 2 * maxPingTime;
 	}
 	
