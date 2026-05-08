@@ -734,7 +734,7 @@ public class FCPServer implements Runnable, DownloadCache {
 		class OutputWrapper {
 			NotAllowedException ne;
 			IOException ioe;
-			boolean done;
+			final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
 		}
 
 		final OutputWrapper ow = new OutputWrapper();
@@ -765,36 +765,22 @@ public class FCPServer implements Runnable, DownloadCache {
 					Logger.error(this, "Failed to make persistent request: "+t, t);
 					return false;
 				} finally {
-					synchronized(ow) {
-						ow.ne = ne;
-						ow.ioe = ioe;
-						ow.done = true;
-						ow.notifyAll();
-					}
+					ow.ne = ne;
+					ow.ioe = ioe;
+					ow.latch.countDown();
 				}
 			}
 
 		}, NativeThread.PriorityLevel.HIGH_PRIORITY.value);
 
-		synchronized(ow) {
-			while(true) {
-				if(!ow.done) {
-					try {
-						ow.wait();
-					} catch (InterruptedException e) {
-					    // 1. Restore the interrupt flag for the rest of the stack
-					    Thread.currentThread().interrupt();
-						// 2. Break the while loop to stop blocking the shutdown
-						break;
-					}
-					continue;
-				}
-				// ... after break, it lands here:
-				if(ow.ioe != null) throw ow.ioe;
-				if(ow.ne != null) throw ow.ne;
-				return;
-			}
+		try {
+			ow.latch.await();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return;
 		}
+		if(ow.ioe != null) throw ow.ioe;
+		if(ow.ne != null) throw ow.ne;
 	}
 
 	public boolean modifyGlobalRequestBlocking(final String identifier, final String newToken, final short newPriority) throws PersistenceDisabledException {
@@ -805,7 +791,7 @@ public class FCPServer implements Runnable, DownloadCache {
 		} else {
 			class OutputWrapper {
 				boolean success;
-				boolean done;
+				final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
 			}
 			final OutputWrapper ow = new OutputWrapper();
 			core.getClientContext().jobRunner.queue(new PersistentJob() {
@@ -824,35 +810,21 @@ public class FCPServer implements Runnable, DownloadCache {
 							req.modifyRequest(newToken, newPriority, FCPServer.this);
 						success = true;
 					} finally {
-						synchronized(ow) {
-							ow.success = success;
-							ow.done = true;
-							ow.notifyAll();
-						}
+						ow.success = success;
+						ow.latch.countDown();
 					}
 					return true;
 				}
 
 			}, NativeThread.PriorityLevel.HIGH_PRIORITY.value);
 
-			synchronized(ow) {
-                	    while(true) {
-	                        if(!ow.done) {
-            		            try {
-            		                ow.wait();
-            		            } catch (InterruptedException e) {
-            		                // Restore flag and break the loop
-            		                Thread.currentThread().interrupt();
-            		                break;
-            		            }
-            		            continue;
-            		        }
-            		        return ow.success;
-                	}
-                	// If we broke out due to an interrupt, the loop ends here.
-                	// Since we don't have the result yet, returning false is the safest bet.
-                	return false;
-            	}
+			try {
+				ow.latch.await();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return false;
+			}
+			return ow.success;
 	}
 	}
 
@@ -997,8 +969,8 @@ public class FCPServer implements Runnable, DownloadCache {
 			req.start(core.getClientContext());
 		} else {
 			class OutputWrapper {
-				boolean done;
 				IdentifierCollisionException collided;
+				final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
 			}
 			final OutputWrapper ow = new OutputWrapper();
 			core.getClientContext().jobRunner.queue(new PersistentJob() {
@@ -1017,34 +989,20 @@ public class FCPServer implements Runnable, DownloadCache {
 					} catch (IdentifierCollisionException e) {
 						ow.collided = e;
 					} finally {
-						synchronized(ow) {
-							ow.done = true;
-							ow.notifyAll();
-						}
+						ow.latch.countDown();
 					}
 					return true;
 				}
 
 			}, NativeThread.PriorityLevel.HIGH_PRIORITY.value);
 
-			synchronized(ow) {
-				while(true) {
-					if(!ow.done) {
-						try {
-							ow.wait();
-						} catch (InterruptedException e) {
-							// Restore Interrupt flag
-							Thread.currentThread().interrupt();
-                            				// 2. Break the loop so we stop blocking shutdown
-                            				break;
-						}
-					} else {
-						if(ow.collided != null)
-							throw ow.collided;
-						return;
-					}
-				}
+			try {
+				ow.latch.await();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return;
 			}
+			if(ow.collided != null) throw ow.collided;
 		}
 	}
 
@@ -1055,8 +1013,8 @@ public class FCPServer implements Runnable, DownloadCache {
 			return true;
 		} else {
 			class OutputWrapper {
-				boolean done;
 				boolean success;
+				final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
 			}
 			final OutputWrapper ow = new OutputWrapper();
             if(logMINOR) Logger.minor(this, "Queueing restart of "+identifier);
@@ -1080,32 +1038,21 @@ public class FCPServer implements Runnable, DownloadCache {
 					} catch (PersistenceDisabledException e) {
 						success = false;
 					} finally {
-						synchronized(ow) {
-							ow.success = success;
-							ow.done = true;
-							ow.notifyAll();
-						}
+						ow.success = success;
+						ow.latch.countDown();
 					}
 					return true;
 				}
 
 			}, NativeThread.PriorityLevel.HIGH_PRIORITY.value);
 
-			synchronized(ow) {
-				while(true) {
-					if(ow.done) return ow.success;
-					try {
-						ow.wait();
-					} catch (InterruptedException e) {
-						// Restore Interrupt Status
-						Thread.currentThread().interrupt();
-						break;
-					}
-				}
-				//This is the "fallback" return
-				//We only reach this line if we 'break' out of the loop.
+			try {
+				ow.latch.await();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 				return false;
 			}
+			return ow.success;
 		}
 	}
 
@@ -1125,7 +1072,7 @@ public class FCPServer implements Runnable, DownloadCache {
 
 		class OutputWrapper {
 			FetchResult result;
-			boolean done;
+			final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
 		}
 
 		final OutputWrapper ow = new OutputWrapper();
@@ -1143,33 +1090,21 @@ public class FCPServer implements Runnable, DownloadCache {
 				try {
 					result = lookup(key, false, context, false, null);
 				} finally {
-					synchronized(ow) {
-						ow.result = result;
-						ow.done = true;
-						ow.notifyAll();
-					}
+					ow.result = result;
+					ow.latch.countDown();
 				}
 				return false;
 			}
 
 		}, NativeThread.PriorityLevel.HIGH_PRIORITY.value);
 
-		synchronized(ow) {
-			while(true) {
-				if(ow.done) {
-					return ow.result;
-				} else {
-					try {
-						ow.wait();
-					} catch (InterruptedException e) {
-						// Restore Interrupt again
-						Thread.currentThread().interrupt();
-						break;
-					}
-				}
-			}
+		try {
+			ow.latch.await();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 			return null;
 		}
+		return ow.result;
 	}
 
 	@Override
