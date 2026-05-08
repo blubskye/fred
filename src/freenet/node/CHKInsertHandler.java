@@ -186,14 +186,12 @@ public class CHKInsertHandler implements PrioRunnable, ByteCounter {
         boolean receivedRejectedOverload = false;
         
         while(true) {
-            synchronized(sender) {
-                try {
-                	if(sender.getStatus() == CHKInsertSender.NOT_FINISHED)
-                		sender.wait(5000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    // Cool, probably this is because the receive failed...
-                }
+            try {
+                if(sender.getStatus() == CHKInsertSender.NOT_FINISHED)
+                    sender.awaitStatusChange(5000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                // Cool, probably this is because the receive failed...
             }
             if(receiveFailed()) {
                 // Nothing else we can do
@@ -411,20 +409,13 @@ public class CHKInsertHandler implements PrioRunnable, ByteCounter {
             long startedTime = System.currentTimeMillis();
 			//If there are downstream senders, our final success report depends on there being no timeouts in the chain.
         	while(true) {
-        		synchronized(sender) {
-        			if(sender.completed()) {
-        				break;
-        			}
-        			try {
-        				int t = (int)Math.min(Integer.MAX_VALUE, startedTime + transferTimeout - System.currentTimeMillis());
-        				if(t > 0) sender.wait(t);
-        				else {
-        					routingTookTooLong = true;
-        					break;
-        				}
-        			} catch (InterruptedException e) {
-        				Thread.currentThread().interrupt();
-        			}
+        		if(sender.completed()) break;
+        		int t = (int)Math.min(Integer.MAX_VALUE, startedTime + transferTimeout - System.currentTimeMillis());
+        		if(t <= 0) { routingTookTooLong = true; break; }
+        		try {
+        			sender.awaitStatusChange(t);
+        		} catch (InterruptedException e) {
+        			Thread.currentThread().interrupt();
         		}
         	}
         	if(routingTookTooLong) {
@@ -440,15 +431,11 @@ public class CHKInsertHandler implements PrioRunnable, ByteCounter {
         		
         		// Still waiting.
         		while(true) {
-        			synchronized(sender) {
-        				if(sender.completed()) {
-        					break;
-        				}
-        				try {
-        					sender.wait(SECONDS.toMillis(10));
-        				} catch (InterruptedException e) {
-        					Thread.currentThread().interrupt();
-        				}
+        			if(sender.completed()) break;
+        			try {
+        				sender.awaitStatusChange(SECONDS.toMillis(10));
+        			} catch (InterruptedException e) {
+        				Thread.currentThread().interrupt();
         			}
         		}
         		if(logMINOR) Logger.minor(this, "Completed after telling downstream on "+this);

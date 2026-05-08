@@ -370,6 +370,9 @@ public final class CHKInsertSender extends BaseSender implements PrioRunnable, A
     private volatile boolean transferTimedOut;
     
     private int status = -1;
+
+	private final java.util.concurrent.locks.ReentrantLock statusLock = new java.util.concurrent.locks.ReentrantLock();
+	private final java.util.concurrent.locks.Condition statusChanged = statusLock.newCondition();
     /** Still running */
     static final int NOT_FINISHED = -1;
     /** Successful insert */
@@ -763,6 +766,8 @@ public final class CHKInsertSender extends BaseSender implements PrioRunnable, A
     	if(hasForwardedRejectedOverload) return;
     	hasForwardedRejectedOverload = true;
    		notifyAll();
+		statusLock.lock();
+		try { statusChanged.signalAll(); } finally { statusLock.unlock(); }
 	}
 	
 	private void setTransferTimedOut() {
@@ -770,6 +775,8 @@ public final class CHKInsertSender extends BaseSender implements PrioRunnable, A
 			if(!transferTimedOut) {
 				transferTimedOut = true;
 				notifyAll();
+				statusLock.lock();
+				try { statusChanged.signalAll(); } finally { statusLock.unlock(); }
 			}
 		}
 	}
@@ -802,6 +809,8 @@ public final class CHKInsertSender extends BaseSender implements PrioRunnable, A
         	}
         	
         	notifyAll();
+        	statusLock.lock();
+        	try { statusChanged.signalAll(); } finally { statusLock.unlock(); }
         	if(logMINOR) Logger.minor(this, "Set status code: "+getStatusString()+" on "+uid);
         }
 		
@@ -831,9 +840,11 @@ public final class CHKInsertSender extends BaseSender implements PrioRunnable, A
 					status = RECEIVE_FAILED;
 				allTransfersCompleted = true;
 				notifyAll();
+				statusLock.lock();
+				try { statusChanged.signalAll(); } finally { statusLock.unlock(); }
 			}
 		}
-        	
+
         if(status == SUCCESS && next != null)
         	next.onSuccess(true, false);
         
@@ -850,6 +861,15 @@ public final class CHKInsertSender extends BaseSender implements PrioRunnable, A
         return htl;
     }
     
+    public void awaitStatusChange(long timeoutMs) throws InterruptedException {
+        statusLock.lock();
+        try {
+            statusChanged.await(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } finally {
+            statusLock.unlock();
+        }
+    }
+
     public boolean failIfReceiveFailed(InsertTag tag, PeerNode next) {
     	synchronized(backgroundTransfers) {
     		if(!receiveFailed) return false;
@@ -934,6 +954,8 @@ public final class CHKInsertSender extends BaseSender implements PrioRunnable, A
 				synchronized(CHKInsertSender.this) {
 					allTransfersCompleted = true;
 					CHKInsertSender.this.notifyAll();
+					statusLock.lock();
+					try { statusChanged.signalAll(); } finally { statusLock.unlock(); }
 				}
 			}
 		}

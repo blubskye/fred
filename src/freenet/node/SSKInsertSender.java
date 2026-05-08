@@ -64,6 +64,9 @@ public class SSKInsertSender extends BaseSender implements PrioRunnable, AnyInse
     private InsertTag forkedRequestTag;
     
     private int status = -1;
+
+	private final java.util.concurrent.locks.ReentrantLock statusLock = new java.util.concurrent.locks.ReentrantLock();
+	private final java.util.concurrent.locks.Condition statusChanged = statusLock.newCondition();
     /** Still running */
     static final int NOT_FINISHED = -1;
     /** Successful insert */
@@ -478,6 +481,8 @@ public class SSKInsertSender extends BaseSender implements PrioRunnable, AnyInse
 				hasRecentlyCollided = true;
 				hasCollided = true;
 				notifyAll();
+				statusLock.lock();
+				try { statusChanged.signalAll(); } finally { statusLock.unlock(); }
 			}
 			
 			// The node will now propagate the new data. There is no need to move to the next node yet.
@@ -520,6 +525,8 @@ public class SSKInsertSender extends BaseSender implements PrioRunnable, AnyInse
     	if(hasForwardedRejectedOverload) return;
     	hasForwardedRejectedOverload = true;
    		notifyAll();
+		statusLock.lock();
+		try { statusChanged.signalAll(); } finally { statusLock.unlock(); }
 	}
     
     private void finish(int code, PeerNode next) {
@@ -540,6 +547,8 @@ public class SSKInsertSender extends BaseSender implements PrioRunnable, AnyInse
     		if(status != TIMED_OUT) {
     			status = code;
     			notifyAll();
+    			statusLock.lock();
+    			try { statusChanged.signalAll(); } finally { statusLock.unlock(); }
     		}
         }
 
@@ -558,6 +567,15 @@ public class SSKInsertSender extends BaseSender implements PrioRunnable, AnyInse
     @Override
     public synchronized short getHTL() {
         return htl;
+    }
+
+    public void awaitStatusChange(long timeoutMs) throws InterruptedException {
+        statusLock.lock();
+        try {
+            statusChanged.await(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } finally {
+            statusLock.unlock();
+        }
     }
 
     @Override
