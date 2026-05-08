@@ -7,6 +7,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.ArrayList;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import freenet.crypt.CryptFormatException;
 import freenet.crypt.DSAPublicKey;
@@ -75,7 +77,7 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
     
     // Basics
     final RequestTag origTag;
-    private PartiallyReceivedBlock prb;
+    private volatile PartiallyReceivedBlock prb;
     private byte[] finalHeaders;
     private byte[] finalSskData;
     private DSAPublicKey pubKey;
@@ -93,7 +95,7 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
     // Terminal status
     // Always set finished AFTER setting the reason flag
 
-    private int status = -1;
+    private volatile int status = -1;
     static final int NOT_FINISHED = -1;
     static final int SUCCESS = 0;
     static final int ROUTE_NOT_FOUND = 1;
@@ -839,6 +841,7 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
         		synchronized(this) {
         			transferringFrom = pn;
         			notifyAll();
+        			statusLock.lock(); statusChanged.signalAll(); statusLock.unlock();
         		}
         		fireCHKTransferBegins();
 				
@@ -1084,9 +1087,10 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
         	finalHeaders = waiter.headers;
     		if(this.status == SUCCESS || this.prb != null && transferringFrom != null)
     			failNow = true;
-    		if((!wasFork) && (this.prb == null || !this.prb.allReceivedAndNotAborted())) 
+    		if((!wasFork) && (this.prb == null || !this.prb.allReceivedAndNotAborted()))
     			this.prb = prb;
     		notifyAll();
+    		statusLock.lock(); statusChanged.signalAll(); statusLock.unlock();
     	}
     	if(!wasFork)
     		// Don't fire transfer begins on a fork since we have not set headers or prb.
@@ -1461,13 +1465,16 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
 	}
 
 	private volatile boolean hasForwardedRejectedOverload;
-    
+    private final ReentrantLock statusLock = new ReentrantLock();
+    private final Condition statusChanged = statusLock.newCondition();
+
     /** Forward RejectedOverload to the request originator */
     protected void forwardRejectedOverload() {
 		synchronized (this) {
 			if(hasForwardedRejectedOverload) return;
 			hasForwardedRejectedOverload = true;
 			notifyAll();
+			statusLock.lock(); statusChanged.signalAll(); statusLock.unlock();
 		}
 		fireReceivedRejectOverload();
 	}
@@ -1500,44 +1507,49 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
      * @return Bitmask indicating present situation. Can be fed back to this function,
      * if nonzero.
      */
-    public synchronized short waitUntilStatusChange(short mask) {
+    public short waitUntilStatusChange(short mask) {
     	if(mask == WAIT_ALL) throw new IllegalArgumentException("Cannot ignore all!");
     	while(true) {
     	long now = System.currentTimeMillis();
     	long deadline = now + (realTimeFlag ? MINUTES.toMillis(5) : MINUTES.toMillis(21));
         while(true) {
         	short current = mask; // If any bits are set already, we ignore those states.
-        	
+
        		if(hasForwardedRejectedOverload)
        			current |= WAIT_REJECTED_OVERLOAD;
-        	
+
        		if(prb != null)
        			current |= WAIT_TRANSFERRING_DATA;
-        	
+
         	if(status != NOT_FINISHED)
         		current |= WAIT_FINISHED;
-        	
+
         	if(current != mask) return current;
-			
-            try {
+
+        	statusLock.lock();
+        	try {
             	if(now >= deadline) {
             		Logger.error(this, "Waited more than 5 minutes for status change on " + this + " current = " + current + " and there was no change.");
             		break;
             	}
-            	
+
             	if(logMINOR) Logger.minor(this, "Waiting for status change on "+this+" current is "+current+" status is "+status);
-                wait(deadline - now);
+                try {
+                    statusChanged.await(deadline - now, java.util.concurrent.TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
                 now = System.currentTimeMillis(); // Is used in the next iteration so needed even without the logging
-                
+
                 if(now >= deadline) {
                     Logger.error(this, "Waited more than 5 minutes for status change on " + this + " current = " + current + ", maybe nobody called notify()");
                     // Normally we would break; here, but we give the function a change to succeed
                     // in the next iteration and break in the above if(now >= deadline) if it
                     // did not succeed. This makes the function work if notify() is not called.
                 }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+        	} finally {
+        		statusLock.unlock();
+        	}
         }
     	}
     }
@@ -1576,8 +1588,9 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
             if(status == SUCCESS)
             	successFrom = next;
             notifyAll();
+            statusLock.lock(); statusChanged.signalAll(); statusLock.unlock();
         }
-        
+
     	boolean shouldUnlock = doOpennet && next != null;
         
         if(status == SUCCESS) {
@@ -1611,10 +1624,11 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
 		synchronized(this) {
 			opennetFinished = true;
 			notifyAll();
+			statusLock.lock(); statusChanged.signalAll(); statusLock.unlock();
 		}
-		
+
     }
-    
+
     AsyncMessageCallback finishOpennetOnAck(final PeerNode next) {
     	
     	return new AsyncMessageCallback() {
@@ -1801,6 +1815,7 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
 					origTag.finishedWaitingForOpennet(next);
 				}
 				notifyAll();
+				statusLock.lock(); statusChanged.signalAll(); statusLock.unlock();
 			}
 			// We need to wait.
 			try {
@@ -1817,6 +1832,7 @@ public final class RequestSender extends BaseSender implements PrioRunnable {
     		synchronized(this) {
     			opennetFinished = true;
     			notifyAll();
+    			statusLock.lock(); statusChanged.signalAll(); statusLock.unlock();
     		}
     	}
 		return false;
